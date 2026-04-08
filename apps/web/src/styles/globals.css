@@ -1,0 +1,33 @@
+@import url("https://fonts.bunny.net/css?family=baloo-2:400,600,700,800|fredoka:400,500,600,700|nunito:400,500,600,700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  /* Couleurs Planify Kids */
+  --color-primary: #4caf50;
+  --color-secondary: #2196f3;
+  --color-accent: #ff9800;
+  --color-danger: #f44336;
+  --color-background: #f5f7fb;
+
+  /* Couleurs enfants */
+  --color-child-emma: #ff9800;
+  --color-child-leo: #2196f3;
+  --color-child-tom: #9c27b0;
+  --color-parent: #4caf50;
+
+  /* Typographie */
+  --font-title: "Fredoka", sans-serif;
+  --font-body: "Nunito", sans-serif;
+  --font-score: "Baloo 2", sans-serif;
+
+  /* Border radius */
+  --radius-card: 20px;
+  --radius-button: 16px;
+  --radius-checkbox: 12px;
+}
+
+@layer base {
+  body {
+    @apply bg-background font-body text-gray-900 antialiased;
+  }
+}

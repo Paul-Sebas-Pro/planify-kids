@@ -1,0 +1,47 @@
+# Dépendances
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+build/
+out/
+.output/
+
+# Env
+.env
+.env.local
+.env.production
+
+# TypeScript
+*.tsbuildinfo
+
+# Prisma
+apps/api/src/prisma/migrations/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Vite
+apps/web/.vite/
+
+# Flutter
+apps/mobile/.dart_tool/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies
+apps/mobile/build/
+apps/mobile/android/.gradle/
+
+# Specs (non versionnées en prod)
+specs/
+design/

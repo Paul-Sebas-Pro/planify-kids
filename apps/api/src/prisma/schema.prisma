@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PARENT
+  CHILD
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+}
+
+enum ExchangeStatus {
+  PENDING
+  ACCEPTED
+  REFUSED
+}
+
+enum RewardStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members FamilyMember[]
+}
+
+model Family {
+  id       String @id @default(uuid())
+  name     String
+  timezone String @default("Europe/Paris")
+  locale   String @default("fr")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members   FamilyMember[]
+  tasks     TaskTemplate[]
+  schedules Schedule[]
+  rewards   Reward[]
+}
+
+model FamilyMember {
+  id       String  @id @default(uuid())
+  familyId String
+  userId   String?
+
+  name      String
+  avatar    String?
+  color     String?
+  birthDate DateTime?
+  role      Role
+
+  points Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id])
+
+  assignments ScheduleItem[]
+  badges      MemberBadge[]
+  rewards     RewardClaim[]
+
+  @@index([familyId])
+}
+
+model TaskTemplate {
+  id          String  @id @default(uuid())
+  familyId    String
+  name        String
+  description String?
+  icon        String?
+
+  difficulty Int
+  duration   Int
+  points     Int
+  frequency  String
+
+  isActive    Boolean @default(true)
+  isMandatory Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family        Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  scheduleItems ScheduleItem[]
+
+  @@index([familyId])
+}
+
+model Schedule {
+  id       String @id @default(uuid())
+  familyId String
+
+  startDate     DateTime
+  endDate       DateTime
+  generatedByAI Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  items  ScheduleItem[]
+
+  @@index([familyId])
+}
+
+model ScheduleItem {
+  id                 String  @id @default(uuid())
+  scheduleId         String
+  taskTemplateId     String
+  assignedToMemberId String
+
+  date        DateTime
+  status      TaskStatus @default(PENDING)
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schedule  Schedule     @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  task      TaskTemplate @relation(fields: [taskTemplateId], references: [id])
+  member    FamilyMember @relation(fields: [assignedToMemberId], references: [id])
+  exchanges TaskExchange[]
+
+  @@index([scheduleId])
+  @@index([assignedToMemberId])
+  @@index([date])
+}
+
+model TaskExchange {
+  id             String @id @default(uuid())
+  scheduleItemId String
+  fromMemberId   String
+  toMemberId     String
+
+  status ExchangeStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id], onDelete: Cascade)
+}
+
+model Badge {
+  id          String @id @default(uuid())
+  name        String
+  description String
+  icon        String
+
+  conditionType  String
+  conditionValue Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members MemberBadge[]
+}
+
+model MemberBadge {
+  id       String @id @default(uuid())
+  memberId String
+  badgeId  String
+
+  earnedAt DateTime @default(now())
+
+  member FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  badge  Badge        @relation(fields: [badgeId], references: [id])
+
+  @@unique([memberId, badgeId])
+}
+
+model Reward {
+  id         String @id @default(uuid())
+  familyId   String
+  name       String
+  icon       String
+  pointsCost Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  claims RewardClaim[]
+
+  @@index([familyId])
+}
+
+model RewardClaim {
+  id       String @id @default(uuid())
+  memberId String
+  rewardId String
+
+  status RewardStatus @default(PENDING)
+
+  claimedAt DateTime @default(now())
+
+  member FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  reward Reward       @relation(fields: [rewardId], references: [id])
+}

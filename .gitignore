@@ -44,4 +44,6 @@ apps/mobile/android/.gradle/
 
 # Specs (non versionnées en prod)
 specs/
-design/
+
+# Claude
+CLAUDE.md

@@ -1,8 +1,10 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { env } from "./config/env.js";
 import { errorMiddleware } from "./core/middleware/error.middleware.js";
+import { authRoutes } from "./modules/auth/auth.routes.js";
 
 const app = new Hono();
 
@@ -18,16 +20,16 @@ app.use(
 );
 
 // ─── Health check ─────────────────────────────────────────────
-app.get("/health", (c) => c.json({ status: "ok", env: env.NODE_ENV }));
+app.get("/health", (c: Context) => c.json({ status: "ok", env: env.NODE_ENV }));
 
-// ─── Routes (à monter au fur et à mesure) ─────────────────────
-// app.route("/auth", authRoutes);
+// ─── Routes ───────────────────────────────────────────────────
+app.route("/auth", authRoutes);
 // app.route("/family", familyRoutes);
 // app.route("/tasks", taskRoutes);
 // app.route("/planning", planningRoutes);
 
 // ─── Gestion d'erreurs ────────────────────────────────────────
-app.onError((err, c) => errorMiddleware(err, c));
-app.notFound((c) => c.json({ error: "Route introuvable" }, 404));
+app.onError((err: unknown, c: Context) => errorMiddleware(err, c));
+app.notFound((c: Context) => c.json({ error: "Route introuvable" }, 404));
 
 export default app;

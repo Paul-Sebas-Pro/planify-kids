@@ -1,5 +1,6 @@
-import { prisma } from "../../config/database.js";
-import type { RegisterInput } from "./auth.schema.js";
+import { prisma } from "../../config/database";
+import type { Prisma } from "@prisma/client";
+import type { RegisterInput } from "./auth.schema";
 
 export async function findUserByEmail(email: string) {
   return prisma.user.findUnique({
@@ -14,9 +15,9 @@ export async function findUserByEmail(email: string) {
 
 export async function createUserWithFamily(
   input: RegisterInput,
-  passwordHash: string
+  passwordHash: string,
 ) {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const user = await tx.user.create({
       data: { email: input.email, passwordHash },
     });

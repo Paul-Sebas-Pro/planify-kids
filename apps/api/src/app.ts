@@ -5,6 +5,8 @@ import { logger } from "hono/logger";
 import { env } from "./config/env.js";
 import { errorMiddleware } from "./core/middleware/error.middleware.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
+import { membersRoutes } from "./modules/members/members.routes.js";
+import { tasksRoutes } from "./modules/tasks/tasks.routes.js";
 
 const app = new Hono();
 
@@ -24,8 +26,8 @@ app.get("/health", (c: Context) => c.json({ status: "ok", env: env.NODE_ENV }));
 
 // ─── Routes ───────────────────────────────────────────────────
 app.route("/auth", authRoutes);
-// app.route("/family", familyRoutes);
-// app.route("/tasks", taskRoutes);
+app.route("/family/members", membersRoutes);
+app.route("/tasks", tasksRoutes);
 // app.route("/planning", planningRoutes);
 
 // ─── Gestion d'erreurs ────────────────────────────────────────

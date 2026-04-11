@@ -1,18 +1,37 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router";
+import { useAuthStore } from "@/store/auth.store";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { LoginPage } from "@/features/auth/LoginPage";
+import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { FamilyPage } from "@/features/family/FamilyPage";
+import { TasksPage } from "@/features/tasks/TasksPage";
 
-// Pages (à créer au fil du développement)
-// import { LoginPage } from "@/features/auth/LoginPage";
-// import { DashboardPage } from "@/features/dashboard/DashboardPage";
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
 
 export function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Temporaire — sera remplacé par les vraies pages */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/login" element={<div>Login (à implémenter)</div>} />
-        <Route path="/dashboard" element={<div>Dashboard (à implémenter)</div>} />
-        <Route path="*" element={<div>404</div>} />
+        <Route path="/login" element={<LoginPage />} />
+
+        <Route
+          element={
+            <RequireAuth>
+              <AppLayout />
+            </RequireAuth>
+          }
+        >
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/family" element={<FamilyPage />} />
+          <Route path="/tasks" element={<TasksPage />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -11,13 +11,56 @@
 
 ## 🗓 Sessions de Développement
 
+### Session 2 - 2026-04-10
+
+**Objectif**: Sprint 1 backend — Auth + CRUD Members + CRUD Tasks
+
+**Concepts introduits**:
+
+- **Prisma v7 + adapter** : Instanciation obligatoire via `PrismaPg` (`@prisma/adapter-pg`) — `new PrismaClient({ adapter })` au lieu de la connection string directe
+- **Prisma.TransactionClient** : Type correct pour le callback `$transaction` — `import type { Prisma } from "@prisma/client"` ; erreur IDE résolue après `prisma generate`
+- **Zod v4** : `z.email()` en top-level (plus `z.string().email()`), `z.iso.date()` pour les dates ISO
+- **`requireRole` middleware** : Factory Hono qui vérifie le rôle JWT avant d'accéder à une route — à passer après `authMiddleware`
+- **Multi-tenant guard** : Toutes les queries Prisma incluent `familyId` issu du JWT — jamais depuis le body
+
+**Modifications**:
+
+```diff
+M apps/api/package.json          (+ @hono/zod-validator, prisma.schema path, @prisma/adapter-pg)
+M apps/api/src/config/database.ts (pattern PrismaPg adapter v7)
+M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
++ apps/api/src/modules/auth/auth.schema.ts
++ apps/api/src/modules/auth/auth.repository.ts  (transaction User+Family+Member)
++ apps/api/src/modules/auth/auth.service.ts     (Argon2 + JWT)
++ apps/api/src/modules/auth/auth.routes.ts      (register, login, me)
++ apps/api/src/modules/members/members.schema.ts
++ apps/api/src/modules/members/members.repository.ts
++ apps/api/src/modules/members/members.service.ts
++ apps/api/src/modules/members/members.routes.ts
++ apps/api/src/modules/tasks/tasks.schema.ts
++ apps/api/src/modules/tasks/tasks.repository.ts
++ apps/api/src/modules/tasks/tasks.service.ts
++ apps/api/src/modules/tasks/tasks.routes.ts
+```
+
+**Décisions d'architecture**:
+
+- **familyId depuis JWT** : Jamais depuis le body de la requête — évite toute usurpation multi-tenant
+- **`isActive` filtre par défaut** : `GET /tasks` ne retourne que les tâches actives ; `?all=true` pour tout voir
+- **Auto-suppression bloquée** : Un membre ne peut pas se supprimer lui-même (`userId === requesterId`)
+- **Transaction atomique register** : `User + Family + FamilyMember` créés dans une seule transaction Prisma
+
+**Tests ajoutés**: Aucun (à ajouter — Sprint 1 definition of done)
+
+---
+
 ### Session 1 - 2026-04-08
 
 **Objectif**: Design system + Setup monorepo
 
 **Concepts introduits**:
 
-- **Pencil MCP** : Outil de design .pen, les instances `ref` doivent utiliser l'ID Pencil généré (ex. `ref:"VViOQ"`), pas l'ID custom
+- **Pencil MCP** : Les instances `ref` doivent utiliser l'ID Pencil généré (ex. `ref:"VViOQ"`), pas l'ID custom
 - **Tailwind CSS v4** : Config via `@theme {}` dans globals.css — plus de `tailwind.config.js`
 - **pnpm workspaces** : Monorepo avec `workspace:*` pour les packages internes
 - **Hono** : `app.onError()` reçoit `(err, c)` — différent d'Express
@@ -25,46 +68,19 @@
 **Modifications**:
 
 ```diff
-+ design/global-design.pen     (design system : couleurs, typo, spacing, états)
-+ design/components.pen        (boutons, avatar, task card, badge, reward card, plan cell)
-+ design/pages.pen             (5 écrans : planning, tâches, badges, récompenses, admin)
-+ package.json                 (root pnpm workspaces, Node ≥24, pnpm ≥10)
-+ pnpm-workspace.yaml
-+ .env.example
-+ .gitignore
-+ apps/api/package.json        (Hono 4, Prisma 7, Argon2, Zod 4, Vitest 4)
-+ apps/api/tsconfig.json
-+ apps/api/src/server.ts
-+ apps/api/src/app.ts
-+ apps/api/src/config/env.ts   (validation Zod des vars d'env)
-+ apps/api/src/config/database.ts
-+ apps/api/src/config/mongo.ts
-+ apps/api/src/core/errors/AppError.ts
-+ apps/api/src/core/middleware/error.middleware.ts
-+ apps/api/src/core/middleware/auth.middleware.ts
-+ apps/api/src/prisma/schema.prisma  (10 modèles + index)
-+ apps/web/package.json        (React 19, Vite 8, Tailwind v4, React Router v7)
-+ apps/web/tsconfig.json
-+ apps/web/vite.config.ts
-+ apps/web/index.html
-+ apps/web/src/main.tsx
-+ apps/web/src/app/providers.tsx
-+ apps/web/src/app/routes.tsx
-+ apps/web/src/styles/globals.css  (Bunny Fonts + tokens Tailwind v4)
-+ packages/types/src/          (auth, family, task, planning)
-M CLAUDE.md
-M PROJECT_STATE.md
++ design/global-design.pen
++ design/components.pen
++ design/pages.pen
++ package.json + pnpm-workspace.yaml + .env.example + .gitignore
++ apps/api/  (fondation : Hono, Prisma schema 10 modèles, middlewares)
++ apps/web/  (fondation : Vite, Tailwind v4, React Router v7)
++ packages/types/src/  (auth, family, task, planning)
 ```
 
 **Décisions d'architecture**:
 
 - **Hono over Express** : Edge-compatible, plus léger, meilleure DX TypeScript
-- **Prisma 7** : Version résolue par pnpm — plus récente que prévu (même API)
-- **Zod v4** : Version résolue — API identique à v3 pour l'usage courant
-- **Bunny Fonts** : Choix vie privée + RGPD vs Google Fonts
-- **Fonts dans CSS** : `@import url(bunny)` dans globals.css, pas de `<link>` dans index.html
-
-**Tests ajoutés**: Aucun (sprint 1 — setup uniquement)
+- **Bunny Fonts** : Vie privée + RGPD vs Google Fonts — `@import url(bunny)` dans CSS uniquement
 
 ---
 
@@ -76,10 +92,28 @@ M PROJECT_STATE.md
 - [x] **Monorepo setup** (Session 1) — pnpm workspaces
 - [x] **Fondation API** (Session 1) — Hono, Prisma schema, middlewares
 - [x] **Fondation Web** (Session 1) — Vite, Tailwind v4, React Router
-- [ ] **Auth** (Sprint 1 — S1-4/5/6) — en cours
-- [ ] **CRUD Famille** (Sprint 1 — S1-7)
-- [ ] **CRUD Tâches** (Sprint 1 — S1-8/9)
-- [ ] **UI Admin minimal** (Sprint 1 — S1-10/11/12)
+- [x] **Auth backend** (Session 2 — S1-4/5/6) — register, login, JWT middleware
+- [x] **CRUD Members** (Session 2 — S1-7) — list, create, update, delete
+- [x] **CRUD Tasks** (Session 2 — S1-8/9) — list, create, update, delete
+- [ ] **UI Admin minimal** (Sprint 1 — S1-10/11/12) — Login, Dashboard, Family, Tasks
+
+---
+
+## 📋 Routes API disponibles
+
+| Méthode | Route | Auth | Rôle |
+| --- | --- | --- | --- |
+| POST | /auth/register | Non | — |
+| POST | /auth/login | Non | — |
+| GET | /auth/me | Oui | any |
+| GET | /family/members | Oui | any |
+| POST | /family/members | Oui | PARENT |
+| PATCH | /family/members/:id | Oui | PARENT |
+| DELETE | /family/members/:id | Oui | PARENT |
+| GET | /tasks | Oui | any |
+| POST | /tasks | Oui | PARENT |
+| PATCH | /tasks/:id | Oui | PARENT |
+| DELETE | /tasks/:id | Oui | PARENT |
 
 ---
 
@@ -92,7 +126,9 @@ M PROJECT_STATE.md
 | TypeScript | 6.x |
 | Hono | 4.12 |
 | @hono/node-server | 1.19 |
+| @hono/zod-validator | 0.4 |
 | Prisma / @prisma/client | 7.7 |
+| @prisma/adapter-pg | 7.7 |
 | Mongoose | 9.4 |
 | Argon2 | 0.44 |
 | node-cron | 4.2 |
@@ -109,20 +145,28 @@ M PROJECT_STATE.md
 
 ## 🐛 Bugs Résolus
 
-Aucun bug résolu pour l'instant.
+- **[2026-04-10]** `tx: any` dans `prisma.$transaction` → `Prisma.TransactionClient` (erreur IDE résolue après `prisma generate`)
+- **[2026-04-10]** `database.ts` sans adapter → pattern Prisma v7 `PrismaPg` obligatoire pour PostgreSQL
 
 ---
 
 ## 📝 Notes techniques
 
-### Prisma avec Hono/Node
+### Prisma v7 — instanciation
 
-Le `prisma.$connect()` est appelé explicitement dans `server.ts` au démarrage.
-Le client est un singleton via `globalThis` pour éviter les connexions multiples en dev (hot-reload tsx).
+```ts
+const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
+```
 
-### Zod v4 — changements notables
+Le client Prisma ne génère pas ses types avant `prisma generate` — les erreurs IDE "module @prisma/client n'exporte pas X" disparaissent après cette commande.
 
-- `z.string().email()` — identique
-- `z.object()` — identique
-- `z.coerce.number()` — identique
-- Performances améliorées, taille bundle réduite
+### Zod v4 — changements utilisés
+
+- `z.email()` → top-level (remplace `z.string().email()`)
+- `z.iso.date()` → validation date ISO 8601
+- `z.enum([...]).default(...)` → identique v3
+
+### Pattern multi-tenant
+
+Toutes les queries Prisma qui touchent des données famille passent `familyId` issu de `c.get("user").familyId` (JWT). Jamais depuis `c.req.body`.

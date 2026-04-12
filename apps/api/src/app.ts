@@ -7,6 +7,7 @@ import { errorMiddleware } from "./core/middleware/error.middleware.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { membersRoutes } from "./modules/members/members.routes.js";
 import { tasksRoutes } from "./modules/tasks/tasks.routes.js";
+import { planningRoutes } from "./modules/planning/planning.routes.js";
 
 const app = new Hono();
 
@@ -28,7 +29,7 @@ app.get("/health", (c: Context) => c.json({ status: "ok", env: env.NODE_ENV }));
 app.route("/auth", authRoutes);
 app.route("/family/members", membersRoutes);
 app.route("/tasks", tasksRoutes);
-// app.route("/planning", planningRoutes);
+app.route("/planning", planningRoutes);
 
 // ─── Gestion d'erreurs ────────────────────────────────────────
 app.onError((err: unknown, c: Context) => errorMiddleware(err, c));

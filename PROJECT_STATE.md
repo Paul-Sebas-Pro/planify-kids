@@ -11,6 +11,28 @@
 
 ## 🗓 Sessions de Développement
 
+### Session 4 - 2026-04-11
+
+**Objectif**: Sprint 1 — Tests unitaires services (definition of done)
+
+**Concepts introduits**:
+
+- **`vi.mock()` avec factory** : `vi.mock("module", () => ({ fn: vi.fn() }))` — obligatoire quand le module a des dépendances transitives non disponibles (ex. `@prisma/client` non généré) ; sans factory, Vitest charge le module réel pour l'auto-mocker
+- **Mocks ESM hoistés** : `vi.mock()` est hoistés en tête de fichier par Vitest — les appels sont évalués avant les imports, d'où la syntaxe `vi.mocked(fn)` après l'import
+
+**Modifications**:
+
+```diff
++ apps/api/vitest.config.ts
++ apps/api/src/modules/auth/auth.service.test.ts     (7 tests)
++ apps/api/src/modules/members/members.service.test.ts  (8 tests)
++ apps/api/src/modules/tasks/tasks.service.test.ts      (6 tests)
+```
+
+**Résultats**: 21/21 tests passent, durée ~250ms
+
+---
+
 ### Session 3 - 2026-04-11
 
 **Objectif**: Sprint 1 frontend — UI Admin minimal (S1-10/11/12)
@@ -131,6 +153,7 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 - [x] **CRUD Members** (Session 2 — S1-7) — list, create, update, delete
 - [x] **CRUD Tasks** (Session 2 — S1-8/9) — list, create, update, delete
 - [x] **UI Admin minimal** (Session 3 — S1-10/11/12) — Login, Dashboard, Family, Tasks
+- [x] **Tests unitaires services** (Session 4) — auth, members, tasks — 21 tests
 
 ---
 

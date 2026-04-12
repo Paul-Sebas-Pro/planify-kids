@@ -5,6 +5,7 @@ const navItems = [
   { to: "/dashboard", label: "Tableau de bord" },
   { to: "/family", label: "Famille" },
   { to: "/tasks", label: "Tâches" },
+  { to: "/planning", label: "Planning" },
 ];
 
 export function AppLayout() {

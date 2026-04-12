@@ -5,6 +5,7 @@ import { LoginPage } from "@/features/auth/LoginPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { FamilyPage } from "@/features/family/FamilyPage";
 import { TasksPage } from "@/features/tasks/TasksPage";
+import { PlanningPage } from "@/features/planning/PlanningPage";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
@@ -29,6 +30,7 @@ export function AppRoutes() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/tasks" element={<TasksPage />} />
+          <Route path="/planning" element={<PlanningPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

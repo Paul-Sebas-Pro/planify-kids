@@ -1,3 +1,4 @@
+import type { FamilyMember } from "@prisma/client";
 import { AppError, NotFoundError } from "../../core/errors/AppError";
 import { getTasksByFamily } from "../tasks/tasks.repository";
 import { getMembersByFamily } from "../members/members.repository";
@@ -27,7 +28,7 @@ export async function generatePlanningService(
 
   const tasks = await getTasksByFamily(familyId, true);
   const members = await getMembersByFamily(familyId);
-  const children = members.filter((m) => m.role === "CHILD");
+  const children = members.filter((m: FamilyMember) => m.role === "CHILD");
 
   if (children.length === 0) {
     throw new AppError("Aucun enfant dans la famille", 400);
@@ -37,7 +38,12 @@ export async function generatePlanningService(
     throw new AppError("Aucune tâche active dans la famille", 400);
   }
 
-  const assignments = generatePlanningGreedy(tasks, children, startDate, endDate);
+  const assignments = generatePlanningGreedy(
+    tasks,
+    children,
+    startDate,
+    endDate,
+  );
   return createScheduleWithItems(familyId, startDate, endDate, assignments);
 }
 
@@ -45,10 +51,7 @@ export function listSchedulesService(familyId: string) {
   return getSchedulesByFamily(familyId);
 }
 
-export async function getScheduleService(
-  scheduleId: string,
-  familyId: string,
-) {
+export async function getScheduleService(scheduleId: string, familyId: string) {
   const schedule = await getScheduleWithItems(scheduleId, familyId);
   if (!schedule) throw new NotFoundError("Planning");
   return schedule;

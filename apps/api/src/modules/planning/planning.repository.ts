@@ -1,4 +1,5 @@
 import { prisma } from "../../config/database";
+import type { Prisma } from "@prisma/client";
 import type { GreedyAssignment } from "../../services/planning-greedy";
 import type { UpdateScheduleItemInput } from "./planning.schema";
 
@@ -43,7 +44,7 @@ export function createScheduleWithItems(
   endDate: Date,
   assignments: GreedyAssignment[],
 ) {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const schedule = await tx.schedule.create({
       data: { familyId, startDate, endDate, generatedByAI: true },
     });

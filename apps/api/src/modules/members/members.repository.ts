@@ -20,9 +20,9 @@ export function createMember(familyId: string, input: CreateMemberInput) {
       familyId,
       name: input.name,
       role: input.role,
-      color: input.color,
-      avatar: input.avatar,
-      birthDate: input.birthDate ? new Date(input.birthDate) : undefined,
+      color: input.color ?? null,
+      avatar: input.avatar ?? null,
+      birthDate: input.birthDate ? new Date(input.birthDate) : null,
     },
   });
 }
@@ -31,8 +31,12 @@ export function updateMember(id: string, input: UpdateMemberInput) {
   return prisma.familyMember.update({
     where: { id },
     data: {
-      ...input,
-      birthDate: input.birthDate ? new Date(input.birthDate) : undefined,
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.color !== undefined && { color: input.color }),
+      ...(input.avatar !== undefined && { avatar: input.avatar }),
+      ...(input.birthDate !== undefined && {
+        birthDate: new Date(input.birthDate),
+      }),
     },
   });
 }

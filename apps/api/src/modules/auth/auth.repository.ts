@@ -1,5 +1,5 @@
-import { prisma } from "../../config/database";
 import type { Prisma } from "@prisma/client";
+import { prisma } from "../../config/database";
 import type { RegisterInput } from "./auth.schema";
 
 export async function findUserByEmail(email: string) {

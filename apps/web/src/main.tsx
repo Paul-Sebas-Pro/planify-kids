@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { Providers } from "./app/providers.tsx";
-import { AppRoutes } from "./app/routes.tsx";
+import { Providers } from "./app/providers";
+import { AppRoutes } from "./app/routes";
 import "./styles/globals.css";
 
 const root = document.getElementById("root");
@@ -12,5 +12,5 @@ createRoot(root).render(
     <Providers>
       <AppRoutes />
     </Providers>
-  </StrictMode>
+  </StrictMode>,
 );

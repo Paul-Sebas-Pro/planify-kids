@@ -5,11 +5,46 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: En développement — Sprint 1 terminé / Sprint 2 à planifier
+- **Statut**: En développement — Sprint 2 Planning terminé / Gamification à faire
 
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 5 - 2026-04-12
+
+**Objectif**: Sprint 2 — Planning greedy + routes API + page web + correctifs Prisma v7 + TypeScript strict
+
+**Concepts introduits**:
+
+- **Prisma v7 `prisma.config.ts`** : `url = env("DATABASE_URL")` supprimé du `datasource db {}` dans `schema.prisma` ; déplacé dans `prisma.config.ts` via `defineConfig` + `env()` de `"prisma/config"` (évite les erreurs TypeScript car le fichier est hors de `include: ["src/**/*"]`)
+- **`exactOptionalPropertyTypes: true`** : Prisma génère les champs optionnels en `T | null`, Zod en `T | undefined` — incompatibles avec ce mode strict. Pattern : `?? null` pour CREATE, spreads conditionnels `...(field !== undefined && { field: value })` pour UPDATE
+- **`vite-env.d.ts`** : `/// <reference types="vite/client" />` requis pour que tsc accepte les imports CSS dans un projet Vite
+
+**Modifications**:
+
+```diff
++ apps/api/src/services/planning-greedy.ts        (algo greedy pur — sans dépendance DB)
++ apps/api/src/modules/planning/planning.schema.ts
++ apps/api/src/modules/planning/planning.repository.ts
++ apps/api/src/modules/planning/planning.service.ts
++ apps/api/src/modules/planning/planning.routes.ts
++ apps/web/src/services/planning.api.ts
++ apps/web/src/features/planning/PlanningPage.tsx
++ apps/web/src/vite-env.d.ts
+M apps/api/src/app.ts                             (+ route /planning)
+M apps/api/src/prisma/schema.prisma               (suppression url= datasource)
+M apps/api/prisma.config.ts                       (pointé vers src/prisma/schema.prisma + datasource url)
+M apps/api/src/modules/members/members.repository.ts  (exactOptionalPropertyTypes fixes)
+M apps/api/src/modules/tasks/tasks.repository.ts      (exactOptionalPropertyTypes fixes)
+M apps/web/src/app/routes.tsx                     (+ /planning)
+M apps/web/src/components/layout/AppLayout.tsx    (+ nav Planning)
+M packages/types/src/planning.ts                  (Schedule, ScheduleDetail, ScheduleItemDetail)
+```
+
+**Résultats**: `pnpm typecheck` passe sur api et web (0 erreur)
+
+---
 
 ### Session 4 - 2026-04-11
 
@@ -154,6 +189,8 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 - [x] **CRUD Tasks** (Session 2 — S1-8/9) — list, create, update, delete
 - [x] **UI Admin minimal** (Session 3 — S1-10/11/12) — Login, Dashboard, Family, Tasks
 - [x] **Tests unitaires services** (Session 4) — auth, members, tasks — 21 tests
+- [x] **Planning greedy** (Session 5 — S2) — algo greedy, repository, service, routes `/planning`
+- [x] **Page Planning web** (Session 5 — S2) — liste schedules + vue détail par jour + mise à jour statut
 
 ---
 
@@ -172,6 +209,11 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 | POST    | /tasks              | Oui  | PARENT |
 | PATCH   | /tasks/:id          | Oui  | PARENT |
 | DELETE  | /tasks/:id          | Oui  | PARENT |
+| POST    | /planning/generate  | Oui  | PARENT |
+| GET     | /planning           | Oui  | any    |
+| GET     | /planning/:id       | Oui  | any    |
+| PATCH   | /planning/items/:id | Oui  | any    |
+| DELETE  | /planning/:id       | Oui  | PARENT |
 
 ---
 

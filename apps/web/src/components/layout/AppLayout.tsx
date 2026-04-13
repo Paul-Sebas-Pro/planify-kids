@@ -6,6 +6,7 @@ const navItems = [
   { to: "/family", label: "Famille" },
   { to: "/tasks", label: "Tâches" },
   { to: "/planning", label: "Planning" },
+  { to: "/rewards", label: "Récompenses" },
 ];
 
 export function AppLayout() {

@@ -65,6 +65,17 @@ export function createScheduleWithItems(
   });
 }
 
+export function getScheduleItemWithTask(itemId: string) {
+  return prisma.scheduleItem.findUnique({
+    where: { id: itemId },
+    select: {
+      status: true,
+      assignedToMemberId: true,
+      task: { select: { points: true } },
+    },
+  });
+}
+
 export function updateScheduleItem(
   itemId: string,
   input: UpdateScheduleItemInput,

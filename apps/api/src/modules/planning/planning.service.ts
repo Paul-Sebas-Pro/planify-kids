@@ -7,9 +7,11 @@ import {
   createScheduleWithItems,
   getSchedulesByFamily,
   getScheduleWithItems,
+  getScheduleItemWithTask,
   updateScheduleItem,
   deleteSchedule,
 } from "./planning.repository";
+import { awardPointsForTask } from "../../services/gamification";
 import type {
   GeneratePlanningInput,
   UpdateScheduleItemInput,
@@ -57,10 +59,18 @@ export async function getScheduleService(scheduleId: string, familyId: string) {
   return schedule;
 }
 
-export function updateScheduleItemService(
+export async function updateScheduleItemService(
   itemId: string,
   input: UpdateScheduleItemInput,
 ) {
+  if (input.status === "COMPLETED") {
+    const before = await getScheduleItemWithTask(itemId);
+    const updated = await updateScheduleItem(itemId, input);
+    if (before && before.status !== "COMPLETED") {
+      await awardPointsForTask(before.assignedToMemberId, before.task.points);
+    }
+    return updated;
+  }
   return updateScheduleItem(itemId, input);
 }
 

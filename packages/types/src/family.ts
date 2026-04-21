@@ -21,6 +21,30 @@ export interface FamilyMember {
   createdAt: string;
 }
 
+export interface ChildStats {
+  id: string;
+  name: string;
+  color?: string;
+  avatar?: string;
+  points: number;
+  badges: Array<{
+    earnedAt: string;
+    badge: { name: string; icon: string };
+  }>;
+  _count: { assignments: number };
+}
+
+export interface FamilyStatsSummary {
+  totalPoints: number;
+  totalTasksCompleted: number;
+  totalBadges: number;
+}
+
+export interface FamilyStats {
+  children: ChildStats[];
+  summary: FamilyStatsSummary;
+}
+
 export interface CreateMemberRequest {
   name: string;
   role: Role;

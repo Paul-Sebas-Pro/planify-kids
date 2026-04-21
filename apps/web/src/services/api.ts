@@ -4,6 +4,7 @@ import type {
   RegisterRequest,
   Family,
   FamilyMember,
+  FamilyStats,
   CreateMemberRequest,
   TaskTemplate,
   CreateTaskRequest,
@@ -81,6 +82,13 @@ export const authApi = {
       success: boolean;
       data: { sub: string; familyId: string; role: string };
     }>("GET", "/auth/me"),
+};
+
+// ─── Family ──────────────────────────────────────────────────────────────────
+
+export const familyApi = {
+  stats: () =>
+    request<{ success: boolean; data: FamilyStats }>("GET", "/family/stats"),
 };
 
 // ─── Members ─────────────────────────────────────────────────────────────────

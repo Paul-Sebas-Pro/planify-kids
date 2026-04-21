@@ -8,6 +8,7 @@ import { authRoutes } from "./modules/auth/auth.routes.js";
 import { membersRoutes } from "./modules/members/members.routes.js";
 import { tasksRoutes } from "./modules/tasks/tasks.routes.js";
 import { planningRoutes } from "./modules/planning/planning.routes.js";
+import { familyStatsRoutes } from "./modules/members/family.stats.routes.js";
 import { rewardsRoutes } from "./modules/rewards/rewards.routes.js";
 import { badgesRoutes } from "./modules/badges/badges.routes.js";
 
@@ -21,7 +22,7 @@ app.use(
     origin: env.CORS_ORIGINS.split(","),
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 
 // ─── Health check ─────────────────────────────────────────────
@@ -32,6 +33,7 @@ app.route("/auth", authRoutes);
 app.route("/family/members", membersRoutes);
 app.route("/tasks", tasksRoutes);
 app.route("/planning", planningRoutes);
+app.route("/family/stats", familyStatsRoutes);
 app.route("/rewards", rewardsRoutes);
 app.route("/badges", badgesRoutes);
 

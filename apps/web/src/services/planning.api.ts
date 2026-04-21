@@ -3,6 +3,9 @@ import type {
   ScheduleDetail,
   GeneratePlanningRequest,
   ScheduleItemDetail,
+  TaskExchange,
+  ProposeExchangeRequest,
+  RespondExchangeRequest,
 } from "@planify-kids/types";
 
 const BASE = "/api";
@@ -18,9 +21,15 @@ function getToken(): string | null {
   }
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<T> {
   const token = getToken();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE}${path}`, {
@@ -30,7 +39,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   });
 
   if (!res.ok) {
-    const err = (await res.json().catch(() => ({ message: res.statusText }))) as {
+    const err = (await res
+      .json()
+      .catch(() => ({ message: res.statusText }))) as {
       message?: string;
     };
     throw new Error(err.message ?? `HTTP ${res.status}`);
@@ -41,11 +52,18 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 export const planningApi = {
   generate: (body: GeneratePlanningRequest) =>
-    request<{ success: boolean; data: Schedule }>("POST", "/planning/generate", body),
+    request<{ success: boolean; data: Schedule }>(
+      "POST",
+      "/planning/generate",
+      body,
+    ),
   list: () =>
     request<{ success: boolean; data: Schedule[] }>("GET", "/planning"),
   get: (id: string) =>
-    request<{ success: boolean; data: ScheduleDetail }>("GET", `/planning/${id}`),
+    request<{ success: boolean; data: ScheduleDetail }>(
+      "GET",
+      `/planning/${id}`,
+    ),
   updateItem: (itemId: string, status: ScheduleItemDetail["status"]) =>
     request<{ success: boolean; data: ScheduleItemDetail }>(
       "PATCH",
@@ -54,4 +72,21 @@ export const planningApi = {
     ),
   delete: (id: string) =>
     request<{ success: boolean }>("DELETE", `/planning/${id}`),
+};
+
+export const exchangesApi = {
+  list: () =>
+    request<{ success: boolean; data: TaskExchange[] }>("GET", "/exchanges"),
+  propose: (body: ProposeExchangeRequest) =>
+    request<{ success: boolean; data: TaskExchange }>(
+      "POST",
+      "/exchanges",
+      body,
+    ),
+  respond: (id: string, body: RespondExchangeRequest) =>
+    request<{ success: boolean; data: TaskExchange }>(
+      "PATCH",
+      `/exchanges/${id}`,
+      body,
+    ),
 };

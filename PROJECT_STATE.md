@@ -5,11 +5,57 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: En développement — Sprint 2 Planning terminé / Gamification à faire
+- **Statut**: En développement — Sprint 2 terminé (Planning + Gamification + Échanges + Dashboard stats)
 
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 6 - 2026-04-21
+
+**Objectif**: Sprint 2 — Gamification (points/badges/récompenses) + Dashboard stats + Échanges de tâches
+
+**Concepts introduits**:
+
+- **Filtered relation count Prisma** : `_count: { select: { assignments: { where: { status: "COMPLETED" } } } }` — compte filtré sur une relation, disponible en Prisma v7
+- **Guard anti-doublon échange** : vérification `getPendingExchangeForItem` avant création — évite deux échanges PENDING sur le même item
+- **Réassignation atomique** : à l'acceptation d'un échange, `scheduleItem.assignedToMemberId` est mis à jour dans le même service call
+
+**Modifications**:
+
+```diff
++ apps/api/src/services/gamification.ts              (awardPointsForTask + checkAndAwardBadges)
++ apps/api/src/modules/rewards/rewards.schema.ts
++ apps/api/src/modules/rewards/rewards.repository.ts
++ apps/api/src/modules/rewards/rewards.service.ts
++ apps/api/src/modules/rewards/rewards.routes.ts
++ apps/api/src/modules/badges/badges.routes.ts       (GET /badges, GET /badges/member/:id)
++ apps/api/src/modules/exchanges/exchanges.schema.ts
++ apps/api/src/modules/exchanges/exchanges.repository.ts
++ apps/api/src/modules/exchanges/exchanges.service.ts
++ apps/api/src/modules/exchanges/exchanges.routes.ts
++ apps/api/src/modules/members/family.stats.routes.ts (GET /family/stats)
++ apps/api/src/prisma/seed.ts                        (7 badges par défaut)
++ apps/web/src/features/rewards/RewardsPage.tsx
++ apps/web/src/services/rewards.api.ts
++ packages/types/src/rewards.ts
++ packages/types/src/exchanges.ts
+M apps/api/src/modules/planning/planning.repository.ts  (+ getScheduleItemWithTask)
+M apps/api/src/modules/planning/planning.service.ts     (trigger gamification à la complétion)
+M apps/api/src/app.ts                                   (+ rewards, badges, exchanges, family/stats)
+M apps/web/src/features/dashboard/DashboardPage.tsx     (classement + badges par enfant)
+M apps/web/src/features/planning/PlanningPage.tsx       (bouton Échanger + section échanges)
+M apps/web/src/services/planning.api.ts                 (+ exchangesApi)
+M apps/web/src/services/api.ts                          (+ familyApi.stats)
+M apps/web/src/app/routes.tsx                           (+ /rewards)
+M apps/web/src/components/layout/AppLayout.tsx          (+ nav Récompenses)
+M packages/types/src/family.ts                          (+ FamilyStats, ChildStats)
+M packages/types/src/index.ts                           (+ rewards, exchanges)
+```
+
+**Résultats**: `pnpm typecheck` passe sur api et web (0 erreur)
+
+---
 
 ### Session 5 - 2026-04-12
 
@@ -191,6 +237,10 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 - [x] **Tests unitaires services** (Session 4) — auth, members, tasks — 21 tests
 - [x] **Planning greedy** (Session 5 — S2) — algo greedy, repository, service, routes `/planning`
 - [x] **Page Planning web** (Session 5 — S2) — liste schedules + vue détail par jour + mise à jour statut
+- [x] **Gamification** (Session 6 — S2) — points à la complétion, badges automatiques (POINTS + TASKS_COMPLETED), seed 7 badges
+- [x] **CRUD Récompenses** (Session 6 — S2) — création/édition/suppression parent, demandes enfants, validation/refus parent
+- [x] **Dashboard stats** (Session 6 — S2) — classement enfants par points, tâches complétées, badges par enfant
+- [x] **Échanges de tâches** (Session 6 — S2) — proposition, acceptation/refus, réassignation automatique
 
 ---
 
@@ -214,6 +264,19 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 | GET     | /planning/:id       | Oui  | any    |
 | PATCH   | /planning/items/:id | Oui  | any    |
 | DELETE  | /planning/:id       | Oui  | PARENT |
+| GET     | /family/stats       | Oui  | any    |
+| GET     | /rewards            | Oui  | any    |
+| POST    | /rewards            | Oui  | PARENT |
+| PATCH   | /rewards/:id        | Oui  | PARENT |
+| DELETE  | /rewards/:id        | Oui  | PARENT |
+| GET     | /rewards/claims     | Oui  | PARENT |
+| POST    | /rewards/:id/claim  | Oui  | any    |
+| PATCH   | /rewards/claims/:id | Oui  | PARENT |
+| GET     | /badges             | Oui  | any    |
+| GET     | /badges/member/:id  | Oui  | any    |
+| GET     | /exchanges          | Oui  | any    |
+| POST    | /exchanges          | Oui  | any    |
+| PATCH   | /exchanges/:id      | Oui  | any    |
 
 ---
 

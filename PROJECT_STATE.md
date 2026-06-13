@@ -5,11 +5,62 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: En développement — Sprint 2 terminé (Planning + Gamification + Échanges + Dashboard stats)
+- **Statut**: En développement — Sprint 3 en cours (App mobile Flutter — enfants)
 
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 7 - 2026-06-13
+
+**Objectif**: Sprint 3 — App mobile Flutter (vue enfant)
+
+**Concepts introduits**:
+
+- **Riverpod 3 naming** : `AuthNotifier` → provider nommé `authProvider` (pas `authNotifierProvider`) — convention sans suffixe `Notifier` dans Riverpod 3
+- **Riverpod 3 AsyncValue** : `valueOrNull` supprimé → `.value` retourne `T?` nativement
+- **PowerSync 2.x schema** : `Schema([...])` positionnel (pas `tables:`), `PowerSyncBackendConnector.fetchCredentials()` retourne `PowerSyncCredentials(endpoint, token)`
+- **Flutter snap ARM64** : binaires officiels Linux x64 incompatibles ARM64 → `sudo snap install flutter --classic` résout sur WSL2 ARM64
+- **Drift + PowerSync** : PowerSync gère sync + SQLite ; Drift utilisé pour définir le schéma et les DAO via `PowerSyncDatabase` comme exécuteur sous-jacent
+- **build_runner Riverpod 3** : option `--delete-conflicting-outputs` supprimée, utiliser directement `flutter pub run build_runner build`
+
+**Modifications**:
+
+```diff
++ apps/mobile/                                  (projet Flutter créé via flutter create)
++ apps/mobile/lib/config/env.dart              (API_BASE_URL, POWERSYNC_URL via dart-define)
++ apps/mobile/lib/models/auth_user.dart
++ apps/mobile/lib/models/schedule_item.dart
++ apps/mobile/lib/models/badge.dart
++ apps/mobile/lib/models/exchange.dart
++ apps/mobile/lib/models/family_member.dart
++ apps/mobile/lib/database/schema.dart         (PowerSync schema — 6 tables)
++ apps/mobile/lib/database/connector.dart      (PlanifyConnector extends PowerSyncBackendConnector)
++ apps/mobile/lib/database/database.dart       (openAppDatabase — init + connect)
++ apps/mobile/lib/shared/services/secure_storage.dart
++ apps/mobile/lib/shared/services/api_client.dart  (Dio — auth, planning, badges, exchanges, stats)
++ apps/mobile/lib/shared/providers/providers.dart  (secureStorage, apiClient, powerSyncDatabase)
++ apps/mobile/lib/shared/theme/app_theme.dart  (Material 3, Fredoka + Nunito, couleur #6C63FF)
++ apps/mobile/lib/features/auth/auth_provider.dart     (AuthNotifier — login/logout)
++ apps/mobile/lib/features/auth/login_screen.dart
++ apps/mobile/lib/features/tasks/tasks_provider.dart   (todayTasks + TasksNotifier.markCompleted)
++ apps/mobile/lib/features/tasks/today_screen.dart
++ apps/mobile/lib/features/tasks/task_card.dart
++ apps/mobile/lib/features/badges/badges_provider.dart
++ apps/mobile/lib/features/badges/badges_screen.dart
++ apps/mobile/lib/features/exchanges/exchanges_provider.dart
++ apps/mobile/lib/features/exchanges/exchanges_screen.dart
++ apps/mobile/lib/features/profile/profile_provider.dart
++ apps/mobile/lib/features/profile/profile_screen.dart
++ apps/mobile/lib/app/shell_screen.dart        (NavigationBar 4 onglets)
++ apps/mobile/lib/app/router.dart              (GoRouter — redirect auth, ShellRoute)
++ apps/mobile/lib/app/app.dart
+M apps/mobile/lib/main.dart
+```
+
+**Résultats**: `flutter analyze lib/` → 0 issue. Build runner → 66 outputs générés. App structure complète, prête pour flutter run.
+
+---
 
 ### Session 6 - 2026-04-21
 

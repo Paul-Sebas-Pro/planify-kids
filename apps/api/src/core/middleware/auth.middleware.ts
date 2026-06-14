@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono";
-import { verify } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { env } from "../../config/env.js";
 import { UnauthorizedError } from "../errors/AppError.js";
 
@@ -25,7 +25,7 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
   const token = authorization.slice(7);
 
   try {
-    const payload = verify(token, env.JWT_SECRET) as JwtPayload;
+    const payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
     c.set("user", payload);
     await next();
   } catch {

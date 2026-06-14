@@ -12,7 +12,7 @@ async function start() {
   await connectMongo();
 
   // Démarrage du serveur
-  serve({ fetch: app.fetch, port: env.PORT }, () => {
+  serve({ fetch: app.fetch, port: env.PORT, hostname: "0.0.0.0" }, () => {
     console.log(`🚀 API démarrée sur http://localhost:${env.PORT}`);
   });
 }

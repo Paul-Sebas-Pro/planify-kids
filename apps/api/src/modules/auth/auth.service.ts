@@ -1,5 +1,5 @@
 import * as argon2 from "argon2";
-import { sign, type Secret } from "jsonwebtoken";
+import jwt, { type Secret } from "jsonwebtoken";
 import { env } from "../../config/env";
 import {
   ConflictError,
@@ -17,11 +17,11 @@ function generateTokens(
 
   const secret = env.JWT_SECRET as Secret;
 
-  const accessToken = sign(payload, secret, {
+  const accessToken = jwt.sign(payload, secret, {
     expiresIn: env.JWT_EXPIRES_IN as any,
   });
 
-  const refreshToken = sign({ sub: userId }, secret, {
+  const refreshToken = jwt.sign({ sub: userId }, secret, {
     expiresIn: env.JWT_REFRESH_EXPIRES_IN as any,
   });
 

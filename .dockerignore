@@ -1,0 +1,27 @@
+node_modules
+**/node_modules
+.git
+.gitignore
+
+# Builds
+dist
+**/dist
+.next
+**/.dart_tool
+
+# Mobile (Flutter) — pas containerisé
+apps/mobile
+
+# Fichiers de dev
+.env
+.env.local
+*.log
+.DS_Store
+
+# Assets lourds
+design
+specs
+.rtk
+
+# Données locales
+apps/api/src/prisma/migrations

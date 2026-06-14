@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../models/auth_user.dart';
@@ -13,13 +15,15 @@ class AuthNotifier extends _$AuthNotifier {
     final token = await storage.getToken();
     if (token == null) return null;
 
-    try {
-      final api = ref.watch(apiClientProvider);
-      return await api.getCurrentUser();
-    } catch (_) {
+    final userJson = await storage.getUserJson();
+    if (userJson == null) {
       await storage.clear();
       return null;
     }
+
+    return AuthUser.fromStorageJson(
+      jsonDecode(userJson) as Map<String, dynamic>,
+    );
   }
 
   Future<void> login(String email, String password) async {
@@ -30,6 +34,7 @@ class AuthNotifier extends _$AuthNotifier {
 
       final storage = ref.read(secureStorageServiceProvider);
       await storage.saveToken(result.token);
+      await storage.saveUserJson(jsonEncode(result.member.toJson()));
 
       return result.member;
     });

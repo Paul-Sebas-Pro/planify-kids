@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -11,15 +12,27 @@ import 'shell_screen.dart';
 
 part 'router.g.dart';
 
-@riverpod
+// Notifies GoRouter when authProvider state changes so redirect is re-evaluated.
+class _AuthChangeNotifier extends ChangeNotifier {
+  _AuthChangeNotifier(Ref ref) {
+    ref.listen(authProvider, (_, _) => notifyListeners());
+  }
+}
+
+@Riverpod(keepAlive: true)
 GoRouter router(Ref ref) {
-  final authState = ref.watch(authProvider);
+  final notifier = _AuthChangeNotifier(ref);
+  ref.onDispose(notifier.dispose);
 
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: notifier,
     redirect: (context, state) {
+      // Always read current state — never close over a captured value.
+      final authState = ref.read(authProvider);
       final isLoggedIn = authState.value != null;
       final isLoading = authState.isLoading;
+
       if (isLoading) return null;
       if (!isLoggedIn && state.matchedLocation != '/login') return '/login';
       if (isLoggedIn && state.matchedLocation == '/login') return '/';

@@ -48,7 +48,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-min-32-chars}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
-      CORS_ORIGINS: "http://localhost:${WEB_PORT:-5173}"
+      CORS_ORIGINS: "http://localhost:${WEB_PORT:-5173},http://localhost:8081"
     volumes:
       - ./apps/api/src:/app/apps/api/src:delegated
     depends_on:

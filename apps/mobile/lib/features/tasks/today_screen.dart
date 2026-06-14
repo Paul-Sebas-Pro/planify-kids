@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../shared/widgets/api_error_widget.dart';
 import 'task_card.dart';
 import 'tasks_provider.dart';
 
@@ -34,19 +35,9 @@ class TodayScreen extends ConsumerWidget {
       ),
       body: tasksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 8),
-              Text('Erreur : $e'),
-              TextButton(
-                onPressed: () => ref.invalidate(tasksProvider),
-                child: const Text('Réessayer'),
-              ),
-            ],
-          ),
+        error: (e, _) => ApiErrorWidget(
+          error: e,
+          onRetry: () => ref.invalidate(tasksProvider),
         ),
         data: (items) {
           if (items.isEmpty) {

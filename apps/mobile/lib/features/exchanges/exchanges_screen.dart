@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/exchange.dart';
+import '../../shared/widgets/api_error_widget.dart';
 import '../auth/auth_provider.dart';
 import 'exchanges_provider.dart';
 
@@ -26,7 +27,10 @@ class ExchangesScreen extends ConsumerWidget {
       ),
       body: exchangesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erreur : $e')),
+        error: (e, _) => ApiErrorWidget(
+          error: e,
+          onRetry: () => ref.invalidate(exchangesProvider),
+        ),
         data: (exchanges) {
           if (exchanges.isEmpty) {
             return const Center(

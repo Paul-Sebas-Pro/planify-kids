@@ -1,22 +1,28 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SecureStorageService {
   static const _tokenKey = 'jwt_token';
   static const _userKey = 'current_user_json';
 
-  final FlutterSecureStorage _storage;
+  Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
-  SecureStorageService() : _storage = const FlutterSecureStorage();
+  Future<String?> getToken() async {
+    return (await _prefs).getString(_tokenKey);
+  }
 
-  Future<String?> getToken() => _storage.read(key: _tokenKey);
+  Future<void> saveToken(String token) async {
+    await (await _prefs).setString(_tokenKey, token);
+  }
 
-  Future<void> saveToken(String token) =>
-      _storage.write(key: _tokenKey, value: token);
+  Future<String?> getUserJson() async {
+    return (await _prefs).getString(_userKey);
+  }
 
-  Future<String?> getUserJson() => _storage.read(key: _userKey);
+  Future<void> saveUserJson(String json) async {
+    await (await _prefs).setString(_userKey, json);
+  }
 
-  Future<void> saveUserJson(String json) =>
-      _storage.write(key: _userKey, value: json);
-
-  Future<void> clear() => _storage.deleteAll();
+  Future<void> clear() async {
+    await (await _prefs).clear();
+  }
 }

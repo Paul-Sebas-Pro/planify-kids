@@ -9,17 +9,97 @@
 
 ---
 
-## 🚀 Prochaines options (post-Session 8)
+## 📋 Backlog priorisé
 
-**A) Mobile Flutter** — app scaffoldée (Session 7), jamais testée sur device. Prochaine étape : `flutter run`, debug écrans login/today, connexion API réelle via `--dart-define=API_BASE_URL=http://10.0.2.2:3000`.
+### 🔴 Priorité 1 — Mobile Flutter (Sprint 3 core)
 
-**B) Web — génération planning** — `PlanningPage` liste les schedules mais ne permet pas d'en créer depuis l'UI. Prochaine étape : formulaire de génération (sélection semaine + membres), visualisation calendrier semaine.
+- [x] **Flutter : premier lancement** — web target `http://localhost:8081`, login fonctionnel
+- [ ] **Flutter : connexion API réelle** — tâches du jour → marquer complété → points mis à jour
+- [ ] **Flutter : tests widget** — LoginScreen, TodayScreen, TaskCard
 
-**C) Tests intégration API** ← **en cours** — zéro test sur routes HTTP critiques (auth, planning, échanges). Prochaine étape : Hono test client (`app.request()`) + mocks services, couverture auth/planning/exchanges.
+### 🟠 Priorité 2 — Web : génération planning (feature manquante critique)
+
+- [ ] **UI génération planning** — formulaire parent : sélection semaine (date picker), membres inclus, bouton "Générer"
+- [ ] **Visualisation calendrier** — vue semaine grille (lundi→dimanche), couleur par enfant, statut item
+
+### 🟡 Priorité 3 — Couverture tests API
+
+- [ ] **members.routes.test.ts** — GET/POST/PATCH/DELETE /family/members (RBAC parent/child)
+- [ ] **tasks.routes.test.ts** — GET/POST/PATCH/DELETE /tasks
+- [ ] **rewards.routes.test.ts** — CRUD rewards + claims flow
+- [ ] **badges.routes.test.ts** — GET /badges, GET /badges/member/:id
+
+### 🟢 Priorité 4 — Qualité & infrastructure
+
+- [ ] **node-cron** — planifié dans `package.json` mais non utilisé : job quotidien de génération auto-planning
+- [ ] **Health route `/health`** — retourner statut DB + Mongo en plus de `{ status: "ok" }`
+- [ ] **Pagination** — GET /planning, GET /exchanges sans limite actuellement
+- [ ] **CI GitHub Actions** — pipeline `pnpm test` + `pnpm typecheck` sur PR
 
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 10 - 2026-06-14
+
+**Objectif**: Sprint 3 — Fix API parsing + auth persistence + GoRouter redirect + Flutter web target
+
+**Concepts introduits**:
+
+- **API response envelope** : toutes les routes retournent `{ success, data }` — ajout de `_unwrap()` / `_unwrapList()` dans `ApiClient` ; `AuthUser.fromLoginData()` pour parser `data.member` + `data.family.id`
+- **AuthNotifier storage pattern** : `build()` charge depuis `SharedPreferences` (via `SecureStorageService`) au lieu d'appeler `GET /auth/me` qui retourne payload JWT pas données membre
+- **GoRouter keepAlive + refreshListenable** : `@Riverpod(keepAlive: true)` évite la recréation du GoRouter à chaque changement d'état auth ; `_AuthChangeNotifier` (ChangeNotifier) bride Riverpod → GoRouter refresh ; `ref.read(authProvider)` dans redirect évite la closure stale
+- **flutter_secure_storage → shared_preferences** : mismatch GLib libsecret avec snap Flutter ARM64 — remplacé par `shared_preferences` pour le dev
+- **GTK first-frame gate** : runner GTK conditionne `gtk_widget_show()` au signal `first-frame` qui ne se déclenche pas avec llvmpipe — supprimé, `gtk_widget_show_all()` appelé immédiatement
+- **Flutter web target avec `kIsWeb` guard** : PowerSync/SQLite natif uniquement — `openAppDatabase()` skippé sur web, `ApiClient` (Dio HTTP) fonctionne sans DB
+- **CORS multi-origines** : `CORS_ORIGINS` dans docker-compose nécessite liste CSV — ajout de `http://localhost:8081` pour le web Flutter
+
+**Modifications**:
+
+```diff
+M apps/mobile/lib/models/auth_user.dart          (+ fromLoginData, toJson, fromStorageJson)
+M apps/mobile/lib/shared/services/api_client.dart (+ _unwrap/_unwrapList, fix login parsing)
+M apps/mobile/lib/shared/services/secure_storage.dart (flutter_secure_storage → shared_preferences)
+M apps/mobile/lib/features/auth/auth_provider.dart   (build() charge depuis storage)
+M apps/mobile/lib/features/auth/login_screen.dart    (gestion erreur réseau vs credentials)
+M apps/mobile/lib/features/tasks/today_screen.dart   (ApiErrorWidget)
+M apps/mobile/lib/features/badges/badges_screen.dart (ApiErrorWidget)
+M apps/mobile/lib/features/exchanges/exchanges_screen.dart (ApiErrorWidget)
+M apps/mobile/lib/app/router.dart                (keepAlive: true + refreshListenable + ref.read)
+M apps/mobile/lib/app/router.g.dart             (isAutoDispose: false)
+M apps/mobile/lib/main.dart                     (+ kIsWeb guard pour openAppDatabase)
+M apps/mobile/pubspec.yaml                      (shared_preferences, plateforme linux)
++ apps/mobile/lib/shared/widgets/api_error_widget.dart (401 logout / réseau / générique)
++ apps/mobile/linux/                            (GTK runner — gtk_widget_show_all immédiat)
+M docker-compose.yml                            (CORS_ORIGINS + http://localhost:8081)
+```
+
+**Résultats**: Login fonctionnel dans Chrome Windows via `http://localhost:8081` — Flutter web target opérationnel, auth persistée en SharedPreferences, redirect GoRouter sans boucle
+
+---
+
+### Session 9 - 2026-06-14
+
+**Objectif**: Tests d'intégration routes HTTP (Option C backlog)
+
+**Concepts introduits**:
+
+- **`app.request()` Hono** : méthode native pour tester les routes HTTP sans serveur — `app.request("/path", { method, headers, body })` retourne une `Response` standard
+- **Mock layer routes** : mock `config/env` + `config/database` + `config/mongo` (évite process.exit et connexions) + `auth.middleware` (injecte user) + service ciblé — isole le layer HTTP sans toucher Prisma
+- **Zod v4 UUID strict** : `z.string().uuid()` enforce RFC 4122 — version nibble 1-5 (position 14), variant nibble 8-b (position 19) — UUIDs maison type `a0000000-0000-0000-...` rejetés
+
+**Modifications**:
+
+```diff
++ apps/api/src/modules/auth/auth.routes.test.ts      (8 tests — register/login/me)
++ apps/api/src/modules/planning/planning.routes.test.ts  (13 tests — generate/list/get/patch)
++ apps/api/src/modules/exchanges/exchanges.routes.test.ts (9 tests — list/propose/respond)
+M PROJECT_STATE.md                                   (Session 8 + backlog priorisé)
+```
+
+**Résultats**: 75/75 tests passent (21 unitaires + 30 routes + existants), durée ~600ms
+
+---
 
 ### Session 8 - 2026-06-14
 
@@ -337,6 +417,9 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 - [x] **CRUD Récompenses** (Session 6 — S2) — création/édition/suppression parent, demandes enfants, validation/refus parent
 - [x] **Dashboard stats** (Session 6 — S2) — classement enfants par points, tâches complétées, badges par enfant
 - [x] **Échanges de tâches** (Session 6 — S2) — proposition, acceptation/refus, réassignation automatique
+- [x] **App mobile Flutter scaffold** (Session 7 — S3) — auth, tâches, badges, échanges, profil — 0 issue flutter analyze
+- [x] **Infrastructure Docker dev** (Session 8) — docker-compose, scripts/docker-dev.sh, ports dynamiques, seed démo
+- [x] **Tests intégration routes HTTP** (Session 9) — auth/planning/exchanges — 75/75 tests, pattern mock service layer
 
 ---
 
@@ -386,8 +469,8 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 | Hono                    | 4.12            |
 | @hono/node-server       | 1.19            |
 | @hono/zod-validator     | 0.4             |
-| Prisma / @prisma/client | 7.7             |
-| @prisma/adapter-pg      | 7.7             |
+| Prisma / @prisma/client | 7.8             |
+| @prisma/adapter-pg      | 7.8             |
 | Mongoose                | 9.4             |
 | Argon2                  | 0.44            |
 | node-cron               | 4.2             |

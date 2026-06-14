@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../shared/widgets/api_error_widget.dart';
 import 'badges_provider.dart';
 
 class BadgesScreen extends ConsumerWidget {
@@ -16,7 +17,10 @@ class BadgesScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Mes badges')),
       body: badgesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erreur : $e')),
+        error: (e, _) => ApiErrorWidget(
+          error: e,
+          onRetry: () => ref.invalidate(memberBadgesProvider),
+        ),
         data: (badges) {
           if (badges.isEmpty) {
             return const Center(

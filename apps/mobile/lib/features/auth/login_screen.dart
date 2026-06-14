@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,11 +31,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         .login(_emailCtrl.text.trim(), _passwordCtrl.text);
 
     if (!mounted) return;
-    final state = ref.read(authProvider);
-    if (state.hasError) {
+    final authState = ref.read(authProvider);
+    if (authState.hasError) {
+      final err = authState.error;
+      final bool isNetwork = err is DioException &&
+          err.type == DioExceptionType.connectionError;
+      final message = isNetwork
+          ? 'Serveur inaccessible. Vérifie que l\'API est démarrée.'
+          : 'Email ou mot de passe incorrect.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Identifiants incorrects'),
+          content: Text(message),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );

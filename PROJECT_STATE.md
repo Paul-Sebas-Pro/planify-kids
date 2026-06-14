@@ -5,11 +5,56 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: En développement — Sprint 3 en cours (App mobile Flutter — enfants)
+- **Statut**: En développement — Sprint 3 en cours
+
+---
+
+## 🚀 Prochaines options (post-Session 8)
+
+**A) Mobile Flutter** — app scaffoldée (Session 7), jamais testée sur device. Prochaine étape : `flutter run`, debug écrans login/today, connexion API réelle via `--dart-define=API_BASE_URL=http://10.0.2.2:3000`.
+
+**B) Web — génération planning** — `PlanningPage` liste les schedules mais ne permet pas d'en créer depuis l'UI. Prochaine étape : formulaire de génération (sélection semaine + membres), visualisation calendrier semaine.
+
+**C) Tests intégration API** ← **en cours** — zéro test sur routes HTTP critiques (auth, planning, échanges). Prochaine étape : Hono test client (`app.request()`) + mocks services, couverture auth/planning/exchanges.
 
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 8 - 2026-06-14
+
+**Objectif**: Infrastructure Docker dev + fixes ESM/Prisma
+
+**Concepts introduits**:
+
+- **Proxy Vite en container** : `VITE_API_URL` utilisé côté serveur Vite (proxy), pas client — doit pointer vers le service Docker (`http://api:3000`) et non `localhost`
+- **`hostname: "0.0.0.0"` Hono** : `@hono/node-server` écoute `127.0.0.1` par défaut — inaccessible depuis l'extérieur du container sans ce paramètre
+- **jsonwebtoken CJS → ESM** : `import { sign } from "jsonwebtoken"` échoue en ESM strict Node 24 — pattern correct : `import jwt from "jsonwebtoken"` puis `jwt.sign(...)`
+- **pnpm 11 breaking** : corepack télécharge pnpm 11 si non pinné — pnpm 11 ignore le champ `pnpm` de `package.json` → pin via `"packageManager": "pnpm@10.30.1"` + migration `overrides`/`onlyBuiltDependencies` vers `pnpm-workspace.yaml`
+- **`onlyBuiltDependencies`** : pnpm 10 bloque les scripts natifs par défaut — `esbuild` (binaire) et `argon2` (addon C++) requièrent déclaration explicite
+
+**Modifications**:
+
+```diff
++ docker-compose.yml                    (postgres:17, mongo:8, api, web — ports dynamiques via env)
++ docker/api.Dockerfile                 (Node 24 + pnpm@10.30.1 via corepack)
++ docker/web.Dockerfile                 (Node 24 + pnpm@10.30.1 via corepack)
++ docker/api-entrypoint.sh             (prisma generate → db push → tsx watch)
++ scripts/docker-dev.sh                (détection ports ss, allocation automatique, flags --build/--down/--logs/--seed)
++ .dockerignore
+M apps/api/src/server.ts               (+ hostname: "0.0.0.0" pour accessibilité container)
+M apps/web/vite.config.ts              (+ host: "0.0.0.0" + proxy cible http://api:3000)
+M apps/api/src/modules/auth/auth.service.ts     (jwt default import)
+M apps/api/src/core/middleware/auth.middleware.ts (jwt default import)
+M apps/api/src/prisma/seed.ts          (+ compte démo demo@planify.kids / demo1234 + famille Demo)
+M apps/api/package.json                (Prisma 7.7 → 7.8)
+M package.json                         (+ packageManager: pnpm@10.30.1)
+M pnpm-workspace.yaml                  (+ overrides + onlyBuiltDependencies: esbuild, argon2)
+```
+
+**Résultats**: `./scripts/docker-dev.sh` démarre les 4 services, web accessible sur http://localhost:5173, login fonctionnel avec demo@planify.kids
+
+---
 
 ### Session 7 - 2026-06-13
 

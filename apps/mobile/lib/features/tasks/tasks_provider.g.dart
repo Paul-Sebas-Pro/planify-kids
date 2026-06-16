@@ -48,7 +48,7 @@ final class TodayTasksProvider
   }
 }
 
-String _$todayTasksHash() => r'2cf9dfad16c35904dbe819394f2cb95537727b97';
+String _$todayTasksHash() => r'3d894449617132dabe551dfeaadb5a015effc504';
 
 @ProviderFor(TasksNotifier)
 final tasksProvider = TasksNotifierProvider._();
@@ -74,7 +74,7 @@ final class TasksNotifierProvider
   TasksNotifier create() => TasksNotifier();
 }
 
-String _$tasksNotifierHash() => r'56a06973ee6ca80354085bb4b6a40dcbfa421b67';
+String _$tasksNotifierHash() => r'4ca42e7ae96542667e1d33f12f55a4dc1e392049';
 
 abstract class _$TasksNotifier extends $AsyncNotifier<List<ScheduleItem>> {
   FutureOr<List<ScheduleItem>> build();

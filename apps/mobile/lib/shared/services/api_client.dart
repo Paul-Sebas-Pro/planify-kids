@@ -60,16 +60,41 @@ class ApiClient {
     return (token: token, member: member);
   }
 
+  Future<List<Map<String, dynamic>>> getChildrenByCode(String code) async {
+    final res = await _dio.get('/auth/family-members',
+        queryParameters: {'code': code.toUpperCase()});
+    final data = _unwrap(res);
+    return (data['members'] as List<dynamic>)
+        .map((e) => e as Map<String, dynamic>)
+        .toList();
+  }
+
+  Future<({String token, AuthUser member})> loginChild(
+      String familyCode, String memberId, String pin) async {
+    final res = await _dio.post('/auth/login-child', data: {
+      'familyCode': familyCode.toUpperCase(),
+      'memberId': memberId,
+      'pin': pin,
+    });
+    final data = _unwrap(res);
+    final member = AuthUser.fromLoginData(data);
+    final token =
+        (data['tokens'] as Map<String, dynamic>)['accessToken'] as String;
+    return (token: token, member: member);
+  }
+
   // ── Planning ──────────────────────────────────────────────────────────────
 
   Future<List<ScheduleItem>> getTodayItems(String memberId) async {
     final today = DateTime.now().toIso8601String().split('T').first;
-    final res = await _dio.get('/planning');
-    final schedules = _unwrapList(res);
+    final listRes = await _dio.get('/planning');
+    final schedules = _unwrapList(listRes);
     final items = <ScheduleItem>[];
     for (final schedule in schedules) {
-      final s = schedule as Map<String, dynamic>;
-      for (final item in (s['items'] as List<dynamic>? ?? [])) {
+      final scheduleId = (schedule as Map<String, dynamic>)['id'] as String;
+      final detailRes = await _dio.get('/planning/$scheduleId');
+      final detail = _unwrap(detailRes);
+      for (final item in (detail['items'] as List<dynamic>? ?? [])) {
         final si = ScheduleItem.fromJson(item as Map<String, dynamic>);
         final itemDate = si.date.toIso8601String().split('T').first;
         if (si.assignedToMemberId == memberId && itemDate == today) {

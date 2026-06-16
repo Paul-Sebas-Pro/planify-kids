@@ -4,9 +4,10 @@ import { env } from "../../config/env.js";
 import { UnauthorizedError } from "../errors/AppError.js";
 
 export interface JwtPayload {
-  sub: string;   // userId
+  sub: string;       // userId (parent) ou memberId (child)
   familyId: string;
   role: "PARENT" | "CHILD";
+  memberId: string;
 }
 
 declare module "hono" {

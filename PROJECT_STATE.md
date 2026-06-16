@@ -14,8 +14,10 @@
 ### 🔴 Priorité 1 — Mobile Flutter (Sprint 3 core)
 
 - [x] **Flutter : premier lancement** — web target `http://localhost:8081`, login fonctionnel
-- [ ] **Flutter : connexion API réelle** — tâches du jour → marquer complété → points mis à jour
-- [ ] **Flutter : tests widget** — LoginScreen, TodayScreen, TaskCard
+- [x] **Auth enfant `POST /auth/login-child`** — familyCode DEMO01 + memberId + PIN ; Alice 1234 / Tom 5678
+- [x] **Seed démo enrichi** — 4 tâches actives + planning semaine courante générés au seed
+- [x] **Flutter : connexion API réelle** — login enfant → tâches du jour → marquer complété → points mis à jour
+- [x] **Flutter : tests widget** — LoginScreen, TodayScreen, TaskCard
 
 ### 🟠 Priorité 2 — Web : génération planning (feature manquante critique)
 
@@ -39,6 +41,81 @@
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 13 - 2026-06-16
+
+**Objectif**: Sprint 3 — Fix API réelle Flutter + tests widget
+
+**Concepts introduits**:
+
+- **`getTodayItems` fix** : `GET /planning` retourne `_count.items` pas les items — corrigé pour appeler `GET /planning/:id` par schedule et filtrer par `assignedToMemberId` + date locale
+- **`markCompleted` fix** : PATCH retourne item sans `task` embedded → `copyWith(status: 'COMPLETED')` local au lieu de remplacer par retour API
+- **`GoRouterState.uri.path`** : go_router v17 — `matchedLocation` remplacé par `uri.path` dans `_selectedIndex`
+- **Logout TodayScreen** : bouton déconnexion ajouté dans AppBar TodayScreen (toujours accessible sans navigation)
+- **Tests widget Riverpod 3** : pattern `FakeNotifier extends RealNotifier` — accessible depuis test car classe publique ; `Completer<T>().future` pour état loading sans timer pending ; `setUpAll(() => initializeDateFormatting('fr_FR'))` obligatoire avant `DateFormat` avec locale ; `await tester.pump()` après `pumpWidget` pour laisser `build() async` résoudre avant interaction
+
+**Modifications**:
+
+```diff
+M apps/mobile/lib/shared/services/api_client.dart   (getTodayItems → GET /planning/:id par schedule)
+M apps/mobile/lib/features/tasks/tasks_provider.dart (markCompleted → copyWith local)
+M apps/mobile/lib/app/shell_screen.dart             (ConsumerWidget, uri.path, sans double AppBar)
+M apps/mobile/lib/features/tasks/today_screen.dart  (+ logout button)
++ apps/mobile/test/widget/task_card_test.dart        (5 tests)
++ apps/mobile/test/widget/today_screen_test.dart     (4 tests)
++ apps/mobile/test/widget/login_screen_test.dart     (5 tests)
+```
+
+**Résultats**: 14/14 tests widget passent. Sprint 3 P1 complet.
+
+---
+
+### Session 12 - 2026-06-15
+
+**Objectif**: Sprint 3 — Auth enfant (familyCode + PIN) + seed enrichi + LoginScreen Flutter
+
+**Concepts introduits**:
+
+- **`Family.code String? @unique`** : code court 6 caractères généré via `Math.random().toString(36).slice(2,8).toUpperCase()` à la création famille — `String?` pour compatibilité schema push sans reset DB
+- **`FamilyMember.pin String?`** : hash Argon2 du PIN 4 chiffres — `String?` car PARENT n'a pas de PIN
+- **`GET /auth/family-members?code=`** : route publique (sans JWT) — retourne liste enfants d'une famille par code court ; utilisée par Flutter avant saisie PIN
+- **`POST /auth/login-child`** : `familyCode + memberId + pin` — vérifie famille, membre CHILD, argon2.verify ; JWT identique parent : `{ sub: memberId, familyId, role: "CHILD", memberId }`
+- **`memberId` dans JWT** : payload enrichi — parent : `sub=userId, memberId=parentMember.id` ; enfant : `sub=memberId=memberId`. Rétrocompatible (routes utilisent seulement `familyId` + `role`)
+- **Seed planning semaine** : calcul lundi courant via `dayOfWeek = getDay(); monday = today - ((dayOfWeek+6)%7)` — planning 7 jours créé au seed, alternance Alice/Tom par tâche
+- **`_ChildLoginForm` Flutter** : flow en 2 étapes — code famille → `getChildrenByCode()` → `FilterChip` sélection membre → PIN → `loginChild()` ; `_ParentLoginForm` inchangé ; `TabBar` bascule entre les deux
+
+**Modifications**:
+
+```diff
+M apps/api/src/prisma/schema.prisma          (+ Family.code String?, + FamilyMember.pin String?)
+M apps/api/src/modules/auth/auth.schema.ts   (+ loginChildSchema)
+M apps/api/src/modules/auth/auth.repository.ts (+ findFamilyByCode, findChildMember, randomFamilyCode)
+M apps/api/src/modules/auth/auth.service.ts  (+ getFamilyMembersService, loginChildService ; generateTokens + memberId)
+M apps/api/src/modules/auth/auth.routes.ts   (+ GET /auth/family-members, POST /auth/login-child)
+M apps/api/src/core/middleware/auth.middleware.ts (JwtPayload + memberId)
+M apps/api/src/prisma/seed.ts                (+ Family.code, PINs Alice/Tom, 4 tâches démo, planning semaine)
+M apps/mobile/lib/shared/services/api_client.dart (+ getChildrenByCode, loginChild)
+M apps/mobile/lib/features/auth/auth_provider.dart (+ loginChild())
+M apps/mobile/lib/features/auth/login_screen.dart  (TabBar Parent/Enfant — _ChildLoginForm)
+```
+
+**Résultats**: `GET /auth/family-members?code=DEMO01` → Alice/Tom. `POST /auth/login-child` → JWT valide. Flutter `flutter analyze` → 0 issue. Login enfant opérationnel sur `http://localhost:8081`.
+
+---
+
+### Session 11 - 2026-06-15
+
+**Objectif**: Sprint 3 — Diagnostic auth enfant + décision architecture
+
+**Concepts introduits**:
+
+- **Auth enfant sans User account** : Alice et Tom sont des `FamilyMember` sans `User` associé — pas de credentials email/password. L'app parent (web) et l'app enfant (mobile) ont des flux d'auth distincts.
+- **Pattern `POST /auth/login-child`** : Route dédiée tablette — `familyCode` (code court de la famille) + `memberId` + `PIN` 4 chiffres. Pas d'email. Décision retenue vs option A (email enfant = friction inutile sur tablette).
+- **`GET /planning` vs `GET /planning/:id`** : la liste retourne `_count.items` (pas le tableau) — items détaillés uniquement via la route par ID.
+
+**Modifications**: Aucune (session de diagnostic et décision)
+
+---
 
 ### Session 10 - 2026-06-14
 
@@ -132,7 +209,7 @@ M package.json                         (+ packageManager: pnpm@10.30.1)
 M pnpm-workspace.yaml                  (+ overrides + onlyBuiltDependencies: esbuild, argon2)
 ```
 
-**Résultats**: `./scripts/docker-dev.sh` démarre les 4 services, web accessible sur http://localhost:5173, login fonctionnel avec demo@planify.kids
+**Résultats**: `./scripts/docker-dev.sh` démarre les 4 services, web accessible sur <http://localhost:5173>, login fonctionnel avec <demo@planify.kids>
 
 ---
 

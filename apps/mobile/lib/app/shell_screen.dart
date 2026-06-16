@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class ShellScreen extends StatelessWidget {
+class ShellScreen extends ConsumerWidget {
   final Widget child;
   const ShellScreen({super.key, required this.child});
 
   int _selectedIndex(BuildContext context) {
-    final location = GoRouterState.of(context).matchedLocation;
-    if (location.startsWith('/badges')) return 1;
-    if (location.startsWith('/exchanges')) return 2;
-    if (location.startsWith('/profile')) return 3;
+    final loc = GoRouterState.of(context).uri.path;
+    if (loc.startsWith('/badges')) return 1;
+    if (loc.startsWith('/exchanges')) return 2;
+    if (loc.startsWith('/profile')) return 3;
     return 0;
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: child,
       bottomNavigationBar: NavigationBar(

@@ -5,23 +5,27 @@ import {
   ConflictError,
   UnauthorizedError,
 } from "../../core/errors/AppError.js";
-import { findUserByEmail, createUserWithFamily } from "./auth.repository";
-import type { RegisterInput, LoginInput } from "./auth.schema";
+import {
+  findUserByEmail,
+  createUserWithFamily,
+  findFamilyByCode,
+  findChildMember,
+} from "./auth.repository";
+import type { RegisterInput, LoginInput, LoginChildInput } from "./auth.schema";
 
 function generateTokens(
-  userId: string,
+  sub: string,
   familyId: string,
   role: "PARENT" | "CHILD",
+  memberId: string,
 ) {
-  const payload = { sub: userId, familyId, role };
-
+  const payload = { sub, familyId, role, memberId };
   const secret = env.JWT_SECRET as Secret;
 
   const accessToken = jwt.sign(payload, secret, {
     expiresIn: env.JWT_EXPIRES_IN as any,
   });
-
-  const refreshToken = jwt.sign({ sub: userId }, secret, {
+  const refreshToken = jwt.sign({ sub }, secret, {
     expiresIn: env.JWT_REFRESH_EXPIRES_IN as any,
   });
 
@@ -40,7 +44,7 @@ export async function registerService(input: RegisterInput) {
     passwordHash,
   );
 
-  const tokens = generateTokens(user.id, family.id, "PARENT");
+  const tokens = generateTokens(user.id, family.id, "PARENT", member.id);
 
   return {
     tokens,
@@ -66,7 +70,7 @@ export async function loginService(input: LoginInput) {
     throw new UnauthorizedError("Compte parent introuvable");
   }
 
-  const tokens = generateTokens(user.id, parentMember.familyId, "PARENT");
+  const tokens = generateTokens(user.id, parentMember.familyId, "PARENT", parentMember.id);
 
   return {
     tokens,
@@ -76,6 +80,52 @@ export async function loginService(input: LoginInput) {
       id: parentMember.id,
       name: parentMember.name,
       role: parentMember.role,
+    },
+  };
+}
+
+export async function getFamilyMembersService(code: string) {
+  const family = await findFamilyByCode(code);
+  if (!family) {
+    throw new UnauthorizedError("Code famille invalide");
+  }
+  return {
+    family: { id: family.id, name: family.name },
+    members: family.members,
+  };
+}
+
+export async function loginChildService(input: LoginChildInput) {
+  const family = await findFamilyByCode(input.familyCode);
+  if (!family) {
+    throw new UnauthorizedError("Code famille invalide");
+  }
+
+  const member = await findChildMember(input.memberId, family.id);
+  if (!member) {
+    throw new UnauthorizedError("Enfant introuvable dans cette famille");
+  }
+  if (!member.pin) {
+    throw new UnauthorizedError("Aucun PIN configuré pour cet enfant");
+  }
+
+  const valid = await argon2.verify(member.pin, input.pin);
+  if (!valid) {
+    throw new UnauthorizedError("PIN incorrect");
+  }
+
+  const tokens = generateTokens(member.id, family.id, "CHILD", member.id);
+
+  return {
+    tokens,
+    family: { id: family.id, name: family.name },
+    member: {
+      id: member.id,
+      name: member.name,
+      role: member.role,
+      color: member.color,
+      avatar: member.avatar,
+      points: member.points,
     },
   };
 }

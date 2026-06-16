@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../shared/widgets/api_error_widget.dart';
+import '../auth/auth_provider.dart';
 import 'task_card.dart';
 import 'tasks_provider.dart';
 
@@ -30,6 +31,11 @@ class TodayScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.invalidate(tasksProvider),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Déconnexion',
+            onPressed: () => ref.read(authProvider.notifier).logout(),
           ),
         ],
       ),

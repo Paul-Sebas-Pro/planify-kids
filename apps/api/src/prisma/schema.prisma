@@ -43,6 +43,7 @@ model User {
 model Family {
   id       String @id @default(uuid())
   name     String
+  code     String? @unique
   timezone String @default("Europe/Paris")
   locale   String @default("fr")
 
@@ -65,6 +66,7 @@ model FamilyMember {
   color     String?
   birthDate DateTime?
   role      Role
+  pin       String?
 
   points Int @default(0)
 

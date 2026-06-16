@@ -40,6 +40,21 @@ class AuthNotifier extends _$AuthNotifier {
     });
   }
 
+  Future<void> loginChild(
+      String familyCode, String memberId, String pin) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final api = ref.read(apiClientProvider);
+      final result = await api.loginChild(familyCode, memberId, pin);
+
+      final storage = ref.read(secureStorageServiceProvider);
+      await storage.saveToken(result.token);
+      await storage.saveUserJson(jsonEncode(result.member.toJson()));
+
+      return result.member;
+    });
+  }
+
   Future<void> logout() async {
     final storage = ref.read(secureStorageServiceProvider);
     await storage.clear();

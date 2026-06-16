@@ -14,5 +14,12 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Mot de passe requis"),
 });
 
+export const loginChildSchema = z.object({
+  familyCode: z.string().length(6),
+  memberId: z.string().uuid(),
+  pin: z.string().length(4).regex(/^\d{4}$/, "PIN doit être 4 chiffres"),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type LoginChildInput = z.infer<typeof loginChildSchema>;

@@ -23,11 +23,12 @@ class TasksNotifier extends _$TasksNotifier {
 
   Future<void> markCompleted(String itemId) async {
     final api = ref.read(apiClientProvider);
-    final updated = await api.updateScheduleItemStatus(itemId, 'COMPLETED');
+    await api.updateScheduleItemStatus(itemId, 'COMPLETED');
 
     state = AsyncData(
       state.value
-              ?.map((item) => item.id == itemId ? updated : item)
+              ?.map((item) =>
+                  item.id == itemId ? item.copyWith(status: 'COMPLETED') : item)
               .toList() ??
           [],
     );

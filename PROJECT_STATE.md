@@ -5,7 +5,7 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: En développement — Sprint 3 en cours
+- **Statut**: Sprints 1-3 terminés — backlog P1→P4 complet
 
 ---
 
@@ -26,21 +26,59 @@
 
 ### 🟡 Priorité 3 — Couverture tests API
 
-- [ ] **members.routes.test.ts** — GET/POST/PATCH/DELETE /family/members (RBAC parent/child)
-- [ ] **tasks.routes.test.ts** — GET/POST/PATCH/DELETE /tasks
-- [ ] **rewards.routes.test.ts** — CRUD rewards + claims flow
-- [ ] **badges.routes.test.ts** — GET /badges, GET /badges/member/:id
+- [x] **members.routes.test.ts** — GET/POST/PATCH/DELETE /family/members (RBAC parent/child) — 12 tests
+- [x] **tasks.routes.test.ts** — GET/POST/PATCH/DELETE /tasks — 13 tests
+- [x] **rewards.routes.test.ts** — CRUD rewards + claims flow — 18 tests
+- [x] **badges.routes.test.ts** — GET /badges, GET /badges/member/:id — 4 tests
 
 ### 🟢 Priorité 4 — Qualité & infrastructure
 
-- [ ] **node-cron** — planifié dans `package.json` mais non utilisé : job quotidien de génération auto-planning
-- [ ] **Health route `/health`** — retourner statut DB + Mongo en plus de `{ status: "ok" }`
-- [ ] **Pagination** — GET /planning, GET /exchanges sans limite actuellement
-- [ ] **CI GitHub Actions** — pipeline `pnpm test` + `pnpm typecheck` sur PR
+- [x] **node-cron** — job `"1 0 * * *"` génère semaine suivante par famille, erreurs isolées
+- [x] **Health route `/health`** — `{ status, db, mongo }` + HTTP 503 si dégradé
+- [x] **Pagination** — `?limit` sur GET /planning (max 100) et GET /exchanges (max 200) + `?status` exchanges
+- [x] **CI GitHub Actions** — jobs `api` (typecheck + test) + `web` (typecheck) sur push/PR → main
 
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 15 - 2026-06-17
+
+**Objectif**: P3 tests routes CRUD + P4 qualité infrastructure
+
+**Concepts introduits**:
+
+- **RBAC en test** : override `authMiddleware.mockImplementationOnce` pour injecter rôle CHILD sur route PARENT → vérifie 403 sans toucher `requireRole`
+- **Badges sans service layer** : `prisma` mocké avec `{ badge: { findMany: vi.fn() }, memberBadge: { findMany: vi.fn() } }` — seul cas où le mock `config/database` expose des méthodes nommées
+- **Pagination `take` Prisma** : `Math.min(Math.max(Number(q ?? default), 1), max)` — robuste aux NaN/négatifs ; `take:` dans `findMany`
+- **`Promise.allSettled` health** : `prisma.$queryRawUnsafe("SELECT 1")` + `mongoose.connection.readyState === 1` — aucun rejet si une DB down, status `"degraded"` + HTTP 503
+- **node-cron isolation** : try/catch par famille — `AppError` (pas de tâches, pas d'enfants) ignorée, cron continue sur les autres familles
+- **CI `pnpm/action-setup@v4`** : `version: 10` + `cache: pnpm` dans `setup-node` — 2 jobs parallèles `api` et `web`
+
+**Modifications**:
+
+```diff
++ apps/api/src/modules/members/members.routes.test.ts  (12 tests — CRUD + RBAC)
++ apps/api/src/modules/tasks/tasks.routes.test.ts      (13 tests — CRUD + RBAC + activeOnly)
++ apps/api/src/modules/rewards/rewards.routes.test.ts  (18 tests — CRUD + claims flow)
++ apps/api/src/modules/badges/badges.routes.test.ts    (4 tests — prisma mocké direct)
+M apps/api/src/app.ts                                  (health : Prisma SELECT 1 + Mongo readyState)
+M apps/api/src/modules/planning/planning.repository.ts (+ take limit, défaut 20)
+M apps/api/src/modules/planning/planning.service.ts    (forward limit)
+M apps/api/src/modules/planning/planning.routes.ts     (parse ?limit, max 100)
+M apps/api/src/modules/planning/planning.routes.test.ts (assertion → 2 args)
+M apps/api/src/modules/exchanges/exchanges.repository.ts (+ take + status filter)
+M apps/api/src/modules/exchanges/exchanges.service.ts  (forward limit + status)
+M apps/api/src/modules/exchanges/exchanges.routes.ts   (parse ?limit max 200 + ?status)
+M apps/api/src/modules/exchanges/exchanges.routes.test.ts (assertion → 3 args)
+M apps/api/src/server.ts                               (+ startPlanningCron après connect)
++ apps/api/src/services/planning-cron.ts               (cron "1 0 * * *", semaine suivante)
++ .github/workflows/ci.yml                             (jobs api + web)
+```
+
+**Résultats**: 122/122 tests. P3 + P4 complets. Backlog Sprint 3 entièrement soldé.
+
+---
 
 ### Session 13 - 2026-06-16
 

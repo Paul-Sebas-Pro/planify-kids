@@ -2,7 +2,9 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import mongoose from "mongoose";
 import { env } from "./config/env.js";
+import { prisma } from "./config/database.js";
 import { errorMiddleware } from "./core/middleware/error.middleware.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { membersRoutes } from "./modules/members/members.routes.js";
@@ -27,7 +29,20 @@ app.use(
 );
 
 // ─── Health check ─────────────────────────────────────────────
-app.get("/health", (c: Context) => c.json({ status: "ok", env: env.NODE_ENV }));
+app.get("/health", async (c: Context) => {
+  const [dbResult, mongoResult] = await Promise.allSettled([
+    prisma.$queryRawUnsafe("SELECT 1"),
+    Promise.resolve(mongoose.connection.readyState === 1),
+  ]);
+  const db = dbResult.status === "fulfilled" ? "ok" : "error";
+  const mongo =
+    mongoResult.status === "fulfilled" && mongoResult.value ? "ok" : "error";
+  const healthy = db === "ok" && mongo === "ok";
+  return c.json(
+    { status: healthy ? "ok" : "degraded", env: env.NODE_ENV, db, mongo },
+    healthy ? 200 : 503,
+  );
+});
 
 // ─── Routes ───────────────────────────────────────────────────
 app.route("/auth", authRoutes);

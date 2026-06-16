@@ -136,7 +136,7 @@ describe("GET /planning", () => {
     const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.data).toHaveLength(1);
-    expect(mockList).toHaveBeenCalledWith("fam-1");
+    expect(mockList).toHaveBeenCalledWith("fam-1", 20);
   });
 
   it("200 avec liste vide", async () => {

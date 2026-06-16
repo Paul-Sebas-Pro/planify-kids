@@ -49,8 +49,8 @@ export async function generatePlanningService(
   return createScheduleWithItems(familyId, startDate, endDate, assignments);
 }
 
-export function listSchedulesService(familyId: string) {
-  return getSchedulesByFamily(familyId);
+export function listSchedulesService(familyId: string, limit: number) {
+  return getSchedulesByFamily(familyId, limit);
 }
 
 export async function getScheduleService(scheduleId: string, familyId: string) {

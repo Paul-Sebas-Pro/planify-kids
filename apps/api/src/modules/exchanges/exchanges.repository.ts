@@ -10,11 +10,19 @@ const exchangeInclude = {
   },
 };
 
-export function getExchangesByFamily(familyId: string) {
+export function getExchangesByFamily(
+  familyId: string,
+  limit = 50,
+  status?: "PENDING" | "ACCEPTED" | "REFUSED",
+) {
   return prisma.taskExchange.findMany({
-    where: { scheduleItem: { schedule: { familyId } } },
+    where: {
+      scheduleItem: { schedule: { familyId } },
+      ...(status !== undefined && { status }),
+    },
     include: exchangeInclude,
     orderBy: { createdAt: "desc" },
+    take: limit,
   });
 }
 

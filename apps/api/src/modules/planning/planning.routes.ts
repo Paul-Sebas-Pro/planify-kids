@@ -33,10 +33,11 @@ planningRoutes.post(
   },
 );
 
-// GET /planning
+// GET /planning?limit=N  (défaut 20, max 100)
 planningRoutes.get("/", async (c) => {
   const { familyId } = c.get("user");
-  const schedules = await listSchedulesService(familyId);
+  const limit = Math.min(Math.max(Number(c.req.query("limit") ?? 20), 1), 100);
+  const schedules = await listSchedulesService(familyId, limit);
   return c.json({ success: true, data: schedules });
 });
 

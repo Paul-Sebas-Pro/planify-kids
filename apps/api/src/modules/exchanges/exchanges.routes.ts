@@ -15,10 +15,16 @@ export const exchangesRoutes = new Hono();
 
 exchangesRoutes.use("*", authMiddleware);
 
-// GET /exchanges
+// GET /exchanges?limit=N&status=PENDING|ACCEPTED|REFUSED
 exchangesRoutes.get("/", async (c) => {
   const { familyId } = c.get("user");
-  const exchanges = await listExchangesService(familyId);
+  const limit = Math.min(Math.max(Number(c.req.query("limit") ?? 50), 1), 200);
+  const rawStatus = c.req.query("status");
+  const status =
+    rawStatus === "PENDING" || rawStatus === "ACCEPTED" || rawStatus === "REFUSED"
+      ? rawStatus
+      : undefined;
+  const exchanges = await listExchangesService(familyId, limit, status);
   return c.json({ success: true, data: exchanges });
 });
 

@@ -3,6 +3,7 @@ import app from "./app.js";
 import { env } from "./config/env.js";
 import { connectMongo } from "./config/mongo.js";
 import { prisma } from "./config/database.js";
+import { startPlanningCron } from "./services/planning-cron.js";
 
 async function start() {
   // Connexions DB
@@ -10,6 +11,9 @@ async function start() {
   console.log("✅ PostgreSQL connecté");
 
   await connectMongo();
+
+  // Jobs récurrents
+  startPlanningCron();
 
   // Démarrage du serveur
   serve({ fetch: app.fetch, port: env.PORT, hostname: "0.0.0.0" }, () => {

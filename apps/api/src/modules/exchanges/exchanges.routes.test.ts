@@ -72,7 +72,7 @@ describe("GET /exchanges", () => {
     expect(body.success).toBe(true);
     expect(body.data).toHaveLength(1);
     expect(body.data[0].status).toBe("PENDING");
-    expect(mockList).toHaveBeenCalledWith("fam-1");
+    expect(mockList).toHaveBeenCalledWith("fam-1", 50, undefined);
   });
 
   it("401 sans token", async () => {

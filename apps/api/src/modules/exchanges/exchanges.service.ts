@@ -13,8 +13,12 @@ import type {
   RespondExchangeInput,
 } from "./exchanges.schema";
 
-export function listExchangesService(familyId: string) {
-  return getExchangesByFamily(familyId);
+export function listExchangesService(
+  familyId: string,
+  limit: number,
+  status?: "PENDING" | "ACCEPTED" | "REFUSED",
+) {
+  return getExchangesByFamily(familyId, limit, status);
 }
 
 export async function proposeExchangeService(

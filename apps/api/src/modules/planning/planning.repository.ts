@@ -3,10 +3,11 @@ import type { Prisma } from "@prisma/client";
 import type { GreedyAssignment } from "../../services/planning-greedy";
 import type { UpdateScheduleItemInput } from "./planning.schema";
 
-export function getSchedulesByFamily(familyId: string) {
+export function getSchedulesByFamily(familyId: string, limit = 20) {
   return prisma.schedule.findMany({
     where: { familyId },
     orderBy: { startDate: "desc" },
+    take: limit,
     select: {
       id: true,
       familyId: true,

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import type { ScheduleDetail, TaskExchange } from "@planify-kids/types";
+import type { ScheduleDetail, ScheduleItemDetail, TaskExchange } from "@planify-kids/types";
 import { planningApi, exchangesApi } from "@/services/planning.api";
 import { membersApi } from "@/services/api";
 
@@ -28,7 +28,6 @@ const EXCHANGE_STATUS_COLORS: Record<string, string> = {
   REFUSED: "text-red-600 bg-red-50",
 };
 
-const DIFFICULTY_DOTS = (d: number) => "●".repeat(d) + "○".repeat(3 - d);
 
 export function PlanningPage() {
   const qc = useQueryClient();
@@ -132,11 +131,23 @@ export function PlanningPage() {
     register,
     handleSubmit,
     reset: resetForm,
+    setValue,
   } = useForm<GenerateFormValues>();
 
   function onGenerate(values: GenerateFormValues) {
     setApiError(null);
     generateMutation.mutate(values);
+  }
+
+  function fillCurrentWeek() {
+    const today = new Date();
+    const dow = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((dow + 6) % 7));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    setValue("startDate", monday.toISOString().slice(0, 10));
+    setValue("endDate", sunday.toISOString().slice(0, 10));
   }
 
   function openExchange(itemId: string, currentMemberId: string) {
@@ -155,14 +166,6 @@ export function PlanningPage() {
     });
   }
 
-  const itemsByDate = detail
-    ? detail.items.reduce<Record<string, typeof detail.items>>((acc, item) => {
-        const day = item.date.slice(0, 10);
-        if (!acc[day]) acc[day] = [];
-        acc[day]!.push(item);
-        return acc;
-      }, {})
-    : {};
 
   return (
     <div>
@@ -241,132 +244,23 @@ export function PlanningPage() {
                 </button>
               </div>
 
-              <div className="space-y-4">
-                {Object.entries(itemsByDate).map(([day, items]) => (
-                  <div key={day}>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                      {formatDateLong(day)}
-                    </p>
-                    <div className="space-y-2">
-                      {items.map((item) => (
-                        <div key={item.id} className="space-y-2">
-                          <div
-                            className={`bg-white rounded-card p-3 shadow-sm flex items-center gap-3 ${
-                              item.status === "COMPLETED" ? "opacity-60" : ""
-                            }`}
-                          >
-                            <div
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                              style={{
-                                backgroundColor: item.member.color ?? "#9e9e9e",
-                              }}
-                            >
-                              {item.member.name[0]?.toUpperCase()}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium truncate">
-                                  {item.task.name}
-                                </p>
-                                {pendingItemIds.has(item.id) && (
-                                  <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full shrink-0">
-                                    Échange en cours
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-400">
-                                {item.member.name} &middot; {item.task.points}{" "}
-                                pts &middot;{" "}
-                                <span className="font-mono text-[10px]">
-                                  {DIFFICULTY_DOTS(item.task.difficulty)}
-                                </span>
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {item.status === "PENDING" &&
-                                !pendingItemIds.has(item.id) &&
-                                children.length > 1 && (
-                                  <button
-                                    onClick={() =>
-                                      openExchange(
-                                        item.id,
-                                        item.assignedToMemberId,
-                                      )
-                                    }
-                                    className="text-xs text-indigo-500 hover:text-indigo-700"
-                                  >
-                                    Échanger
-                                  </button>
-                                )}
-                              <select
-                                value={item.status}
-                                onChange={(e) =>
-                                  updateItemMutation.mutate({
-                                    itemId: item.id,
-                                    status: e.target.value as
-                                      | "PENDING"
-                                      | "COMPLETED"
-                                      | "SKIPPED",
-                                  })
-                                }
-                                className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/40"
-                              >
-                                {Object.entries(STATUS_LABELS).map(
-                                  ([val, label]) => (
-                                    <option key={val} value={val}>
-                                      {label}
-                                    </option>
-                                  ),
-                                )}
-                              </select>
-                            </div>
-                          </div>
-
-                          {/* Formulaire inline d'échange */}
-                          {exchangeItemId === item.id && (
-                            <div className="ml-11 bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex items-center gap-3">
-                              <p className="text-xs text-indigo-700 font-medium shrink-0">
-                                Échanger avec
-                              </p>
-                              <select
-                                value={exchangeToId}
-                                onChange={(e) =>
-                                  setExchangeToId(e.target.value)
-                                }
-                                className="flex-1 text-xs border border-indigo-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none"
-                              >
-                                <option value="">Choisir un enfant</option>
-                                {children
-                                  .filter((c) => c.id !== exchangeFromId)
-                                  .map((c) => (
-                                    <option key={c.id} value={c.id}>
-                                      {c.name}
-                                    </option>
-                                  ))}
-                              </select>
-                              <button
-                                onClick={submitExchange}
-                                disabled={
-                                  !exchangeToId || proposeMutation.isPending
-                                }
-                                className="text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg"
-                              >
-                                Proposer
-                              </button>
-                              <button
-                                onClick={() => setExchangeItemId(null)}
-                                className="text-xs text-gray-400 hover:text-gray-600"
-                              >
-                                Annuler
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <WeekCalendar
+                detail={detail}
+                pendingItemIds={pendingItemIds}
+                exchangeItemId={exchangeItemId}
+                exchangeFromId={exchangeFromId}
+                exchangeToId={exchangeToId}
+                childMembers={children}
+                isUpdating={updateItemMutation.isPending}
+                isProposing={proposeMutation.isPending}
+                onUpdateItem={(itemId, status) =>
+                  updateItemMutation.mutate({ itemId, status })
+                }
+                onOpenExchange={openExchange}
+                onSetExchangeTo={setExchangeToId}
+                onSubmitExchange={submitExchange}
+                onCancelExchange={() => setExchangeItemId(null)}
+              />
             </div>
           )}
 
@@ -458,6 +352,13 @@ export function PlanningPage() {
             </h3>
 
             <form onSubmit={handleSubmit(onGenerate)} className="space-y-4">
+              <button
+                type="button"
+                onClick={fillCurrentWeek}
+                className="w-full text-xs text-primary border border-primary/30 rounded-xl py-1.5 hover:bg-primary/5 transition-colors"
+              >
+                📅 Semaine courante
+              </button>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   Date de début
@@ -512,10 +413,207 @@ function formatDate(iso: string): string {
   });
 }
 
-function formatDateLong(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+// ── WeekCalendar ─────────────────────────────────────────────────────────────
+
+const STATUS_BG: Record<string, string> = {
+  PENDING: "bg-white border border-gray-200",
+  COMPLETED: "bg-green-50 border border-green-200",
+  SKIPPED: "bg-red-50 border border-red-100",
+};
+
+const STATUS_CHIP: Record<string, string> = {
+  PENDING: "text-gray-500 bg-gray-100",
+  COMPLETED: "text-green-700 bg-green-100",
+  SKIPPED: "text-red-600 bg-red-100",
+};
+
+const STATUS_NEXT: Record<string, "PENDING" | "COMPLETED" | "SKIPPED"> = {
+  PENDING: "COMPLETED",
+  COMPLETED: "SKIPPED",
+  SKIPPED: "PENDING",
+};
+
+function getDaysInRange(startDate: string, endDate: string): string[] {
+  const days: string[] = [];
+  const cur = new Date(startDate);
+  const end = new Date(endDate);
+  while (cur <= end && days.length < 7) {
+    days.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return days;
+}
+
+function WeekCalendar({
+  detail,
+  pendingItemIds,
+  exchangeItemId,
+  exchangeFromId,
+  exchangeToId,
+  childMembers,
+  isUpdating,
+  isProposing,
+  onUpdateItem,
+  onOpenExchange,
+  onSetExchangeTo,
+  onSubmitExchange,
+  onCancelExchange,
+}: {
+  detail: ScheduleDetail;
+  pendingItemIds: Set<string>;
+  exchangeItemId: string | null;
+  exchangeFromId: string;
+  exchangeToId: string;
+  childMembers: { id: string; name: string; color?: string | null }[];
+  isUpdating: boolean;
+  isProposing: boolean;
+  onUpdateItem: (itemId: string, status: "PENDING" | "COMPLETED" | "SKIPPED") => void;
+  onOpenExchange: (itemId: string, memberId: string) => void;
+  onSetExchangeTo: (id: string) => void;
+  onSubmitExchange: () => void;
+  onCancelExchange: () => void;
+}) {
+  const days = getDaysInRange(detail.startDate, detail.endDate);
+  const cols = days.length;
+
+  const byDay = detail.items.reduce<Record<string, ScheduleItemDetail[]>>(
+    (acc, item) => {
+      const d = item.date.slice(0, 10);
+      (acc[d] ??= []).push(item);
+      return acc;
+    },
+    {},
+  );
+
+  return (
+    <div className="overflow-x-auto">
+      <div
+        className="grid gap-2 min-w-140"
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      >
+        {/* En-têtes jours */}
+        {days.map((d) => (
+          <div key={d} className="text-center pb-1 border-b border-gray-100">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+              {new Date(d).toLocaleDateString("fr-FR", { weekday: "short" })}
+            </p>
+            <p className="text-sm font-bold text-gray-700">
+              {new Date(d).toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "short",
+              })}
+            </p>
+          </div>
+        ))}
+
+        {/* Colonnes tâches */}
+        {days.map((d) => (
+          <div key={d} className="space-y-2 pt-1">
+            {(byDay[d] ?? []).map((item) => (
+              <div key={item.id} className="space-y-1">
+                <div
+                  className={`rounded-xl p-2 shadow-sm text-xs ${STATUS_BG[item.status] ?? "bg-white border border-gray-200"}`}
+                >
+                  {/* Membre */}
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div
+                      className="w-4 h-4 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: item.member.color ?? "#9e9e9e",
+                      }}
+                    />
+                    <span className="font-medium truncate text-gray-700">
+                      {item.member.name}
+                    </span>
+                  </div>
+
+                  {/* Tâche */}
+                  <p className="truncate text-gray-800 font-medium leading-snug">
+                    {item.task.icon} {item.task.name}
+                  </p>
+
+                  {/* Footer : pts + statut cliquable */}
+                  <div className="flex items-center justify-between mt-1.5">
+                    <span className="text-gray-400">{item.task.points} pts</span>
+                    <button
+                      disabled={isUpdating}
+                      onClick={() =>
+                        onUpdateItem(
+                          item.id,
+                          STATUS_NEXT[item.status] ?? "PENDING",
+                        )
+                      }
+                      className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold transition-opacity hover:opacity-70 disabled:opacity-40 ${STATUS_CHIP[item.status] ?? ""}`}
+                    >
+                      {STATUS_LABELS[item.status as keyof typeof STATUS_LABELS] ??
+                        item.status}
+                    </button>
+                  </div>
+
+                  {/* Badge échange en cours */}
+                  {pendingItemIds.has(item.id) && (
+                    <p className="mt-1 text-[10px] text-yellow-600 font-medium">
+                      ↔ Échange en cours
+                    </p>
+                  )}
+
+                  {/* Bouton échanger */}
+                  {item.status === "PENDING" &&
+                    !pendingItemIds.has(item.id) &&
+                    childMembers.length > 1 && (
+                      <button
+                        onClick={() =>
+                          onOpenExchange(item.id, item.assignedToMemberId)
+                        }
+                        className="mt-1 text-[10px] text-indigo-500 hover:text-indigo-700"
+                      >
+                        Échanger →
+                      </button>
+                    )}
+                </div>
+
+                {/* Formulaire inline échange */}
+                {exchangeItemId === item.id && (
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-2 space-y-1.5">
+                    <p className="text-[10px] text-indigo-700 font-semibold">
+                      Échanger avec
+                    </p>
+                    <select
+                      value={exchangeToId}
+                      onChange={(e) => onSetExchangeTo(e.target.value)}
+                      className="w-full text-xs border border-indigo-200 rounded-lg px-2 py-1 bg-white focus:outline-none"
+                    >
+                      <option value="">Choisir…</option>
+                      {childMembers
+                        .filter((c) => c.id !== exchangeFromId)
+                        .map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                    </select>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={onSubmitExchange}
+                        disabled={!exchangeToId || isProposing}
+                        className="flex-1 text-[10px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-1 rounded-lg"
+                      >
+                        Proposer
+                      </button>
+                      <button
+                        onClick={onCancelExchange}
+                        className="text-[10px] text-gray-400 hover:text-gray-600 px-2"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

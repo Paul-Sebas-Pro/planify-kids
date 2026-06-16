@@ -21,8 +21,8 @@
 
 ### 🟠 Priorité 2 — Web : génération planning (feature manquante critique)
 
-- [ ] **UI génération planning** — formulaire parent : sélection semaine (date picker), membres inclus, bouton "Générer"
-- [ ] **Visualisation calendrier** — vue semaine grille (lundi→dimanche), couleur par enfant, statut item
+- [x] **UI génération planning** — bouton "📅 Semaine courante" + modale startDate/endDate
+- [x] **Visualisation calendrier** — vue semaine grille (lundi→dimanche), couleur par enfant, statut cliquable
 
 ### 🟡 Priorité 3 — Couverture tests API
 
@@ -67,6 +67,28 @@ M apps/mobile/lib/features/tasks/today_screen.dart  (+ logout button)
 ```
 
 **Résultats**: 14/14 tests widget passent. Sprint 3 P1 complet.
+
+---
+
+### Session 14 - 2026-06-16
+
+**Objectif**: Sprint 3 P2 — Web : UI génération planning + visualisation calendrier semaine
+
+**Concepts introduits**:
+
+- **`fillCurrentWeek()`** : calcul lundi courant via `(getDay()+6)%7` → `setValue("startDate")` + `setValue("endDate")` — bouton "📅 Semaine courante" dans modale de génération
+- **`WeekCalendar` composant** : grille CSS `gridTemplateColumns: repeat(N, minmax(0, 1fr))` max 7 colonnes — `getDaysInRange(start, end)` génère tableau de dates ; items groupés par `date.toISOString().slice(0,10)`
+- **Status cycling** : `STATUS_NEXT = { PENDING: "COMPLETED", COMPLETED: "SKIPPED", SKIPPED: "PENDING" }` — clic sur badge chip appelle `PATCH /planning/items/:id` et invalide query
+- **`STATUS_BG` / `STATUS_CHIP`** : maps Tailwind bg/text classes par statut — `PENDING: "bg-amber-50"`, `COMPLETED: "bg-emerald-50"`, `SKIPPED: "bg-slate-50"`
+- **`min-w-140` Tailwind v4** : valeur canonique (pas `min-w-[560px]`) — évite warning classe arbitraire
+
+**Modifications**:
+
+```diff
+M apps/web/src/features/planning/PlanningPage.tsx  (+ fillCurrentWeek, WeekCalendar composant, STATUS_* maps, getDaysInRange, suppression DIFFICULTY_DOTS/itemsByDate/formatDateLong)
+```
+
+**Résultats**: `pnpm typecheck` → 0 erreur. Vue calendrier grille opérationnelle. Status cycling fonctionnel.
 
 ---
 
@@ -497,6 +519,10 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 - [x] **App mobile Flutter scaffold** (Session 7 — S3) — auth, tâches, badges, échanges, profil — 0 issue flutter analyze
 - [x] **Infrastructure Docker dev** (Session 8) — docker-compose, scripts/docker-dev.sh, ports dynamiques, seed démo
 - [x] **Tests intégration routes HTTP** (Session 9) — auth/planning/exchanges — 75/75 tests, pattern mock service layer
+- [x] **Auth enfant Flutter** (Sessions 11-12 — S3) — `POST /auth/login-child`, `GET /auth/family-members?code=`, PIN Argon2, seed Alice/Tom
+- [x] **Fix API réelle Flutter** (Session 13 — S3) — getTodayItems `GET /planning/:id`, markCompleted copyWith local, uri.path go_router v17, logout button
+- [x] **Tests widget Flutter** (Session 13 — S3) — LoginScreen (5), TodayScreen (4), TaskCard (5) — 14/14 passent
+- [x] **Planning web — semaine courante + calendrier** (Session 14 — S3) — bouton fillCurrentWeek, WeekCalendar grille, status cycling
 
 ---
 

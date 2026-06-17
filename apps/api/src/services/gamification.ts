@@ -27,9 +27,12 @@ async function checkAndAwardBadges(
     }),
   ]);
 
-  const earnedIds = new Set(earned.map((e) => e.badgeId));
+  const earnedIds = new Set(
+    earned.map((e: { badgeId: string }) => e.badgeId),
+  );
 
-  const toAward = badges.filter((badge) => {
+  type BadgeRow = { id: string; conditionType: string; conditionValue: number };
+  const toAward = (badges as BadgeRow[]).filter((badge) => {
     if (earnedIds.has(badge.id)) return false;
     if (badge.conditionType === "POINTS")
       return totalPoints >= badge.conditionValue;

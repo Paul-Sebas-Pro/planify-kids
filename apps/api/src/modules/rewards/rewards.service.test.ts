@@ -179,7 +179,7 @@ describe("reviewClaimService", () => {
     mockGetClaimById.mockResolvedValue({ ...fakeClaim, status: "APPROVED" } as any);
 
     await expect(
-      reviewClaimService("claim-1", "family-1", { status: "REFUSED" }),
+      reviewClaimService("claim-1", "family-1", { status: "REJECTED" }),
     ).rejects.toThrow(AppError);
   });
 

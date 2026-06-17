@@ -34,12 +34,15 @@ familyStatsRoutes.get("/", async (c) => {
     orderBy: { points: "desc" },
   });
 
-  const totalPoints = children.reduce((s, c) => s + c.points, 0);
-  const totalTasksCompleted = children.reduce(
-    (s, c) => s + c._count.assignments,
-    0,
-  );
-  const totalBadges = children.reduce((s, c) => s + c.badges.length, 0);
+  type ChildRow = {
+    points: number;
+    badges: unknown[];
+    _count: { assignments: number };
+  };
+  const rows = children as ChildRow[];
+  const totalPoints = rows.reduce((s, c) => s + c.points, 0);
+  const totalTasksCompleted = rows.reduce((s, c) => s + c._count.assignments, 0);
+  const totalBadges = rows.reduce((s, c) => s + c.badges.length, 0);
 
   return c.json({
     success: true,

@@ -25,6 +25,8 @@ jobs:
 
       - name: Generate Prisma client
         run: pnpm --filter @planify-kids/api db:generate
+        env:
+          DATABASE_URL: postgresql://localhost/ci_dummy
 
       - name: Typecheck API
         run: pnpm --filter @planify-kids/api typecheck

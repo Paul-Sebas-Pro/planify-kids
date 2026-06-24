@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth.store";
 import { familyApi, tasksApi } from "@/services/api";
+import { logsApi } from "@/services/logs.api";
+import { PointsChart } from "./PointsChart";
 import type { ChildStats } from "@planify-kids/types";
 
 export function DashboardPage() {
@@ -14,6 +16,11 @@ export function DashboardPage() {
   const { data: tasksData } = useQuery({
     queryKey: ["tasks"],
     queryFn: () => tasksApi.list(),
+  });
+
+  const { data: logs = [] } = useQuery({
+    queryKey: ["logs"],
+    queryFn: () => logsApi.list({ limit: 100 }),
   });
 
   const stats = statsData?.data;
@@ -57,6 +64,12 @@ export function DashboardPage() {
         <p className="text-sm text-gray-400">
           Ajoutez des enfants pour voir le classement.
         </p>
+      )}
+
+      {stats && stats.children.length > 0 && (
+        <section className="mt-8">
+          <PointsChart events={logs} children={stats.children} />
+        </section>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { prisma } from "../config/database";
+import { GamificationLog } from "../config/gamification-log.model.js";
 
 export async function awardPointsForTask(
   memberId: string,
@@ -9,12 +10,20 @@ export async function awardPointsForTask(
     data: { points: { increment: points } },
   });
 
-  await checkAndAwardBadges(memberId, member.points);
+  GamificationLog.create({
+    type: "POINTS_EARNED",
+    memberId,
+    familyId: member.familyId,
+    data: { points },
+  }).catch(() => {});
+
+  await checkAndAwardBadges(memberId, member.points, member.familyId);
 }
 
 async function checkAndAwardBadges(
   memberId: string,
   totalPoints: number,
+  familyId: string,
 ): Promise<void> {
   const [badges, earned, completedCount] = await Promise.all([
     prisma.badge.findMany(),
@@ -46,5 +55,14 @@ async function checkAndAwardBadges(
       data: toAward.map((badge) => ({ memberId, badgeId: badge.id })),
       skipDuplicates: true,
     });
+
+    for (const badge of toAward) {
+      GamificationLog.create({
+        type: "BADGE_EARNED",
+        memberId,
+        familyId,
+        data: { badgeId: badge.id },
+      }).catch(() => {});
+    }
   }
 }

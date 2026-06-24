@@ -13,17 +13,17 @@
 
 ### 🔴 Priorité 1 — Notifications in-app
 
-- [ ] **Modèle `Notification` Prisma** — `{ id, memberId, familyId, type, message, readAt?, createdAt }` — migration
-- [ ] **Création auto notifications** — enfant complète tâche → notif PARENT ; APPROVED/REJECTED claim → notif enfant CHILD
-- [ ] **Routes API** — `GET /notifications` (non-lues en premier) + `PATCH /notifications/:id/read` + `PATCH /notifications/read-all`
-- [ ] **Web : cloche header** — badge nombre non-lus, dropdown liste, marquer lu au clic
-- [ ] **Flutter : badge NavigationBar** — indicateur non-lus sur onglet profil
+- [x] **Modèle `Notification` Prisma** — `{ id, memberId, familyId, type, message, readAt?, createdAt }` — migration
+- [x] **Création auto notifications** — enfant complète tâche → notif PARENT ; APPROVED/REJECTED claim → notif enfant CHILD
+- [x] **Routes API** — `GET /notifications` (non-lues en premier) + `PATCH /notifications/:id/read` + `PATCH /notifications/read-all`
+- [x] **Web : cloche header** — badge nombre non-lus, dropdown liste, marquer lu au clic
+- [x] **Flutter : badge NavigationBar** — indicateur non-lus sur onglet profil
 
 ### 🟠 Priorité 2 — Historique gamification (MongoDB)
 
-- [ ] **Log MongoDB events** — log `{ type, memberId, familyId, data, ts }` à chaque gain points ou badge décerné
-- [ ] **Route `GET /logs`** — `?memberId=&limit=50` — 50 derniers events du membre ou de la famille
-- [ ] **Web Dashboard : courbe points** — graphique évolution points 30 derniers jours par enfant (SVG ou Recharts)
+- [x] **Log MongoDB events** — log `{ type, memberId, familyId, data, ts }` à chaque gain points ou badge décerné
+- [x] **Route `GET /logs`** — `?memberId=&limit=50` — 50 derniers events du membre ou de la famille
+- [x] **Web Dashboard : courbe points** — graphique évolution points 7 derniers jours par enfant (SVG polyline)
 
 ### 🟡 Priorité 3 — Gestion profil famille (parent)
 
@@ -70,6 +70,55 @@
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 16 - 2026-06-25
+
+**Objectif**: Sprint 4 P1 (Notifications in-app) + P2 (Historique gamification MongoDB)
+
+**Concepts introduits**:
+
+- **Notification Prisma** : enum `NotificationType` + modèle `Notification` (memberId, familyId, type, message, readAt?) — `db:push` suffit, pas de migration destructive
+- **Hooks non-bloquants** : `GamificationLog.create(...).catch(() => {})` — MongoDB down ne casse pas le flow gamification
+- **`build_runner --build-filter`** : `flutter pub run build_runner build --build-filter="lib/features/notifications/**"` — regénère uniquement les `.g.dart` ciblés, évite l'OOM complet
+- **Riverpod 3 `.value`** : `ref.watch(provider).value?.where(...)` — `valueOrNull` supprimé en Riverpod 3
+- **`vi.mock` chaîne de dépendances** : quand `service.ts` importe un autre module qui lui-même importe `@prisma/client`, le test doit mocker le module intermédiaire (pas seulement le repository) pour éviter `Cannot find module '.prisma/client/default'`
+- **SVG polyline chart** : `viewBox + polyline points="x1,y1 x2,y2..."` — graphique courbe sans bibliothèque externe ; `yPos = PAD.top + chartH - (v / maxVal) * chartH` pour axe Y inversé
+
+**Modifications**:
+
+```diff
++ apps/api/src/modules/notifications/notifications.repository.ts  (getNotifications, markRead, markAllRead, createMany)
++ apps/api/src/modules/notifications/notifications.service.ts     (list, markRead, markAllRead, notifyTaskCompleted, notifyClaimReviewed)
++ apps/api/src/modules/notifications/notifications.routes.ts      (GET /notifications, PATCH /:id/read, PATCH /read-all)
++ apps/api/src/config/gamification-log.model.ts                   (Mongoose IGamificationLog — collection gamification_logs)
++ apps/api/src/modules/logs/logs.routes.ts                        (GET /logs?memberId=&limit= — family-scoped)
+M apps/api/src/prisma/schema.prisma           (+ NotificationType enum + Notification model)
+M apps/api/src/app.ts                         (+ /notifications + /logs)
+M apps/api/src/modules/planning/planning.repository.ts  (getScheduleItemWithTask + member.name, task.name, schedule.familyId)
+M apps/api/src/modules/planning/planning.service.ts     (notifyTaskCompleted après COMPLETED)
+M apps/api/src/modules/rewards/rewards.repository.ts    (getClaimById + reward.name)
+M apps/api/src/modules/rewards/rewards.service.ts       (notifyClaimReviewed après APPROVED/REJECTED)
+M apps/api/src/modules/rewards/rewards.service.test.ts  (vi.mock notifications.service)
+M apps/api/src/services/gamification.ts       (log POINTS_EARNED + BADGE_EARNED → MongoDB, non-bloquant)
+M apps/api/package.json                       (+ db:push script)
++ packages/types/src/notifications.ts
++ packages/types/src/logs.ts
+M packages/types/src/index.ts                 (re-export notifications + logs)
++ apps/web/src/services/notifications.api.ts
++ apps/web/src/services/logs.api.ts
++ apps/web/src/components/layout/NotificationBell.tsx  (badge, dropdown, mark-read, refetch 30s)
++ apps/web/src/features/dashboard/PointsChart.tsx      (SVG polyline 7j, légende, empty state)
+M apps/web/src/components/layout/AppLayout.tsx   (header + NotificationBell)
+M apps/web/src/features/dashboard/DashboardPage.tsx  (query /logs + PointsChart)
++ apps/mobile/lib/models/notification_item.dart
++ apps/mobile/lib/features/notifications/notifications_provider.dart  (+ .g.dart)
+M apps/mobile/lib/shared/services/api_client.dart  (+ getNotifications, markNotificationRead, markAllNotificationsRead)
+M apps/mobile/lib/app/shell_screen.dart            (badge non-lus sur onglet Profil via notificationsProvider)
+```
+
+**Résultats**: 122/122 tests. typecheck API + Web : 0 erreur. flutter analyze : 0 issue.
+
+---
 
 ### Session 15 - 2026-06-17
 

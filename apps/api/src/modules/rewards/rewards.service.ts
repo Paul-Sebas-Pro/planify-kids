@@ -12,6 +12,7 @@ import {
   deductPoints,
 } from "./rewards.repository";
 import { getMemberById } from "../members/members.repository";
+import { notifyClaimReviewed } from "../notifications/notifications.service";
 import type {
   CreateRewardInput,
   UpdateRewardInput,
@@ -86,6 +87,13 @@ export async function reviewClaimService(
   if (input.status === "APPROVED") {
     await deductPoints(claim.memberId, claim.reward.pointsCost);
   }
+
+  await notifyClaimReviewed(
+    claim.memberId,
+    claim.reward.familyId,
+    claim.reward.name,
+    input.status === "APPROVED",
+  );
 
   return updated;
 }

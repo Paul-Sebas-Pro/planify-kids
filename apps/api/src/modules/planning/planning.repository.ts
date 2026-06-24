@@ -72,7 +72,9 @@ export function getScheduleItemWithTask(itemId: string) {
     select: {
       status: true,
       assignedToMemberId: true,
-      task: { select: { points: true } },
+      task: { select: { points: true, name: true } },
+      member: { select: { name: true } },
+      schedule: { select: { familyId: true } },
     },
   });
 }

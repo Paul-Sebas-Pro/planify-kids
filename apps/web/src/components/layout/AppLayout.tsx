@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router";
 import { useAuthStore } from "@/store/auth.store";
+import { NotificationBell } from "./NotificationBell";
 
 const navItems = [
   { to: "/dashboard", label: "Tableau de bord" },
@@ -59,8 +60,13 @@ export function AppLayout() {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 overflow-auto">
-        <Outlet />
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <header className="flex justify-end items-center px-8 py-3 border-b border-gray-100 bg-white shrink-0">
+          <NotificationBell />
+        </header>
+        <div className="flex-1 p-8 overflow-auto">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

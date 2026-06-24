@@ -6,6 +6,7 @@ import '../../models/auth_user.dart';
 import '../../models/badge.dart';
 import '../../models/exchange.dart';
 import '../../models/family_member.dart';
+import '../../models/notification_item.dart';
 import '../../models/schedule_item.dart';
 import 'secure_storage.dart';
 
@@ -159,5 +160,22 @@ class ApiClient {
   Future<Map<String, dynamic>> getFamilyStats() async {
     final res = await _dio.get('/family/stats');
     return _unwrap(res);
+  }
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+
+  Future<List<NotificationItem>> getNotifications() async {
+    final res = await _dio.get('/notifications');
+    return _unwrapList(res)
+        .map((e) => NotificationItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> markNotificationRead(String id) async {
+    await _dio.patch('/notifications/$id/read');
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    await _dio.patch('/notifications/read-all');
   }
 }

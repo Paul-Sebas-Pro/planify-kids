@@ -58,7 +58,7 @@ export function getClaimById(claimId: string) {
     where: { id: claimId },
     include: {
       member: { select: { familyId: true, points: true } },
-      reward: { select: { familyId: true, pointsCost: true } },
+      reward: { select: { familyId: true, pointsCost: true, name: true } },
     },
   });
 }

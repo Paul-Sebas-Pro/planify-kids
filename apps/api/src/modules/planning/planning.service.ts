@@ -12,6 +12,7 @@ import {
   deleteSchedule,
 } from "./planning.repository";
 import { awardPointsForTask } from "../../services/gamification";
+import { notifyTaskCompleted } from "../notifications/notifications.service";
 import type {
   GeneratePlanningInput,
   UpdateScheduleItemInput,
@@ -68,6 +69,11 @@ export async function updateScheduleItemService(
     const updated = await updateScheduleItem(itemId, input);
     if (before && before.status !== "COMPLETED") {
       await awardPointsForTask(before.assignedToMemberId, before.task.points);
+      await notifyTaskCompleted(
+        before.schedule.familyId,
+        before.member.name,
+        before.task.name,
+      );
     }
     return updated;
   }

@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppError, NotFoundError } from "../../core/errors/AppError";
 
+vi.mock("../notifications/notifications.service", () => ({
+  notifyClaimReviewed: vi.fn(),
+}));
+
 vi.mock("./rewards.repository", () => ({
   getRewardsByFamily: vi.fn(),
   getRewardById: vi.fn(),

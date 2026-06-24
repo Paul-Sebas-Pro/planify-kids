@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/notifications/notifications_provider.dart';
+
 class ShellScreen extends ConsumerWidget {
   final Widget child;
   const ShellScreen({super.key, required this.child});
@@ -16,6 +18,22 @@ class ShellScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref
+            .watch(notificationsProvider)
+            .value
+            ?.where((n) => n.isUnread)
+            .length ??
+        0;
+
+    Widget profileIcon(bool selected) {
+      final icon = Icon(selected ? Icons.person : Icons.person_outlined);
+      if (unreadCount == 0) return icon;
+      return Badge(
+        label: Text(unreadCount > 9 ? '9+' : '$unreadCount'),
+        child: icon,
+      );
+    }
+
     return Scaffold(
       body: child,
       bottomNavigationBar: NavigationBar(
@@ -32,25 +50,25 @@ class ShellScreen extends ConsumerWidget {
               context.go('/profile');
           }
         },
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.today_outlined),
             selectedIcon: Icon(Icons.today),
             label: 'Aujourd\'hui',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.emoji_events_outlined),
             selectedIcon: Icon(Icons.emoji_events),
             label: 'Badges',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.swap_horiz_outlined),
             selectedIcon: Icon(Icons.swap_horiz),
             label: 'Échanges',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outlined),
-            selectedIcon: Icon(Icons.person),
+            icon: profileIcon(false),
+            selectedIcon: profileIcon(true),
             label: 'Profil',
           ),
         ],

@@ -5,11 +5,40 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprints 1-3 terminés — backlog P1→P4 complet
+- **Statut**: Sprint 4 en cours — features fonctionnelles
 
 ---
 
-## 📋 Backlog priorisé
+## 📋 Backlog Sprint 4 — Features fonctionnelles
+
+### 🔴 Priorité 1 — Notifications in-app
+
+- [ ] **Modèle `Notification` Prisma** — `{ id, memberId, familyId, type, message, readAt?, createdAt }` — migration
+- [ ] **Création auto notifications** — enfant complète tâche → notif PARENT ; APPROVED/REJECTED claim → notif enfant CHILD
+- [ ] **Routes API** — `GET /notifications` (non-lues en premier) + `PATCH /notifications/:id/read` + `PATCH /notifications/read-all`
+- [ ] **Web : cloche header** — badge nombre non-lus, dropdown liste, marquer lu au clic
+- [ ] **Flutter : badge NavigationBar** — indicateur non-lus sur onglet profil
+
+### 🟠 Priorité 2 — Historique gamification (MongoDB)
+
+- [ ] **Log MongoDB events** — log `{ type, memberId, familyId, data, ts }` à chaque gain points ou badge décerné
+- [ ] **Route `GET /logs`** — `?memberId=&limit=50` — 50 derniers events du membre ou de la famille
+- [ ] **Web Dashboard : courbe points** — graphique évolution points 30 derniers jours par enfant (SVG ou Recharts)
+
+### 🟡 Priorité 3 — Gestion profil famille (parent)
+
+- [ ] **PATCH avatar + couleur enfant** — UI web dans FamilyPage (champs déjà en DB, modale manquante)
+- [ ] **PATCH PIN enfant** — route `PATCH /family/members/:id/pin` (PARENT only) + UI web
+- [ ] **PATCH nom famille** — route `PATCH /family` + champ dans settings page (nouvelle page web)
+
+### 🟢 Priorité 4 — Rapport hebdomadaire
+
+- [ ] **Route `GET /family/report`** — `?startDate=&endDate=` → agrégat : tâches complétées/skippées, points gagnés, badges obtenus, récompenses validées par enfant
+- [ ] **Web : page rapport** — sélecteur de semaine + tableau récapitulatif par enfant
+
+---
+
+## 📋 Backlog Sprint 3 (complété)
 
 ### 🔴 Priorité 1 — Mobile Flutter (Sprint 3 core)
 

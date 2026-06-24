@@ -21,5 +21,10 @@ export const updateMemberSchema = z.object({
   birthDate: z.iso.date().optional(),
 });
 
+export const updatePinSchema = z.object({
+  pin: z.string().regex(/^\d{4}$/, { message: "PIN doit être 4 chiffres" }),
+});
+
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
+export type UpdatePinInput = z.infer<typeof updatePinSchema>;

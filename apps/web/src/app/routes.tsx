@@ -7,6 +7,7 @@ import { FamilyPage } from "@/features/family/FamilyPage";
 import { TasksPage } from "@/features/tasks/TasksPage";
 import { PlanningPage } from "@/features/planning/PlanningPage";
 import { RewardsPage } from "@/features/rewards/RewardsPage";
+import { SettingsPage } from "@/features/settings/SettingsPage";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
@@ -33,6 +34,7 @@ export function AppRoutes() {
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/planning" element={<PlanningPage />} />
           <Route path="/rewards" element={<RewardsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

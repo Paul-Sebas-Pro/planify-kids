@@ -89,6 +89,12 @@ export const authApi = {
 export const familyApi = {
   stats: () =>
     request<{ success: boolean; data: FamilyStats }>("GET", "/family/stats"),
+  update: (name: string) =>
+    request<{ success: boolean; data: { id: string; name: string } }>(
+      "PATCH",
+      "/family",
+      { name },
+    ),
 };
 
 // ─── Members ─────────────────────────────────────────────────────────────────
@@ -113,6 +119,8 @@ export const membersApi = {
     ),
   delete: (id: string) =>
     request<{ success: boolean }>("DELETE", `/family/members/${id}`),
+  updatePin: (id: string, pin: string) =>
+    request<{ success: boolean }>("PATCH", `/family/members/${id}/pin`, { pin }),
 };
 
 // ─── Tasks ───────────────────────────────────────────────────────────────────

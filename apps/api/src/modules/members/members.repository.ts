@@ -1,3 +1,4 @@
+import * as argon2 from "argon2";
 import { prisma } from "../../config/database";
 import type { CreateMemberInput, UpdateMemberInput } from "./members.schema";
 
@@ -43,4 +44,9 @@ export function updateMember(id: string, input: UpdateMemberInput) {
 
 export function deleteMember(id: string) {
   return prisma.familyMember.delete({ where: { id } });
+}
+
+export async function updateMemberPin(id: string, pin: string) {
+  const hash = await argon2.hash(pin);
+  return prisma.familyMember.update({ where: { id }, data: { pin: hash } });
 }

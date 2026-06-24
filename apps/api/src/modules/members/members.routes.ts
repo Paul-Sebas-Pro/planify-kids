@@ -4,11 +4,16 @@ import {
   authMiddleware,
   requireRole,
 } from "../../core/middleware/auth.middleware";
-import { createMemberSchema, updateMemberSchema } from "./members.schema";
+import {
+  createMemberSchema,
+  updateMemberSchema,
+  updatePinSchema,
+} from "./members.schema";
 import {
   listMembersService,
   createMemberService,
   updateMemberService,
+  updatePinService,
   deleteMemberService,
 } from "./members.service";
 
@@ -48,6 +53,20 @@ membersRoutes.patch(
     const input = c.req.valid("json");
     const member = await updateMemberService(id, familyId, input);
     return c.json({ success: true, data: member });
+  },
+);
+
+// PATCH /family/members/:id/pin  (parent uniquement)
+membersRoutes.patch(
+  "/:id/pin",
+  requireRole("PARENT"),
+  zValidator("json", updatePinSchema),
+  async (c) => {
+    const { familyId } = c.get("user");
+    const id = c.req.param("id");
+    const { pin } = c.req.valid("json");
+    await updatePinService(id, familyId, pin);
+    return c.json({ success: true });
   },
 );
 

@@ -9,6 +9,7 @@ interface MemberFormValues {
   name: string;
   role: Role;
   color: string;
+  avatar: string;
   birthDate: string;
 }
 
@@ -21,11 +22,14 @@ const COLORS = [
   "#00BCD4",
 ];
 
+const AVATARS = ["🦊", "🐼", "🦁", "🐸", "🐧", "🦄", "🐻", "🐯"];
+
 export function FamilyPage() {
   const qc = useQueryClient();
   const { member: currentMember } = useAuthStore();
   const [editTarget, setEditTarget] = useState<FamilyMember | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [pinTarget, setPinTarget] = useState<FamilyMember | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -69,13 +73,14 @@ export function FamilyPage() {
 
   const { register, handleSubmit, reset, setValue, watch } =
     useForm<MemberFormValues>({
-      defaultValues: { role: "CHILD", color: COLORS[0] },
+      defaultValues: { role: "CHILD", color: COLORS[0], avatar: "" },
     });
 
   const selectedColor = watch("color");
+  const selectedAvatar = watch("avatar");
 
   function openCreate() {
-    reset({ role: "CHILD", color: COLORS[0] ?? "#FF9800" });
+    reset({ role: "CHILD", color: COLORS[0] ?? "#FF9800", avatar: "" });
     setEditTarget(null);
     setApiError(null);
     setShowForm(true);
@@ -86,6 +91,7 @@ export function FamilyPage() {
       name: m.name,
       role: m.role,
       color: m.color ?? COLORS[0] ?? "#FF9800",
+      avatar: m.avatar ?? "",
       birthDate: m.birthDate ?? "",
     });
     setEditTarget(m);
@@ -105,6 +111,7 @@ export function FamilyPage() {
       name: values.name,
       role: values.role,
       color: values.color || undefined,
+      avatar: values.avatar || undefined,
       birthDate: values.birthDate || undefined,
     };
     if (editTarget) {
@@ -147,7 +154,11 @@ export function FamilyPage() {
                 className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
                 style={{ backgroundColor: m.color ?? "#9e9e9e" }}
               >
-                {m.name[0]?.toUpperCase()}
+                {m.avatar ? (
+                  <span className="text-lg">{m.avatar}</span>
+                ) : (
+                  m.name[0]?.toUpperCase()
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{m.name}</p>
@@ -156,17 +167,25 @@ export function FamilyPage() {
                   {m.points} pts
                 </p>
               </div>
-              <div className="flex gap-1 shrink-0">
+              <div className="flex flex-col gap-1 shrink-0 items-end">
                 <button
                   onClick={() => openEdit(m)}
                   className="text-xs text-secondary hover:underline"
                 >
                   Modifier
                 </button>
+                {m.role === "CHILD" && (
+                  <button
+                    onClick={() => setPinTarget(m)}
+                    className="text-xs text-gray-400 hover:underline"
+                  >
+                    PIN
+                  </button>
+                )}
                 {m.id !== currentMember?.id && (
                   <button
                     onClick={() => deleteMutation.mutate(m.id)}
-                    className="text-xs text-danger hover:underline ml-2"
+                    className="text-xs text-danger hover:underline"
                   >
                     Supprimer
                   </button>
@@ -207,6 +226,35 @@ export function FamilyPage() {
                   <option value="CHILD">Enfant</option>
                   <option value="PARENT">Parent</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Avatar
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  {AVATARS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() =>
+                        setValue(
+                          "avatar",
+                          selectedAvatar === emoji ? "" : emoji,
+                        )
+                      }
+                      className="w-9 h-9 rounded-xl text-xl flex items-center justify-center border-2 transition-all"
+                      style={{
+                        borderColor:
+                          selectedAvatar === emoji ? "#6C63FF" : "transparent",
+                        backgroundColor:
+                          selectedAvatar === emoji ? "#ede9fe" : "#f8f8f8",
+                      }}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -263,6 +311,90 @@ export function FamilyPage() {
           </div>
         </div>
       )}
+
+      {pinTarget && (
+        <PinModal
+          member={pinTarget}
+          onClose={() => setPinTarget(null)}
+          onSuccess={() => {
+            setPinTarget(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function PinModal({
+  member,
+  onClose,
+  onSuccess,
+}: {
+  member: FamilyMember;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: (p: string) => membersApi.updatePin(member.id, p),
+    onSuccess,
+    onError: (err: Error) => setError(err.message),
+  });
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!/^\d{4}$/.test(pin)) {
+      setError("Le PIN doit être exactement 4 chiffres");
+      return;
+    }
+    mutation.mutate(pin);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+      <div className="bg-white rounded-card p-6 w-full max-w-xs shadow-xl">
+        <h3 className="font-title font-bold text-lg mb-1">Modifier le PIN</h3>
+        <p className="text-sm text-gray-400 mb-4">{member.name}</p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Nouveau PIN (4 chiffres)
+            </label>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+              placeholder="••••"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </div>
+
+          {error && <p className="text-danger text-xs">{error}</p>}
+
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 border border-gray-200 text-sm font-semibold py-2 rounded-(--radius-button) hover:bg-gray-50 transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={mutation.isPending}
+              className="flex-1 bg-primary text-white text-sm font-semibold py-2 rounded-(--radius-button) hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {mutation.isPending ? "Enregistrement..." : "Enregistrer"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

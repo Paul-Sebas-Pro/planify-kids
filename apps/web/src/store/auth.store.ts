@@ -18,6 +18,7 @@ interface AuthState {
     family: Family;
     member: FamilyMember;
   }) => void;
+  setFamily: (family: Pick<Family, "id" | "name">) => void;
   logout: () => void;
   isAuthenticated: () => boolean;
 }
@@ -31,6 +32,8 @@ export const useAuthStore = create<AuthState>()(
       member: null,
       setAuth: ({ token, user, family, member }) =>
         set({ token, user, family, member }),
+      setFamily: (updated) =>
+        set((s) => ({ family: s.family ? { ...s.family, ...updated } : null })),
       logout: () =>
         set({ token: null, user: null, family: null, member: null }),
       isAuthenticated: () => get().token !== null,

@@ -27,9 +27,9 @@
 
 ### 🟡 Priorité 3 — Gestion profil famille (parent)
 
-- [ ] **PATCH avatar + couleur enfant** — UI web dans FamilyPage (champs déjà en DB, modale manquante)
-- [ ] **PATCH PIN enfant** — route `PATCH /family/members/:id/pin` (PARENT only) + UI web
-- [ ] **PATCH nom famille** — route `PATCH /family` + champ dans settings page (nouvelle page web)
+- [x] **PATCH avatar + couleur enfant** — picker emoji + couleur dans modale FamilyPage web
+- [x] **PATCH PIN enfant** — route `PATCH /family/members/:id/pin` (PARENT only) + modal PIN web
+- [x] **PATCH nom famille** — route `PATCH /family` + page Paramètres web
 
 ### 🟢 Priorité 4 — Rapport hebdomadaire
 
@@ -70,6 +70,39 @@
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 17 - 2026-06-25
+
+**Objectif**: Sprint 4 P3 — Gestion profil famille (avatar, couleur, PIN enfant, nom famille)
+
+**Concepts introduits**:
+
+- **`PATCH /:id/pin` après `PATCH /:id`** : Hono — `/:id/pin` a un segment `/pin` littéral supplémentaire, pas de conflit avec `/:id` même si déclaré après ; l'ordre des routes n'a pas d'impact ici
+- **Mongoose 9 `Model<T>` vs `ReturnType<typeof model<T>>`** : contrainte générique renforcée en Mongoose 9 — `model<T>` attend `T extends Schema` dans le type `ReturnType` ; fix : typer l'export `const X: Model<I> = (models["X"] as Model<I>) ?? model<I>("X", schema)`
+- **Zod v4 `.regex(pattern, string)` déprécié** : le second argument doit être un objet `{ message: "..." }` — `.regex(/\d{4}/, { message: "..." })`
+- **Zustand `setFamily` partiel** : `set((s) => ({ family: s.family ? { ...s.family, ...updated } : null }))` — met à jour uniquement `id` et `name` sans écraser les autres champs du store
+
+**Modifications**:
+
+```diff
+M apps/api/src/modules/members/members.schema.ts      (+ updatePinSchema)
+M apps/api/src/modules/members/members.repository.ts  (+ updateMemberPin — argon2.hash)
+M apps/api/src/modules/members/members.service.ts     (+ updatePinService — vérifie CHILD + familyId)
+M apps/api/src/modules/members/members.routes.ts      (+ PATCH /:id/pin PARENT only)
++ apps/api/src/modules/members/family.settings.routes.ts  (PATCH /family — nom famille, PARENT only)
+M apps/api/src/app.ts                                 (+ mount /family → familySettingsRoutes)
+M apps/api/src/config/gamification-log.model.ts       (fix Model<IGamificationLog> vs ReturnType<...>)
+M apps/web/src/store/auth.store.ts                    (+ setFamily action)
+M apps/web/src/services/api.ts                        (+ familyApi.update, membersApi.updatePin)
+M apps/web/src/features/family/FamilyPage.tsx         (+ avatar picker emoji + bouton PIN → PinModal)
++ apps/web/src/features/settings/SettingsPage.tsx     (form nom famille, feedback "Enregistré ✓")
+M apps/web/src/app/routes.tsx                         (+ /settings)
+M apps/web/src/components/layout/AppLayout.tsx        (+ nav "Paramètres")
+```
+
+**Résultats**: 122/122 tests. typecheck API + Web : 0 erreur.
+
+---
 
 ### Session 16 - 2026-06-25
 
@@ -644,37 +677,43 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 
 ## 📋 Routes API disponibles
 
-| Méthode | Route               | Auth | Rôle   |
-| ------- | ------------------- | ---- | ------ |
-| POST    | /auth/register      | Non  | —      |
-| POST    | /auth/login         | Non  | —      |
-| GET     | /auth/me            | Oui  | any    |
-| GET     | /family/members     | Oui  | any    |
-| POST    | /family/members     | Oui  | PARENT |
-| PATCH   | /family/members/:id | Oui  | PARENT |
-| DELETE  | /family/members/:id | Oui  | PARENT |
-| GET     | /tasks              | Oui  | any    |
-| POST    | /tasks              | Oui  | PARENT |
-| PATCH   | /tasks/:id          | Oui  | PARENT |
-| DELETE  | /tasks/:id          | Oui  | PARENT |
-| POST    | /planning/generate  | Oui  | PARENT |
-| GET     | /planning           | Oui  | any    |
-| GET     | /planning/:id       | Oui  | any    |
-| PATCH   | /planning/items/:id | Oui  | any    |
-| DELETE  | /planning/:id       | Oui  | PARENT |
-| GET     | /family/stats       | Oui  | any    |
-| GET     | /rewards            | Oui  | any    |
-| POST    | /rewards            | Oui  | PARENT |
-| PATCH   | /rewards/:id        | Oui  | PARENT |
-| DELETE  | /rewards/:id        | Oui  | PARENT |
-| GET     | /rewards/claims     | Oui  | PARENT |
-| POST    | /rewards/:id/claim  | Oui  | any    |
-| PATCH   | /rewards/claims/:id | Oui  | PARENT |
-| GET     | /badges             | Oui  | any    |
-| GET     | /badges/member/:id  | Oui  | any    |
-| GET     | /exchanges          | Oui  | any    |
-| POST    | /exchanges          | Oui  | any    |
-| PATCH   | /exchanges/:id      | Oui  | any    |
+| Méthode | Route                   | Auth | Rôle   |
+| ------- | ----------------------- | ---- | ------ |
+| POST    | /auth/register          | Non  | —      |
+| POST    | /auth/login             | Non  | —      |
+| GET     | /auth/me                | Oui  | any    |
+| GET     | /family/members         | Oui  | any    |
+| POST    | /family/members         | Oui  | PARENT |
+| PATCH   | /family/members/:id     | Oui  | PARENT |
+| DELETE  | /family/members/:id     | Oui  | PARENT |
+| GET     | /tasks                  | Oui  | any    |
+| POST    | /tasks                  | Oui  | PARENT |
+| PATCH   | /tasks/:id              | Oui  | PARENT |
+| DELETE  | /tasks/:id              | Oui  | PARENT |
+| POST    | /planning/generate      | Oui  | PARENT |
+| GET     | /planning               | Oui  | any    |
+| GET     | /planning/:id           | Oui  | any    |
+| PATCH   | /planning/items/:id     | Oui  | any    |
+| DELETE  | /planning/:id           | Oui  | PARENT |
+| GET     | /family/stats           | Oui  | any    |
+| GET     | /rewards                | Oui  | any    |
+| POST    | /rewards                | Oui  | PARENT |
+| PATCH   | /rewards/:id            | Oui  | PARENT |
+| DELETE  | /rewards/:id            | Oui  | PARENT |
+| GET     | /rewards/claims         | Oui  | PARENT |
+| POST    | /rewards/:id/claim      | Oui  | any    |
+| PATCH   | /rewards/claims/:id     | Oui  | PARENT |
+| GET     | /badges                 | Oui  | any    |
+| GET     | /badges/member/:id      | Oui  | any    |
+| GET     | /exchanges              | Oui  | any    |
+| POST    | /exchanges              | Oui  | any    |
+| PATCH   | /exchanges/:id          | Oui  | any    |
+| GET     | /notifications          | Oui  | any    |
+| PATCH   | /notifications/read-all | Oui  | any    |
+| PATCH   | /notifications/:id/read | Oui  | any    |
+| GET     | /logs                   | Oui  | any    |
+| PATCH   | /family                 | Oui  | PARENT |
+| PATCH   | /family/members/:id/pin | Oui  | PARENT |
 
 ---
 

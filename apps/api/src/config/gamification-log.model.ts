@@ -1,4 +1,4 @@
-import { Schema, model, models } from "mongoose";
+import { Schema, model, models, type Model } from "mongoose";
 
 export type GamificationLogType = "POINTS_EARNED" | "BADGE_EARNED";
 
@@ -21,6 +21,6 @@ const schema = new Schema<IGamificationLog>(
   { collection: "gamification_logs" },
 );
 
-export const GamificationLog =
-  (models["GamificationLog"] as ReturnType<typeof model<IGamificationLog>>) ??
+export const GamificationLog: Model<IGamificationLog> =
+  (models["GamificationLog"] as Model<IGamificationLog>) ??
   model<IGamificationLog>("GamificationLog", schema);

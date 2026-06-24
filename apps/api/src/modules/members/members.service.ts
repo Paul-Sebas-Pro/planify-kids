@@ -5,6 +5,7 @@ import {
   createMember,
   updateMember,
   deleteMember,
+  updateMemberPin,
 } from "./members.repository";
 import type { CreateMemberInput, UpdateMemberInput } from "./members.schema";
 
@@ -27,6 +28,18 @@ export async function updateMemberService(
   const member = await getMemberById(id, familyId);
   if (!member) throw new NotFoundError("Membre");
   return updateMember(id, input);
+}
+
+export async function updatePinService(
+  id: string,
+  familyId: string,
+  pin: string,
+) {
+  const member = await getMemberById(id, familyId);
+  if (!member) throw new NotFoundError("Membre");
+  if (member.role !== "CHILD")
+    throw new ForbiddenError("Le PIN ne s'applique qu'aux enfants");
+  return updateMemberPin(id, pin);
 }
 
 export async function deleteMemberService(

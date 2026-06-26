@@ -6,3 +6,4 @@ export * from "./exchanges.js";
 export * from "./auth.js";
 export * from "./notifications.js";
 export * from "./logs.js";
+export * from "./report.js";

@@ -33,8 +33,8 @@
 
 ### 🟢 Priorité 4 — Rapport hebdomadaire
 
-- [ ] **Route `GET /family/report`** — `?startDate=&endDate=` → agrégat : tâches complétées/skippées, points gagnés, badges obtenus, récompenses validées par enfant
-- [ ] **Web : page rapport** — sélecteur de semaine + tableau récapitulatif par enfant
+- [x] **Route `GET /family/report`** — `?startDate=&endDate=` → agrégat : tâches complétées/skippées, points gagnés, badges obtenus, récompenses validées par enfant
+- [x] **Web : page rapport** — sélecteur de semaine + tableau récapitulatif par enfant
 
 ---
 
@@ -70,6 +70,33 @@
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 18 - 2026-06-26
+
+**Objectif**: Sprint 4 P4 — Rapport hebdomadaire
+
+**Concepts introduits**:
+
+- **Agrégat multi-table sans `groupBy` Prisma** : 4 `findMany` parallèles (FamilyMember, ScheduleItem, MemberBadge, RewardClaim) scopés `familyId`, agrégation JS — plus lisible et type-safe que `groupBy` Prisma avec relations
+- **`z.iso.date()` Zod v4 pour query params** : validation `startDate`/`endDate` via `querySchema.safeParse(c.req.query(...))` — pattern cohérent avec la validation body existante
+- **`date lte endDate + T23:59:59.999Z`** : filtre inclusif fin de journée — évite de rater les items créés en cours de journée
+
+**Modifications**:
+
+```diff
++ packages/types/src/report.ts                              (ChildReport + WeeklyReport)
+M packages/types/src/index.ts                               (+ export report.js)
++ apps/api/src/modules/members/family.report.routes.ts      (GET /family/report — 4 queries parallèles + agrégat)
+M apps/api/src/app.ts                                       (+ /family/report avant /family)
++ apps/web/src/services/report.api.ts                       (reportApi.get)
++ apps/web/src/features/report/ReportPage.tsx               (sélecteur semaine + tableau récapitulatif)
+M apps/web/src/app/routes.tsx                               (+ /report)
+M apps/web/src/components/layout/AppLayout.tsx              (+ nav "Rapport")
+```
+
+**Résultats**: 122/122 tests. typecheck API + Web : 0 erreur. Sprint 4 complet.
+
+---
 
 ### Session 17 - 2026-06-25
 

@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, Navigate, useNavigate } from "react-router";
 import { authApi } from "@/services/api";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -11,8 +11,11 @@ interface FormValues {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const setAuth = useAuthStore((s) => s.setAuth);
   const [error, setError] = useState<string | null>(null);
+
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
   const {
     register,
@@ -91,6 +94,13 @@ export function LoginPage() {
             {isSubmitting ? "Connexion..." : "Se connecter"}
           </button>
         </form>
+
+        <p className="text-center text-sm text-gray-500 mt-4">
+          Pas encore de compte ?{" "}
+          <Link to="/register" className="text-primary font-semibold hover:underline">
+            Créer un compte
+          </Link>
+        </p>
       </div>
     </div>
   );

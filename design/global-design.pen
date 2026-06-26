@@ -1,5 +1,5 @@
 {
-  "version": "2.10",
+  "version": "2.14",
   "children": [
     {
       "type": "frame",
@@ -317,11 +317,9 @@
                       "fill": "#F5F7FB",
                       "width": 140,
                       "height": 80,
-                      "stroke": {
-                        "align": "inside",
-                        "thickness": 1,
-                        "fill": "#E0E0E0"
-                      }
+                      "stroke": "#E0E0E0",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner"
                     },
                     {
                       "type": "text",
@@ -358,11 +356,9 @@
                       "fill": "#FFFFFF",
                       "width": 140,
                       "height": 80,
-                      "stroke": {
-                        "align": "inside",
-                        "thickness": 1,
-                        "fill": "#E0E0E0"
-                      }
+                      "stroke": "#E0E0E0",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner"
                     },
                     {
                       "type": "text",
@@ -649,7 +645,8 @@
                       "fill": "#444444",
                       "content": "Ajouter un enfant à la famille",
                       "fontFamily": "Nunito",
-                      "fontSize": 16
+                      "fontSize": 16,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -1016,11 +1013,9 @@
                       "fill": "#FFFFFF",
                       "width": 22,
                       "height": 22,
-                      "stroke": {
-                        "align": "inside",
-                        "thickness": 2,
-                        "fill": "#CCCCCC"
-                      }
+                      "stroke": "#CCCCCC",
+                      "strokeWidth": 2,
+                      "strokeAlignment": "inner"
                     },
                     {
                       "type": "text",
@@ -1201,5 +1196,6 @@
         }
       ]
     }
-  ]
+  ],
+  "fileToken": "93b3d5a3-ba1d-47aa-9292-90f50e11f5f8"
 }

@@ -316,7 +316,7 @@ export function PlanningPage() {
                                   status: "ACCEPTED",
                                 })
                               }
-                              className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg"
+                              className="text-xs bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg transition-colors"
                             >
                               Accepter
                             </button>
@@ -327,7 +327,7 @@ export function PlanningPage() {
                                   status: "REFUSED",
                                 })
                               }
-                              className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-lg"
+                              className="text-xs bg-danger/10 hover:bg-danger/20 text-danger px-3 py-1.5 rounded-lg transition-colors"
                             >
                               Refuser
                             </button>
@@ -417,14 +417,14 @@ function formatDate(iso: string): string {
 
 const STATUS_BG: Record<string, string> = {
   PENDING: "bg-white border border-gray-200",
-  COMPLETED: "bg-green-50 border border-green-200",
-  SKIPPED: "bg-red-50 border border-red-100",
+  COMPLETED: "bg-primary/10 border border-primary/20",
+  SKIPPED: "bg-danger/10 border border-danger/20",
 };
 
 const STATUS_CHIP: Record<string, string> = {
   PENDING: "text-gray-500 bg-gray-100",
-  COMPLETED: "text-green-700 bg-green-100",
-  SKIPPED: "text-red-600 bg-red-100",
+  COMPLETED: "text-primary bg-primary/10",
+  SKIPPED: "text-danger bg-danger/10",
 };
 
 const STATUS_NEXT: Record<string, "PENDING" | "COMPLETED" | "SKIPPED"> = {
@@ -565,7 +565,7 @@ function WeekCalendar({
                         onClick={() =>
                           onOpenExchange(item.id, item.assignedToMemberId)
                         }
-                        className="mt-1 text-[10px] text-indigo-500 hover:text-indigo-700"
+                        className="mt-1 text-[10px] text-secondary hover:text-secondary/80"
                       >
                         Échanger →
                       </button>
@@ -574,14 +574,14 @@ function WeekCalendar({
 
                 {/* Formulaire inline échange */}
                 {exchangeItemId === item.id && (
-                  <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-2 space-y-1.5">
-                    <p className="text-[10px] text-indigo-700 font-semibold">
+                  <div className="bg-secondary/5 border border-secondary/20 rounded-xl p-2 space-y-1.5">
+                    <p className="text-[10px] text-secondary font-semibold">
                       Échanger avec
                     </p>
                     <select
                       value={exchangeToId}
                       onChange={(e) => onSetExchangeTo(e.target.value)}
-                      className="w-full text-xs border border-indigo-200 rounded-lg px-2 py-1 bg-white focus:outline-none"
+                      className="w-full text-xs border border-secondary/30 rounded-lg px-2 py-1 bg-white focus:outline-none"
                     >
                       <option value="">Choisir…</option>
                       {childMembers
@@ -596,7 +596,7 @@ function WeekCalendar({
                       <button
                         onClick={onSubmitExchange}
                         disabled={!exchangeToId || isProposing}
-                        className="flex-1 text-[10px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-1 rounded-lg"
+                        className="flex-1 text-[10px] bg-secondary hover:bg-secondary/90 disabled:opacity-50 text-white py-1 rounded-lg transition-colors"
                       >
                         Proposer
                       </button>

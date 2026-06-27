@@ -17,9 +17,9 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: "text-yellow-600 bg-yellow-50",
-  APPROVED: "text-green-600 bg-green-50",
-  REJECTED: "text-red-600 bg-red-50",
+  PENDING: "text-accent bg-accent/10",
+  APPROVED: "text-primary bg-primary/10",
+  REJECTED: "text-danger bg-danger/10",
 };
 
 export function RewardsPage() {
@@ -58,7 +58,10 @@ export function RewardsPage() {
 
   const updateMutation = useMutation({
     mutationFn: (data: RewardFormValues) =>
-      rewardsApi.update(editing!.id, { ...data, pointsCost: Number(data.pointsCost) }),
+      rewardsApi.update(editing!.id, {
+        ...data,
+        pointsCost: Number(data.pointsCost),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["rewards"] });
       setEditing(null);
@@ -75,8 +78,13 @@ export function RewardsPage() {
   });
 
   const reviewMutation = useMutation({
-    mutationFn: ({ claimId, status }: { claimId: string; status: "APPROVED" | "REJECTED" }) =>
-      rewardsApi.reviewClaim(claimId, { status }),
+    mutationFn: ({
+      claimId,
+      status,
+    }: {
+      claimId: string;
+      status: "APPROVED" | "REJECTED";
+    }) => rewardsApi.reviewClaim(claimId, { status }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reward-claims"] });
     },
@@ -85,6 +93,7 @@ export function RewardsPage() {
   function openCreate() {
     setEditing(null);
     reset({ name: "", icon: "", pointsCost: 0 });
+    setApiError(null);
     setShowForm(true);
   }
 
@@ -93,6 +102,7 @@ export function RewardsPage() {
     setValue("name", reward.name);
     setValue("icon", reward.icon);
     setValue("pointsCost", reward.pointsCost);
+    setApiError(null);
     setShowForm(true);
   }
 
@@ -106,55 +116,65 @@ export function RewardsPage() {
   }
 
   if (isLoading) {
-    return <p className="p-6 text-gray-500">Chargement...</p>;
+    return <p className="text-sm text-gray-400">Chargement...</p>;
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Récompenses</h1>
+        <h2 className="text-2xl font-title font-bold text-gray-800">
+          Récompenses
+        </h2>
         <button
           onClick={openCreate}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+          className="bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-4 py-2 rounded-button transition-colors"
         >
           Nouvelle récompense
         </button>
       </div>
 
       {apiError && (
-        <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg">{apiError}</p>
+        <p className="text-sm text-danger bg-danger/10 px-4 py-2.5 rounded-xl">
+          {apiError}
+        </p>
       )}
 
       {showForm && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4">
+        <div className="bg-white rounded-card shadow-sm p-6">
+          <h3 className="font-title text-lg font-bold text-gray-900 mb-4">
             {editing ? "Modifier la récompense" : "Nouvelle récompense"}
-          </h2>
+          </h3>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Nom
+              </label>
               <input
                 {...register("name", { required: true })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 placeholder="ex. Sortie cinéma"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Icone</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Icône
+                </label>
                 <input
                   {...register("icon", { required: true })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   placeholder="ex. 🎬"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cout (points)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Coût (points)
+                </label>
                 <input
                   type="number"
                   min={1}
                   {...register("pointsCost", { required: true, min: 1 })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
             </div>
@@ -162,14 +182,18 @@ export function RewardsPage() {
               <button
                 type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
-                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white px-4 py-2 rounded-button text-sm font-semibold transition-colors"
               >
                 {editing ? "Enregistrer" : "Créer"}
               </button>
               <button
                 type="button"
-                onClick={() => { setShowForm(false); setEditing(null); reset(); }}
-                className="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg text-sm"
+                onClick={() => {
+                  setShowForm(false);
+                  setEditing(null);
+                  reset();
+                }}
+                className="border border-gray-200 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-button text-sm transition-colors"
               >
                 Annuler
               </button>
@@ -180,25 +204,30 @@ export function RewardsPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {rewards.map((reward) => (
-          <div key={reward.id} className="bg-white border border-gray-200 rounded-xl p-5">
+          <div
+            key={reward.id}
+            className="bg-white rounded-card shadow-sm p-5"
+          >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">{reward.icon}</span>
                 <div>
                   <p className="font-semibold text-gray-900">{reward.name}</p>
-                  <p className="text-sm text-indigo-600 font-medium">{reward.pointsCost} pts</p>
+                  <p className="font-score text-sm font-semibold text-accent">
+                    {reward.pointsCost} pts
+                  </p>
                 </div>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => openEdit(reward)}
-                  className="text-gray-400 hover:text-gray-600 text-sm"
+                  className="text-xs text-secondary hover:underline"
                 >
                   Modifier
                 </button>
                 <button
                   onClick={() => deleteMutation.mutate(reward.id)}
-                  className="text-red-400 hover:text-red-600 text-sm"
+                  className="text-xs text-danger hover:underline"
                 >
                   Supprimer
                 </button>
@@ -207,7 +236,7 @@ export function RewardsPage() {
           </div>
         ))}
         {rewards.length === 0 && (
-          <p className="col-span-full text-center text-gray-400 py-8">
+          <p className="col-span-full text-center text-sm text-gray-400 py-8">
             Aucune récompense. Commencez par en créer une.
           </p>
         )}
@@ -215,27 +244,32 @@ export function RewardsPage() {
 
       {claims.length > 0 && (
         <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            Demandes{" "}
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            Demandes
             {pendingClaims.length > 0 && (
-              <span className="ml-2 bg-yellow-100 text-yellow-700 text-sm font-medium px-2 py-0.5 rounded-full">
+              <span className="ml-2 bg-accent/10 text-accent text-xs font-medium px-2 py-0.5 rounded-full">
                 {pendingClaims.length} en attente
               </span>
             )}
-          </h2>
-          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+          </h3>
+          <div className="bg-white rounded-card shadow-sm divide-y divide-gray-100">
             {claims.map((claim) => (
-              <div key={claim.id} className="flex items-center justify-between px-5 py-4">
+              <div
+                key={claim.id}
+                className="flex items-center justify-between px-5 py-4"
+              >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{claim.reward.icon}</span>
                   <div>
-                    <p className="font-medium text-gray-900">{claim.reward.name}</p>
-                    <p className="text-sm text-gray-500">
-                      {claim.member.name} · {claim.reward.pointsCost} pts
+                    <p className="font-semibold text-sm text-gray-900">
+                      {claim.reward.name}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {claim.member.name} &middot; {claim.reward.pointsCost} pts
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0">
                   <span
                     className={`text-xs font-medium px-2 py-1 rounded-full ${STATUS_COLORS[claim.status] ?? ""}`}
                   >
@@ -244,14 +278,24 @@ export function RewardsPage() {
                   {claim.status === "PENDING" && (
                     <div className="flex gap-2">
                       <button
-                        onClick={() => reviewMutation.mutate({ claimId: claim.id, status: "APPROVED" })}
-                        className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-lg"
+                        onClick={() =>
+                          reviewMutation.mutate({
+                            claimId: claim.id,
+                            status: "APPROVED",
+                          })
+                        }
+                        className="bg-primary hover:bg-primary/90 text-white text-xs px-3 py-1.5 rounded-lg transition-colors"
                       >
                         Approuver
                       </button>
                       <button
-                        onClick={() => reviewMutation.mutate({ claimId: claim.id, status: "REJECTED" })}
-                        className="bg-red-100 hover:bg-red-200 text-red-700 text-xs px-3 py-1.5 rounded-lg"
+                        onClick={() =>
+                          reviewMutation.mutate({
+                            claimId: claim.id,
+                            status: "REJECTED",
+                          })
+                        }
+                        className="bg-danger/10 hover:bg-danger/20 text-danger text-xs px-3 py-1.5 rounded-lg transition-colors"
                       >
                         Refuser
                       </button>

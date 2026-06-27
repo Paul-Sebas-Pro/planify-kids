@@ -59,7 +59,7 @@ export function ReportPage() {
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="flex flex-wrap items-end gap-3 mb-8 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm"
+        className="flex flex-wrap items-end gap-3 mb-8 p-4 bg-white rounded-card border border-gray-100 shadow-sm"
       >
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-500">Début</label>
@@ -101,7 +101,7 @@ export function ReportPage() {
           <p className="text-sm text-gray-400 mb-4">
             {report.startDate} → {report.endDate}
           </p>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-card border border-gray-100 shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-left">

@@ -13,6 +13,7 @@ import {
 } from "./planning.repository";
 import { awardPointsForTask } from "../../services/gamification";
 import { notifyTaskCompleted } from "../notifications/notifications.service";
+import { sseEmit } from "../../services/sse.service";
 import type {
   GeneratePlanningInput,
   UpdateScheduleItemInput,
@@ -74,6 +75,11 @@ export async function updateScheduleItemService(
         before.member.name,
         before.task.name,
       );
+      sseEmit(before.schedule.familyId, "task_completed", {
+        memberName: before.member.name,
+        taskName: before.task.name,
+        points: before.task.points,
+      });
     }
     return updated;
   }

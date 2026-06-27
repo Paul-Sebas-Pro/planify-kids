@@ -14,6 +14,7 @@ import {
 } from "./rewards.repository";
 import { getMemberById } from "../members/members.repository";
 import { notifyClaimReviewed } from "../notifications/notifications.service";
+import { sseEmit } from "../../services/sse.service";
 import type {
   CreateRewardInput,
   UpdateRewardInput,
@@ -71,7 +72,13 @@ export async function claimRewardService(
     throw new AppError("Points insuffisants", 400);
   }
 
-  return createClaim(input.memberId, rewardId);
+  const claim = await createClaim(input.memberId, rewardId);
+  sseEmit(familyId, "claim_submitted", {
+    memberName: member.name,
+    rewardName: reward.name,
+    pointsCost: reward.pointsCost,
+  });
+  return claim;
 }
 
 export async function reviewClaimService(

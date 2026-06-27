@@ -18,6 +18,7 @@ import { rewardsRoutes } from "./modules/rewards/rewards.routes.js";
 import { badgesRoutes } from "./modules/badges/badges.routes.js";
 import { notificationsRoutes } from "./modules/notifications/notifications.routes.js";
 import { logsRoutes } from "./modules/logs/logs.routes.js";
+import { eventsRoutes } from "./modules/events/events.routes.js";
 
 const app = new Hono();
 
@@ -61,6 +62,7 @@ app.route("/rewards", rewardsRoutes);
 app.route("/badges", badgesRoutes);
 app.route("/notifications", notificationsRoutes);
 app.route("/logs", logsRoutes);
+app.route("/events", eventsRoutes);
 
 // ─── Gestion d'erreurs ────────────────────────────────────────
 app.onError((err: unknown, c: Context) => errorMiddleware(err, c));

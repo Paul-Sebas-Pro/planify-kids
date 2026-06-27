@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 import { useAuthStore } from "@/store/auth.store";
 import { NotificationBell } from "./NotificationBell";
+import { useServerEvents } from "@/hooks/useServerEvents";
 
 const navItems = [
   { to: "/dashboard", label: "Tableau de bord", icon: "📊" },
@@ -17,6 +18,7 @@ export function AppLayout() {
   const { family, member, logout } = useAuthStore();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  useServerEvents();
 
   function handleLogout() {
     logout();

@@ -5,7 +5,7 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5 en cours — D1 Flutter enfant ✅
+- **Statut**: Sprint 5 en cours — D1 ✅ D2 ✅ D3 SSE ✅
 
 ---
 
@@ -27,10 +27,10 @@
 
 ### Direction 2 — UX web parent — polish & responsive
 
-- [ ] **Empty states illustrés** — remplacer "Aucune tâche." / "Chargement..." par états visuels (illustration + CTA)
-- [ ] **Skeletons** — cartes fantômes pendant le chargement TanStack Query
-- [ ] **Responsive mobile** — sidebar collapsible, grille planning scrollable, breakpoints sm/md
-- [ ] **PWA** — `manifest.json` + service worker → installable sur mobile parent
+- [x] **Empty states illustrés** — `EmptyState` component : emoji + titre + CTA ; Tasks, Rewards, Planning, Family
+- [x] **Skeletons** — `SkeletonCard/List/StatCard` animate-pulse ; remplace "Chargement..." dans toutes les pages
+- [x] **Responsive mobile** — sidebar drawer hamburger mobile + backdrop overlay ; padding adaptatif p-4/p-8
+- [x] **PWA** — `vite-plugin-pwa` : manifest standalone, Workbox cache NetworkFirst `/api/*`, icône SVG maskable
 
 **Valeur** : améliore l'expérience quotidienne des parents sur tous supports.
 
@@ -39,7 +39,7 @@
 ### Direction 3 — Features avancées
 
 - [ ] **Notifications push** — FCM (Firebase Cloud Messaging) → tablette enfant reçoit alerte quand tâche assignée
-- [ ] **Real-time** — SSE ou WebSocket → parent voit complétion tâche en direct sans refresh
+- [x] **Real-time SSE** — `GET /events` Hono streamSSE, pub/sub par familyId ; emit task_completed + claim_submitted ; frontend EventSource + invalidate queries + toast natif
 - [ ] **Challenges famille** — objectif collectif (ex. "100 pts cette semaine") avec bonus automatique
 - [ ] **Timeline enfant** — vue historique personnelle de ses accomplissements (badges, points, récompenses)
 
@@ -790,6 +790,8 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 | GET     | /logs                   | Oui  | any    |
 | PATCH   | /family                 | Oui  | PARENT |
 | PATCH   | /family/members/:id/pin | Oui  | PARENT |
+| GET     | /rewards/my-claims      | Oui  | any    |
+| GET     | /events                 | Oui  | any    |
 
 ---
 

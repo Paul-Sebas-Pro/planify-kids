@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../auth/auth_provider.dart';
+import '../notifications/notifications_provider.dart';
 import 'profile_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -11,6 +13,12 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).value;
     final statsAsync = ref.watch(familyStatsProvider);
+    final unreadCount = ref
+            .watch(notificationsProvider)
+            .value
+            ?.where((n) => n.isUnread)
+            .length ??
+        0;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -66,6 +74,28 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Notifications
+          Card(
+            child: ListTile(
+              leading: unreadCount > 0
+                  ? Badge(
+                      label: Text(unreadCount > 9 ? '9+' : '$unreadCount'),
+                      child: const Icon(Icons.notifications_outlined),
+                    )
+                  : const Icon(Icons.notifications_outlined),
+              title: const Text('Notifications'),
+              subtitle: Text(
+                unreadCount > 0
+                    ? '$unreadCount non lue${unreadCount > 1 ? 's' : ''}'
+                    : 'Tout est lu',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/notifications'),
             ),
           ),
 

@@ -7,6 +7,7 @@ import '../../models/badge.dart';
 import '../../models/exchange.dart';
 import '../../models/family_member.dart';
 import '../../models/notification_item.dart';
+import '../../models/reward.dart';
 import '../../models/schedule_item.dart';
 import 'secure_storage.dart';
 
@@ -160,6 +161,26 @@ class ApiClient {
   Future<Map<String, dynamic>> getFamilyStats() async {
     final res = await _dio.get('/family/stats');
     return _unwrap(res);
+  }
+
+  // ── Rewards ───────────────────────────────────────────────────────────────
+
+  Future<List<Reward>> getRewards() async {
+    final res = await _dio.get('/rewards');
+    return _unwrapList(res)
+        .map((e) => Reward.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<RewardClaim>> getMyRewardClaims() async {
+    final res = await _dio.get('/rewards/my-claims');
+    return _unwrapList(res)
+        .map((e) => RewardClaim.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> claimReward(String rewardId, String memberId) async {
+    await _dio.post('/rewards/$rewardId/claim', data: {'memberId': memberId});
   }
 
   // ── Notifications ─────────────────────────────────────────────────────────

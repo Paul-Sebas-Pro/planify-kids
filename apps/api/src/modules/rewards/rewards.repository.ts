@@ -42,6 +42,16 @@ export function deleteReward(id: string) {
   return prisma.reward.delete({ where: { id } });
 }
 
+export function getClaimsByMember(memberId: string) {
+  return prisma.rewardClaim.findMany({
+    where: { memberId },
+    orderBy: { claimedAt: "desc" },
+    include: {
+      reward: { select: { id: true, name: true, icon: true, pointsCost: true } },
+    },
+  });
+}
+
 export function getClaimsByFamily(familyId: string) {
   return prisma.rewardClaim.findMany({
     where: { member: { familyId } },

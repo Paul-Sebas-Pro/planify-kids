@@ -16,6 +16,7 @@ import {
   updateRewardService,
   deleteRewardService,
   listClaimsService,
+  listMyClaimsService,
   claimRewardService,
   reviewClaimService,
 } from "./rewards.service";
@@ -70,6 +71,13 @@ rewardsRoutes.delete("/:id", requireRole("PARENT"), async (c) => {
 rewardsRoutes.get("/claims", requireRole("PARENT"), async (c) => {
   const { familyId } = c.get("user");
   const claims = await listClaimsService(familyId);
+  return c.json({ success: true, data: claims });
+});
+
+// GET /rewards/my-claims  (tout membre — ses propres demandes)
+rewardsRoutes.get("/my-claims", async (c) => {
+  const { memberId } = c.get("user");
+  const claims = await listMyClaimsService(memberId);
   return c.json({ success: true, data: claims });
 });
 

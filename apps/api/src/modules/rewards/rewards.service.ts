@@ -6,6 +6,7 @@ import {
   updateReward,
   deleteReward,
   getClaimsByFamily,
+  getClaimsByMember,
   getClaimById,
   createClaim,
   updateClaim,
@@ -49,6 +50,10 @@ export async function deleteRewardService(id: string, familyId: string) {
 
 export function listClaimsService(familyId: string) {
   return getClaimsByFamily(familyId);
+}
+
+export function listMyClaimsService(memberId: string) {
+  return getClaimsByMember(memberId);
 }
 
 export async function claimRewardService(

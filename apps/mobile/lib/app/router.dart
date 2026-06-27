@@ -6,7 +6,9 @@ import '../features/auth/auth_provider.dart';
 import '../features/auth/login_screen.dart';
 import '../features/badges/badges_screen.dart';
 import '../features/exchanges/exchanges_screen.dart';
+import '../features/notifications/notifications_screen.dart';
 import '../features/profile/profile_screen.dart';
+import '../features/rewards/rewards_screen.dart';
 import '../features/tasks/today_screen.dart';
 import 'shell_screen.dart';
 
@@ -47,12 +49,17 @@ GoRouter router(Ref ref) {
         builder: (_, _, child) => ShellScreen(child: child),
         routes: [
           GoRoute(path: '/', builder: (_, _) => const TodayScreen()),
-          GoRoute(path: '/badges', builder: (_, _) => const BadgesScreen()),
+          GoRoute(path: '/rewards', builder: (_, _) => const RewardsScreen()),
           GoRoute(
               path: '/exchanges',
               builder: (_, _) => const ExchangesScreen()),
+          GoRoute(path: '/badges', builder: (_, _) => const BadgesScreen()),
           GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
         ],
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (_, _) => const NotificationsScreen(),
       ),
     ],
   );

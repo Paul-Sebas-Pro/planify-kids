@@ -5,7 +5,55 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 4 en cours — features fonctionnelles
+- **Statut**: Sprint 4 terminé — Sprint 5 à planifier
+
+---
+
+## 🗺 Directions Sprint 5 — À prioriser
+
+### Direction 1 — Finaliser l'app Flutter enfant ⭐ (recommandée)
+
+**Contexte** : backend complet, design tablette fait (`pages-auth.pen`). App enfant démarre + tâches du jour fonctionnent. Manque :
+
+- [ ] **Screen récompenses** — lister les récompenses disponibles + `POST /rewards/:id/claim`
+- [ ] **Screen notifications** — liste des notifications, marquer lu (provider existe, pas d'écran)
+- [ ] **Vérification sync PowerSync** — tester offline → sync au retour réseau
+- [ ] **UI polish** — aligner sur design Pencil (pages-auth.pen Login tablette + Mes Tâches)
+
+**Valeur** : sans ça, les enfants ne peuvent pas utiliser l'app.
+
+---
+
+### Direction 2 — UX web parent — polish & responsive
+
+- [ ] **Empty states illustrés** — remplacer "Aucune tâche." / "Chargement..." par états visuels (illustration + CTA)
+- [ ] **Skeletons** — cartes fantômes pendant le chargement TanStack Query
+- [ ] **Responsive mobile** — sidebar collapsible, grille planning scrollable, breakpoints sm/md
+- [ ] **PWA** — `manifest.json` + service worker → installable sur mobile parent
+
+**Valeur** : améliore l'expérience quotidienne des parents sur tous supports.
+
+---
+
+### Direction 3 — Features avancées
+
+- [ ] **Notifications push** — FCM (Firebase Cloud Messaging) → tablette enfant reçoit alerte quand tâche assignée
+- [ ] **Real-time** — SSE ou WebSocket → parent voit complétion tâche en direct sans refresh
+- [ ] **Challenges famille** — objectif collectif (ex. "100 pts cette semaine") avec bonus automatique
+- [ ] **Timeline enfant** — vue historique personnelle de ses accomplissements (badges, points, récompenses)
+
+**Valeur** : engagement et rétention long terme.
+
+---
+
+### Direction 4 — Qualité & production-readiness
+
+- [ ] **Tests E2E Playwright** — scénarios critiques : register → planning → complétion → rapport
+- [ ] **Docker production** — multi-stage build, variables env prod, health checks
+- [ ] **Monitoring** — Sentry (erreurs) + structured logging API
+- [ ] **CI/CD deploy** — déploiement automatique sur push main (ex. Fly.io / Railway)
+
+**Valeur** : prépare le déploiement réel pour de vraies familles.
 
 ---
 

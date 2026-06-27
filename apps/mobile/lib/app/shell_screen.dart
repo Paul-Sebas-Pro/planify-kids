@@ -10,9 +10,10 @@ class ShellScreen extends ConsumerWidget {
 
   int _selectedIndex(BuildContext context) {
     final loc = GoRouterState.of(context).uri.path;
-    if (loc.startsWith('/badges')) return 1;
+    if (loc.startsWith('/rewards')) return 1;
     if (loc.startsWith('/exchanges')) return 2;
-    if (loc.startsWith('/profile')) return 3;
+    if (loc.startsWith('/badges')) return 3;
+    if (loc.startsWith('/profile')) return 4;
     return 0;
   }
 
@@ -43,10 +44,12 @@ class ShellScreen extends ConsumerWidget {
             case 0:
               context.go('/');
             case 1:
-              context.go('/badges');
+              context.go('/rewards');
             case 2:
               context.go('/exchanges');
             case 3:
+              context.go('/badges');
+            case 4:
               context.go('/profile');
           }
         },
@@ -57,14 +60,19 @@ class ShellScreen extends ConsumerWidget {
             label: 'Aujourd\'hui',
           ),
           const NavigationDestination(
-            icon: Icon(Icons.emoji_events_outlined),
-            selectedIcon: Icon(Icons.emoji_events),
-            label: 'Badges',
+            icon: Icon(Icons.card_giftcard_outlined),
+            selectedIcon: Icon(Icons.card_giftcard),
+            label: 'Récompenses',
           ),
           const NavigationDestination(
             icon: Icon(Icons.swap_horiz_outlined),
             selectedIcon: Icon(Icons.swap_horiz),
             label: 'Échanges',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.emoji_events_outlined),
+            selectedIcon: Icon(Icons.emoji_events),
+            label: 'Badges',
           ),
           NavigationDestination(
             icon: profileIcon(false),

@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { FamilyMember, Role } from "@planify-kids/types";
 import { membersApi } from "@/services/api";
 import { useAuthStore } from "@/store/auth.store";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { SkeletonList } from "@/components/shared/Skeleton";
 
 interface MemberFormValues {
   name: string;
@@ -142,7 +144,14 @@ export function FamilyPage() {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-gray-400">Chargement...</p>
+        <SkeletonList count={3} />
+      ) : members.length === 0 ? (
+        <EmptyState
+          icon="👨‍👩‍👧"
+          title="Aucun membre"
+          description="Ajoutez les membres de votre famille pour leur assigner des tâches."
+          action={{ label: "Ajouter un membre", onClick: openCreate }}
+        />
       ) : (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {members.map((m) => (

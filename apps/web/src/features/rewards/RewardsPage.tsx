@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { Reward, RewardClaim } from "@planify-kids/types";
 import { rewardsApi } from "@/services/rewards.api";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { SkeletonList } from "@/components/shared/Skeleton";
 
 interface RewardFormValues {
   name: string;
@@ -116,7 +118,7 @@ export function RewardsPage() {
   }
 
   if (isLoading) {
-    return <p className="text-sm text-gray-400">Chargement...</p>;
+    return <SkeletonList count={3} />;
   }
 
   return (
@@ -236,9 +238,14 @@ export function RewardsPage() {
           </div>
         ))}
         {rewards.length === 0 && (
-          <p className="col-span-full text-center text-sm text-gray-400 py-8">
-            Aucune récompense. Commencez par en créer une.
-          </p>
+          <div className="col-span-full">
+            <EmptyState
+              icon="🎁"
+              title="Aucune récompense"
+              description="Créez des récompenses que les enfants pourront réclamer avec leurs points."
+              action={{ label: "Créer une récompense", onClick: openCreate }}
+            />
+          </div>
         )}
       </div>
 

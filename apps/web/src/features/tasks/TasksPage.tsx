@@ -3,6 +3,8 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import type { TaskTemplate, Frequency } from "@planify-kids/types";
 import { tasksApi } from "@/services/api";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { SkeletonList } from "@/components/shared/Skeleton";
 
 interface TaskFormValues {
   name: string;
@@ -161,9 +163,14 @@ export function TasksPage() {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-gray-400">Chargement...</p>
+        <SkeletonList count={4} />
       ) : tasks.length === 0 ? (
-        <p className="text-sm text-gray-400">Aucune tâche pour l'instant.</p>
+        <EmptyState
+          icon="✅"
+          title="Aucune tâche pour l'instant"
+          description="Créez vos premières tâches pour pouvoir générer un planning."
+          action={{ label: "Créer une tâche", onClick: openCreate }}
+        />
       ) : (
         <div className="grid gap-3">
           {tasks.map((t) => (

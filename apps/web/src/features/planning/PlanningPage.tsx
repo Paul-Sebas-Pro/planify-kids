@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { ScheduleDetail, ScheduleItemDetail, TaskExchange } from "@planify-kids/types";
 import { planningApi, exchangesApi } from "@/services/planning.api";
 import { membersApi } from "@/services/api";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { SkeletonList } from "@/components/shared/Skeleton";
 
 interface GenerateFormValues {
   startDate: string;
@@ -191,9 +193,13 @@ export function PlanningPage() {
             Plannings
           </p>
           {isLoading ? (
-            <p className="text-sm text-gray-400">Chargement...</p>
+            <SkeletonList count={3} />
           ) : schedules.length === 0 ? (
-            <p className="text-sm text-gray-400">Aucun planning.</p>
+            <EmptyState
+              icon="📅"
+              title="Aucun planning"
+              description="Générez un planning pour commencer."
+            />
           ) : (
             <ul className="space-y-2">
               {schedules.map((s) => (

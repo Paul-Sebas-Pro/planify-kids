@@ -5,7 +5,7 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 4 terminé — Sprint 5 à planifier
+- **Statut**: Sprint 5 en cours — D1 Flutter enfant ✅
 
 ---
 
@@ -15,10 +15,11 @@
 
 **Contexte** : backend complet, design tablette fait (`pages-auth.pen`). App enfant démarre + tâches du jour fonctionnent. Manque :
 
-- [ ] **Screen récompenses** — lister les récompenses disponibles + `POST /rewards/:id/claim`
-- [ ] **Screen notifications** — liste des notifications, marquer lu (provider existe, pas d'écran)
-- [ ] **Vérification sync PowerSync** — tester offline → sync au retour réseau
-- [ ] **UI polish** — aligner sur design Pencil (pages-auth.pen Login tablette + Mes Tâches)
+- [x] **Screen récompenses** — liste récompenses + `POST /rewards/:id/claim` + mes demandes
+- [x] **Screen notifications** — liste, marquer lu au tap, "Tout lire"
+- [x] **Navigation 5 onglets** — Aujourd'hui · Récompenses · Échanges · Badges · Profil ; lien cloche profil → `/notifications`
+- [~] **Vérification sync PowerSync** — scaffoldé ; non fonctionnel sans instance PowerSync cloud (reporté)
+- [x] **UI polish** — design system tokens : seed #4CAF50, background #F5F7FB, card 20px, button 16px, Baloo 2 scores ; TaskCard 4 états ; TodayScreen bannière progression
 
 **Valeur** : sans ça, les enfants ne peuvent pas utiliser l'app.
 

@@ -34,6 +34,75 @@ jobs:
       - name: Test API
         run: pnpm --filter @planify-kids/api test
 
+  smoke:
+    name: API — smoke test (startup + /health)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: planify_kids
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mongo:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1}).ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/planify_kids
+      MONGODB_URI: mongodb://localhost:27017/planify-kids-ci
+      JWT_SECRET: ci-secret-min-32-chars-for-testing-only
+      PORT: "3000"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @planify-kids/api db:generate
+
+      - name: Push schema
+        run: pnpm --filter @planify-kids/api db:push
+
+      - name: Start API (background)
+        run: |
+          pnpm --filter @planify-kids/api dev &
+          echo $! > /tmp/api.pid
+
+      - name: Wait for API + health check
+        run: |
+          for i in $(seq 1 15); do
+            sleep 2
+            if curl -sf http://localhost:3000/health; then
+              echo "✅ API healthy"
+              exit 0
+            fi
+            echo "Attempt $i/15..."
+          done
+          echo "❌ API did not start in time"
+          cat /tmp/api.pid | xargs kill 2>/dev/null || true
+          exit 1
+
   web:
     name: Web — typecheck
     runs-on: ubuntu-latest

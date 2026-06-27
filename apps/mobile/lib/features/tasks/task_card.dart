@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/schedule_item.dart';
 
@@ -11,50 +12,144 @@ class TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final completed = item.isCompleted;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: ListTile(
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: completed
-                ? theme.colorScheme.primaryContainer
-                : theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(
-            child: Text(
-              item.taskIcon ?? '✅',
-              style: const TextStyle(fontSize: 24),
-            ),
-          ),
+    final (bgColor, borderColor, iconBg, pointsColor, trailing) =
+        switch (item.status) {
+      'COMPLETED' => (
+          const Color(0xFFF0FBF0),
+          const Color(0xFFB8E6B8),
+          const Color(0xFF4CAF50),
+          const Color(0xFF4CAF50),
+          _StatusChip(label: 'Fait ✓', color: const Color(0xFF4CAF50)),
         ),
-        title: Text(
-          item.taskName,
-          style: theme.textTheme.titleSmall?.copyWith(
-            decoration: completed ? TextDecoration.lineThrough : null,
-            color: completed ? theme.colorScheme.onSurfaceVariant : null,
-          ),
+      'SKIPPED' => (
+          const Color(0xFFFFF8F0),
+          const Color(0xFFFFDDB3),
+          const Color(0xFFFF9800),
+          Colors.grey.shade400,
+          _StatusChip(label: 'Passée', color: const Color(0xFFFF9800)),
         ),
-        subtitle: Text(
-          '${item.taskPoints} pts',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: completed
-                ? theme.colorScheme.onSurfaceVariant
-                : theme.colorScheme.primary,
-            fontWeight: FontWeight.bold,
-          ),
+      'LATE' => (
+          const Color(0xFFFFF0F0),
+          const Color(0xFFFFCCCC),
+          const Color(0xFFF44336),
+          Colors.grey.shade400,
+          _StatusChip(label: 'En retard', color: const Color(0xFFF44336)),
         ),
-        trailing: completed
-            ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
-            : FilledButton.tonal(
-                onPressed: onComplete,
-                child: const Text('Fait !'),
-              ),
+      _ => (
+          Colors.white,
+          Colors.grey.shade100,
+          const Color(0xFF4CAF50),
+          const Color(0xFFFF9800),
+          onComplete != null
+              ? _DoneButton(onPressed: onComplete!)
+              : const SizedBox.shrink() as Widget,
+        ),
+    };
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
       ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: iconBg.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Center(
+                child: Text(
+                  item.taskIcon ?? '✅',
+                  style: const TextStyle(fontSize: 26),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.taskName,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      decoration: item.isCompleted || item.isSkipped
+                          ? TextDecoration.lineThrough
+                          : null,
+                      color: item.isPending
+                          ? const Color(0xFF1A1A2E)
+                          : Colors.grey.shade500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '+${item.taskPoints} pts',
+                    style: GoogleFonts.baloo2(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          item.isPending ? pointsColor : Colors.grey.shade400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            trailing,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _StatusChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _DoneButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  const _DoneButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(72, 36),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: const Color(0xFF4CAF50),
+      ),
+      child: const Text('Fait !', style: TextStyle(fontSize: 13)),
     );
   }
 }

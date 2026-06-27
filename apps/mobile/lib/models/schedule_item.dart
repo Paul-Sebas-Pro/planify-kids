@@ -21,6 +21,8 @@ class ScheduleItem {
 
   bool get isPending => status == 'PENDING';
   bool get isCompleted => status == 'COMPLETED';
+  bool get isSkipped => status == 'SKIPPED';
+  bool get isLate => status == 'LATE';
 
   factory ScheduleItem.fromJson(Map<String, dynamic> json) {
     final task = json['task'] as Map<String, dynamic>? ?? {};

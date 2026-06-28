@@ -5,7 +5,7 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5 en cours — D1 ✅ D2 ✅ D3 SSE ✅
+- **Statut**: Sprint 5 en cours — D1 ✅ D2 ✅ D3 ✅
 
 ---
 
@@ -40,8 +40,8 @@
 
 - [ ] **Notifications push** — FCM (Firebase Cloud Messaging) → tablette enfant reçoit alerte quand tâche assignée
 - [x] **Real-time SSE** — `GET /events` Hono streamSSE, pub/sub par familyId ; emit task_completed + claim_submitted ; frontend EventSource + invalidate queries + toast natif
-- [ ] **Challenges famille** — objectif collectif (ex. "100 pts cette semaine") avec bonus automatique
-- [ ] **Timeline enfant** — vue historique personnelle de ses accomplissements (badges, points, récompenses)
+- [x] **Challenges famille** — `FamilyChallenge` Prisma ; `GET/POST /challenges`, `PATCH /challenges/:id` ; check auto après attribution points ; ChallengesPage web + SSE `challenge_completed`
+- [x] **Timeline enfant** — `GET /family/members/:id/timeline` (tâches + badges + claims agrégés) ; `MemberTimelineModal` web depuis FamilyPage ; `HistoryScreen` Flutter poussée depuis Profile
 
 **Valeur** : engagement et rétention long terme.
 
@@ -753,45 +753,50 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 
 ## 📋 Routes API disponibles
 
-| Méthode | Route                   | Auth | Rôle   |
-| ------- | ----------------------- | ---- | ------ |
-| POST    | /auth/register          | Non  | —      |
-| POST    | /auth/login             | Non  | —      |
-| GET     | /auth/me                | Oui  | any    |
-| GET     | /family/members         | Oui  | any    |
-| POST    | /family/members         | Oui  | PARENT |
-| PATCH   | /family/members/:id     | Oui  | PARENT |
-| DELETE  | /family/members/:id     | Oui  | PARENT |
-| GET     | /tasks                  | Oui  | any    |
-| POST    | /tasks                  | Oui  | PARENT |
-| PATCH   | /tasks/:id              | Oui  | PARENT |
-| DELETE  | /tasks/:id              | Oui  | PARENT |
-| POST    | /planning/generate      | Oui  | PARENT |
-| GET     | /planning               | Oui  | any    |
-| GET     | /planning/:id           | Oui  | any    |
-| PATCH   | /planning/items/:id     | Oui  | any    |
-| DELETE  | /planning/:id           | Oui  | PARENT |
-| GET     | /family/stats           | Oui  | any    |
-| GET     | /rewards                | Oui  | any    |
-| POST    | /rewards                | Oui  | PARENT |
-| PATCH   | /rewards/:id            | Oui  | PARENT |
-| DELETE  | /rewards/:id            | Oui  | PARENT |
-| GET     | /rewards/claims         | Oui  | PARENT |
-| POST    | /rewards/:id/claim      | Oui  | any    |
-| PATCH   | /rewards/claims/:id     | Oui  | PARENT |
-| GET     | /badges                 | Oui  | any    |
-| GET     | /badges/member/:id      | Oui  | any    |
-| GET     | /exchanges              | Oui  | any    |
-| POST    | /exchanges              | Oui  | any    |
-| PATCH   | /exchanges/:id          | Oui  | any    |
-| GET     | /notifications          | Oui  | any    |
-| PATCH   | /notifications/read-all | Oui  | any    |
-| PATCH   | /notifications/:id/read | Oui  | any    |
-| GET     | /logs                   | Oui  | any    |
-| PATCH   | /family                 | Oui  | PARENT |
-| PATCH   | /family/members/:id/pin | Oui  | PARENT |
-| GET     | /rewards/my-claims      | Oui  | any    |
-| GET     | /events                 | Oui  | any    |
+| Méthode | Route                          | Auth | Rôle   |
+| ------- | ------------------------------ | ---- | ------ |
+| POST    | /auth/register                 | Non  | —      |
+| POST    | /auth/login                    | Non  | —      |
+| GET     | /auth/me                       | Oui  | any    |
+| GET     | /family/members                | Oui  | any    |
+| POST    | /family/members                | Oui  | PARENT |
+| PATCH   | /family/members/:id            | Oui  | PARENT |
+| DELETE  | /family/members/:id            | Oui  | PARENT |
+| GET     | /family/members/:id/timeline   | Oui  | any    |
+| GET     | /tasks                         | Oui  | any    |
+| POST    | /tasks                         | Oui  | PARENT |
+| PATCH   | /tasks/:id                     | Oui  | PARENT |
+| DELETE  | /tasks/:id                     | Oui  | PARENT |
+| POST    | /planning/generate             | Oui  | PARENT |
+| GET     | /planning                      | Oui  | any    |
+| GET     | /planning/:id                  | Oui  | any    |
+| PATCH   | /planning/items/:id            | Oui  | any    |
+| DELETE  | /planning/:id                  | Oui  | PARENT |
+| GET     | /family/stats                  | Oui  | any    |
+| GET     | /family/report                 | Oui  | any    |
+| PATCH   | /family                        | Oui  | PARENT |
+| PATCH   | /family/members/:id/pin        | Oui  | PARENT |
+| GET     | /rewards                       | Oui  | any    |
+| POST    | /rewards                       | Oui  | PARENT |
+| PATCH   | /rewards/:id                   | Oui  | PARENT |
+| DELETE  | /rewards/:id                   | Oui  | PARENT |
+| GET     | /rewards/claims                | Oui  | PARENT |
+| GET     | /rewards/my-claims             | Oui  | any    |
+| POST    | /rewards/:id/claim             | Oui  | any    |
+| PATCH   | /rewards/claims/:id            | Oui  | PARENT |
+| GET     | /badges                        | Oui  | any    |
+| GET     | /badges/member/:id             | Oui  | any    |
+| GET     | /exchanges                     | Oui  | any    |
+| POST    | /exchanges                     | Oui  | any    |
+| PATCH   | /exchanges/:id                 | Oui  | any    |
+| GET     | /notifications                 | Oui  | any    |
+| PATCH   | /notifications/read-all        | Oui  | any    |
+| PATCH   | /notifications/:id/read        | Oui  | any    |
+| GET     | /logs                          | Oui  | any    |
+| GET     | /events                        | Oui  | any    |
+| GET     | /challenges                    | Oui  | any    |
+| POST    | /challenges                    | Oui  | PARENT |
+| PATCH   | /challenges/:id                | Oui  | PARENT |
 
 ---
 

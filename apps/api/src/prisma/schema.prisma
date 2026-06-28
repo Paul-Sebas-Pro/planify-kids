@@ -35,6 +35,12 @@ enum NotificationType {
   CLAIM_REJECTED
 }
 
+enum ChallengeStatus {
+  ACTIVE
+  COMPLETED
+  FAILED
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -56,10 +62,11 @@ model Family {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members   FamilyMember[]
-  tasks     TaskTemplate[]
-  schedules Schedule[]
-  rewards   Reward[]
+  members    FamilyMember[]
+  tasks      TaskTemplate[]
+  schedules  Schedule[]
+  rewards    Reward[]
+  challenges FamilyChallenge[]
 }
 
 model FamilyMember {
@@ -238,5 +245,24 @@ model Notification {
   member FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@index([memberId])
+  @@index([familyId])
+}
+
+model FamilyChallenge {
+  id          String          @id @default(uuid())
+  familyId    String
+  title       String
+  description String?
+  targetPoints Int
+  bonusPoints  Int
+  startDate   DateTime
+  endDate     DateTime
+  status      ChallengeStatus @default(ACTIVE)
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
   @@index([familyId])
 }

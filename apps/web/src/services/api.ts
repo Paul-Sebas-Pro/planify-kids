@@ -9,6 +9,7 @@ import type {
   TaskTemplate,
   CreateTaskRequest,
   UpdateTaskRequest,
+  TimelineEvent,
 } from "@planify-kids/types";
 
 const BASE = "/api";
@@ -121,6 +122,11 @@ export const membersApi = {
     request<{ success: boolean }>("DELETE", `/family/members/${id}`),
   updatePin: (id: string, pin: string) =>
     request<{ success: boolean }>("PATCH", `/family/members/${id}/pin`, { pin }),
+  timeline: (id: string) =>
+    request<{ success: boolean; data: TimelineEvent[] }>(
+      "GET",
+      `/family/members/${id}/timeline`,
+    ),
 };
 
 // ─── Tasks ───────────────────────────────────────────────────────────────────

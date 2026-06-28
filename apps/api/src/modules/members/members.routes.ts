@@ -15,6 +15,7 @@ import {
   updateMemberService,
   updatePinService,
   deleteMemberService,
+  getMemberTimelineService,
 } from "./members.service";
 
 export const membersRoutes = new Hono();
@@ -69,6 +70,14 @@ membersRoutes.patch(
     return c.json({ success: true });
   },
 );
+
+// GET /family/members/:id/timeline
+membersRoutes.get("/:id/timeline", async (c) => {
+  const { familyId } = c.get("user");
+  const id = c.req.param("id");
+  const events = await getMemberTimelineService(id, familyId);
+  return c.json({ success: true, data: events });
+});
 
 // DELETE /family/members/:id  (parent uniquement)
 membersRoutes.delete("/:id", requireRole("PARENT"), async (c) => {

@@ -6,6 +6,7 @@ import { membersApi } from "@/services/api";
 import { useAuthStore } from "@/store/auth.store";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SkeletonList } from "@/components/shared/Skeleton";
+import { MemberTimelineModal } from "./MemberTimelineModal";
 
 interface MemberFormValues {
   name: string;
@@ -32,6 +33,7 @@ export function FamilyPage() {
   const [editTarget, setEditTarget] = useState<FamilyMember | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [pinTarget, setPinTarget] = useState<FamilyMember | null>(null);
+  const [timelineTarget, setTimelineTarget] = useState<FamilyMember | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -184,12 +186,20 @@ export function FamilyPage() {
                   Modifier
                 </button>
                 {m.role === "CHILD" && (
-                  <button
-                    onClick={() => setPinTarget(m)}
-                    className="text-xs text-gray-400 hover:underline"
-                  >
-                    PIN
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setPinTarget(m)}
+                      className="text-xs text-gray-400 hover:underline"
+                    >
+                      PIN
+                    </button>
+                    <button
+                      onClick={() => setTimelineTarget(m)}
+                      className="text-xs text-blue-400 hover:underline"
+                    >
+                      Historique
+                    </button>
+                  </>
                 )}
                 {m.id !== currentMember?.id && (
                   <button
@@ -328,6 +338,13 @@ export function FamilyPage() {
           onSuccess={() => {
             setPinTarget(null);
           }}
+        />
+      )}
+
+      {timelineTarget && (
+        <MemberTimelineModal
+          member={timelineTarget}
+          onClose={() => setTimelineTarget(null)}
         />
       )}
     </div>

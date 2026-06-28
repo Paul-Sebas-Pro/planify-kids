@@ -8,6 +8,7 @@ import '../../models/exchange.dart';
 import '../../models/family_member.dart';
 import '../../models/notification_item.dart';
 import '../../models/reward.dart';
+import '../../models/timeline_event.dart';
 import '../../models/schedule_item.dart';
 import 'secure_storage.dart';
 
@@ -198,5 +199,13 @@ class ApiClient {
 
   Future<void> markAllNotificationsRead() async {
     await _dio.patch('/notifications/read-all');
+  }
+
+  Future<List<TimelineEvent>> getTimeline(String memberId) async {
+    final res = await _dio.get('/family/members/$memberId/timeline');
+    final data = (res.data['data'] as List<dynamic>);
+    return data
+        .map((e) => TimelineEvent.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

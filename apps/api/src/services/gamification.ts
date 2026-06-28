@@ -1,5 +1,6 @@
 import { prisma } from "../config/database";
 import { GamificationLog } from "../config/gamification-log.model.js";
+import { checkChallengesAfterPoints } from "../modules/challenges/challenges.service.js";
 
 export async function awardPointsForTask(
   memberId: string,
@@ -18,6 +19,7 @@ export async function awardPointsForTask(
   }).catch(() => {});
 
   await checkAndAwardBadges(memberId, member.points, member.familyId);
+  checkChallengesAfterPoints(member.familyId).catch(() => {});
 }
 
 async function checkAndAwardBadges(

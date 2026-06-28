@@ -6,6 +6,7 @@ import '../features/auth/auth_provider.dart';
 import '../features/auth/login_screen.dart';
 import '../features/badges/badges_screen.dart';
 import '../features/exchanges/exchanges_screen.dart';
+import '../features/history/history_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/rewards/rewards_screen.dart';
@@ -60,6 +61,10 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/notifications',
         builder: (_, _) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/history',
+        builder: (_, _) => const HistoryScreen(),
       ),
     ],
   );

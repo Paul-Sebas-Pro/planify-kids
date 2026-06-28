@@ -79,6 +79,19 @@ class ProfileScreen extends ConsumerWidget {
 
           const SizedBox(height: 16),
 
+          // Historique
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Mon historique'),
+              subtitle: const Text('Tâches, badges, récompenses'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/history'),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
           // Notifications
           Card(
             child: ListTile(

@@ -11,6 +11,7 @@ const navItems = [
   { to: "/planning", label: "Planning", icon: "📅" },
   { to: "/rewards", label: "Récompenses", icon: "🏆" },
   { to: "/report", label: "Rapport", icon: "📈" },
+  { to: "/challenges", label: "Challenges", icon: "🏆" },
   { to: "/settings", label: "Paramètres", icon: "⚙️" },
 ];
 

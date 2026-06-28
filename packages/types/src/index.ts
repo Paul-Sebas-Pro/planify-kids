@@ -7,3 +7,5 @@ export * from "./auth.js";
 export * from "./notifications.js";
 export * from "./logs.js";
 export * from "./report.js";
+export * from "./challenges.js";
+export * from "./timeline.js";

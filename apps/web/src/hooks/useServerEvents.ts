@@ -31,6 +31,18 @@ export function useServerEvents() {
       showToast(msg, "info");
     });
 
+    source.addEventListener("challenge_completed", (e) => {
+      const data = JSON.parse(e.data) as {
+        title: string;
+        bonusPoints: number;
+        totalPoints: number;
+      };
+      qc.invalidateQueries({ queryKey: ["challenges"] });
+      qc.invalidateQueries({ queryKey: ["family-stats"] });
+      const msg = `🏆 Challenge « ${data.title} » réussi ! +${data.bonusPoints} pts bonus pour tous`;
+      showToast(msg, "success");
+    });
+
     source.onerror = () => {
       // Le navigateur reconnecte automatiquement — pas d'action requise
     };

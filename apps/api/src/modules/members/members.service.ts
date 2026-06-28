@@ -6,6 +6,7 @@ import {
   updateMember,
   deleteMember,
   updateMemberPin,
+  getMemberTimelineData,
 } from "./members.repository";
 import type { CreateMemberInput, UpdateMemberInput } from "./members.schema";
 
@@ -40,6 +41,12 @@ export async function updatePinService(
   if (member.role !== "CHILD")
     throw new ForbiddenError("Le PIN ne s'applique qu'aux enfants");
   return updateMemberPin(id, pin);
+}
+
+export async function getMemberTimelineService(id: string, familyId: string) {
+  const member = await getMemberById(id, familyId);
+  if (!member) throw new NotFoundError("Membre");
+  return getMemberTimelineData(id);
 }
 
 export async function deleteMemberService(

@@ -23,6 +23,7 @@ apps/api/src/prisma/migrations/
 # Logs
 *.log
 logs/
+!apps/api/src/modules/logs/
 
 # OS
 .DS_Store

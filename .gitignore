@@ -36,6 +36,10 @@ Thumbs.db
 # Vite
 apps/web/.vite/
 
+# Playwright
+apps/web/playwright-report/
+apps/web/test-results/
+
 # Flutter
 apps/mobile/.dart_tool/
 apps/mobile/.flutter-plugins

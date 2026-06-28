@@ -5,7 +5,7 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5 en cours — D1 ✅ D2 ✅ D3 ✅
+- **Statut**: Sprint 5 en cours — D1 ✅ D2 ✅ D3 ✅ D4 en cours
 
 ---
 
@@ -49,7 +49,7 @@
 
 ### Direction 4 — Qualité & production-readiness
 
-- [ ] **Tests E2E Playwright** — scénarios critiques : register → planning → complétion → rapport
+- [x] **Tests E2E Playwright** — scénarios critiques : auth (login/erreur/déconnexion) + planning (charge + génère) + rapport (sélecteur semaine + affichage) ; job CI `e2e` (needs: api+smoke+web) — build + preview + Playwright chromium
 - [ ] **Docker production** — multi-stage build, variables env prod, health checks
 - [ ] **Monitoring** — Sentry (erreurs) + structured logging API
 - [ ] **CI/CD deploy** — déploiement automatique sur push main (ex. Fly.io / Railway)
@@ -119,6 +119,35 @@
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 19 - 2026-06-28
+
+**Objectif**: Sprint 5 D4 — Tests E2E Playwright + CI/CD
+
+**Concepts introduits**:
+
+- **`preview.proxy` Vite** : `vite preview` n'a pas de proxy par défaut — ajout `preview.proxy` identique à `server.proxy` pour que le build servi via `vite preview` route `/api/*` vers l'API `:3000`
+- **Job E2E CI `needs: [api, smoke, web]`** : E2E bloqué jusqu'à succès des 3 jobs amont — évite de lancer des tests browser si le backend ou le typecheck échoue
+- **`vite build && vite preview` vs `vite dev`** : preview sert le bundle compilé — plus stable en CI (pas de HMR, pas de TS compilation à la volée), proxy identique via `preview.proxy`
+- **`webServer: process.env["CI"] ? undefined`** : en CI, le web est démarré manuellement dans le job avant Playwright — `undefined` évite que Playwright tente de lancer son propre processus en doublon
+
+**Modifications**:
+
+```diff
++ apps/web/e2e/helpers.ts             (loginAs helper + DEMO_EMAIL/DEMO_PASSWORD)
++ apps/web/e2e/auth.spec.ts           (4 tests : login valide, erreur, redirect, déconnexion)
++ apps/web/e2e/planning.spec.ts       (3 tests : charge, génère, change statut)
++ apps/web/e2e/report.spec.ts         (3 tests : charge, affiche semaine courante, nav)
++ apps/web/playwright.config.ts       (baseURL, chromium, webServer local uniquement)
+M apps/web/package.json               (+ scripts e2e, e2e:ui)
+M apps/web/vite.config.ts             (+ preview.proxy /api → :3000)
+M .github/workflows/ci.yml            (+ job e2e : services PG+Mongo, seed, build, preview, Playwright)
+M .gitignore                          (+ playwright-report/ test-results/)
+```
+
+**Résultats**: typecheck web 0 erreur. Playwright chromium installé. Job E2E prêt pour CI.
+
+---
 
 ### Session 18 - 2026-06-26
 

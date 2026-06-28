@@ -7,6 +7,6 @@ export async function loginAs(page: Page, email = DEMO_EMAIL, password = DEMO_PA
   await page.goto("/login");
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/mot de passe/i).fill(password);
-  await page.getByRole("button", { name: /connexion/i }).click();
+  await page.getByRole("button", { name: /se connecter/i }).click();
   await page.waitForURL("**/dashboard");
 }

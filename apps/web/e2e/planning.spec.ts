@@ -9,31 +9,31 @@ test.describe("Planning", () => {
   });
 
   test("page planning charge la liste des semaines", async ({ page }) => {
-    await expect(page.getByText(/planning/i).first()).toBeVisible();
-    // Attend la fin du chargement (skeleton → contenu ou empty state)
+    // Bouton "Générer un planning" toujours présent quelle que soit la liste
+    await expect(page.getByRole("button", { name: /générer un planning/i })).toBeVisible();
+    // Sidebar affiche soit "Aucun planning" soit des items avec date/tâches
     await expect(
-      page.getByText(/semaine/i).or(page.getByText(/aucun planning/i))
+      page.getByText(/aucun planning/i).or(page.getByText(/tâches/i).first())
     ).toBeVisible({ timeout: 5000 });
   });
 
   test("générer un planning pour la semaine courante", async ({ page }) => {
-    const btn = page.getByRole("button", { name: /générer/i });
-    await expect(btn).toBeVisible();
-    await btn.click();
+    await page.getByRole("button", { name: /générer un planning/i }).click();
 
-    // Modal ou panneau de génération
-    const semaineCourante = page.getByRole("button", { name: /semaine courante/i });
-    if (await semaineCourante.isVisible()) {
-      await semaineCourante.click();
-    }
+    // Modale de génération s'ouvre
+    await expect(page.getByRole("heading", { name: /générer un planning/i })).toBeVisible();
 
-    await page.getByRole("button", { name: /générer/i }).last().click();
+    // Remplir avec la semaine courante
+    await page.getByRole("button", { name: /semaine courante/i }).click();
 
-    // Attend la confirmation ou l'apparition de la grille calendrier
-    await expect(
-      page.getByText(/planning généré/i)
-        .or(page.locator("[class*=calendar],[class*=week]").first())
-    ).toBeVisible({ timeout: 8000 });
+    // Soumettre — click le bouton "Générer" dans la modale (pas celui de la page)
+    await page.getByRole("button", { name: /^Générer$/ }).click();
+
+    // Attendre la fermeture de la modale
+    await expect(page.getByRole("heading", { name: /générer un planning/i })).not.toBeVisible({ timeout: 8000 });
+
+    // Le planning généré apparaît dans la sidebar (dates + nb tâches)
+    await expect(page.getByText(/tâches/i).first()).toBeVisible({ timeout: 5000 });
   });
 
   test("changer le statut d'un item de planning", async ({ page }) => {

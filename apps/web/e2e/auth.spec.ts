@@ -5,15 +5,15 @@ test.describe("Authentification", () => {
   test("login avec credentials valides → dashboard", async ({ page }) => {
     await loginAs(page);
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByText("Tableau de bord")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tableau de bord" })).toBeVisible();
   });
 
   test("login avec mot de passe incorrect → message d'erreur", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel(/email/i).fill(DEMO_EMAIL);
     await page.getByLabel(/mot de passe/i).fill("mauvais-mdp");
-    await page.getByRole("button", { name: /connexion/i }).click();
-    await expect(page.getByRole("alert").or(page.locator("[class*=error],[class*=danger]"))).toBeVisible();
+    await page.getByRole("button", { name: /se connecter/i }).click();
+    await expect(page.getByRole("alert")).toBeVisible();
     await expect(page).toHaveURL(/\/login/);
   });
 

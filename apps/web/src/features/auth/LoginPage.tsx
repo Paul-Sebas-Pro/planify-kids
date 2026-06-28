@@ -49,10 +49,11 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1">
               Email
             </label>
             <input
+              id="email"
               type="email"
               autoComplete="email"
               {...register("email", { required: "Email requis" })}
@@ -64,10 +65,11 @@ export function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1">
               Mot de passe
             </label>
             <input
+              id="password"
               type="password"
               autoComplete="current-password"
               {...register("password", { required: "Mot de passe requis" })}
@@ -81,7 +83,7 @@ export function LoginPage() {
           </div>
 
           {error && (
-            <p className="text-danger text-sm bg-red-50 rounded-xl px-4 py-2.5">
+            <p role="alert" className="text-danger text-sm bg-red-50 rounded-xl px-4 py-2.5">
               {error}
             </p>
           )}

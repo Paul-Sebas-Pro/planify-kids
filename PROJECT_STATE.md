@@ -50,7 +50,7 @@
 ### Direction 4 — Qualité & production-readiness
 
 - [x] **Tests E2E Playwright** — scénarios critiques : auth (login/erreur/déconnexion) + planning (charge + génère) + rapport (sélecteur semaine + affichage) ; job CI `e2e` (needs: api+smoke+web) — build + preview + Playwright chromium
-- [ ] **Docker production** — multi-stage build, variables env prod, health checks
+- [x] **Docker production** — multi-stage builds (3 stages API, 2 stages Web/nginx) ; `docker-compose.prod.yml` vars requises `:?` ; health checks `/health` + nginx ; `.env.prod.example` ; `pnpm prune --prod` stage runner
 - [ ] **Monitoring** — Sentry (erreurs) + structured logging API
 - [ ] **CI/CD deploy** — déploiement automatique sur push main (ex. Fly.io / Railway)
 

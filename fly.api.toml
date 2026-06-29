@@ -1,0 +1,37 @@
+app = "planify-kids-api"
+primary_region = "cdg"
+
+[build]
+  dockerfile = "docker/api.prod.Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+
+[[services]]
+  internal_port = 3000
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 100
+    soft_limit = 80
+
+  [[services.http_checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/health"
+    protocol = "http"
+
+[mounts]
+  # Pas de volume — DB gérées en externe (Supabase + MongoDB Atlas)

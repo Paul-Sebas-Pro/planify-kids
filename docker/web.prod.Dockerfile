@@ -19,7 +19,12 @@ RUN pnpm --filter @planify-kids/web build
 FROM nginx:1.27-alpine AS runner
 
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Template nginx — envsubst remplace ${API_URL} au démarrage (image nginx officielle)
+COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
+
+# Valeur par défaut pour docker-compose (écrasé par env var en prod Fly.io)
+ENV API_URL=http://api:3000
 
 EXPOSE 80
 

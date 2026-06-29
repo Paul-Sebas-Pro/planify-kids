@@ -5,9 +5,9 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5 en cours — D1 ✅ D2 ✅ D3 ✅ D4 🔲 (E2E ✅ Docker ✅ Monitoring ✅ CI/CD 🔲)
-- **Last Session**: 2026-06-28 — D4 : Monitoring (Sentry opt-in + structured JSON logging)
-- **Next Steps**: D4 CI/CD deploy (Fly.io ou Railway)
+- **Statut**: Sprint 5 TERMINÉ — D1 ✅ D2 ✅ D3 ✅ D4 ✅
+- **Last Session**: 2026-06-28 — D4 complet : Monitoring + CI/CD deploy Fly.io
+- **Next Steps**: —
 
 ---
 
@@ -54,7 +54,7 @@
 - [x] **Tests E2E Playwright** — scénarios critiques : auth (login/erreur/déconnexion) + planning (charge + génère) + rapport (sélecteur semaine + affichage) ; job CI `e2e` (needs: api+smoke+web) — build + preview + Playwright chromium
 - [x] **Docker production** — multi-stage builds (3 stages API, 2 stages Web/nginx) ; `docker-compose.prod.yml` vars requises `:?` ; health checks `/health` + nginx ; `.env.prod.example` ; `pnpm prune --prod` stage runner
 - [x] **Monitoring** — `requestLogger` middleware JSON (`ts/method/path/status/ms/familyId`) remplace Hono logger ; Sentry opt-in (`SENTRY_DSN` / `VITE_SENTRY_DSN`) — `initSentry()` no-op si absent ; `Sentry.ErrorBoundary` React avec fallback UI
-- [ ] **CI/CD deploy** — déploiement automatique sur push main (ex. Fly.io / Railway)
+- [x] **CI/CD deploy** — Fly.io : `fly.api.toml` (region cdg, health check /health) + `fly.web.toml` (nginx + Fly private DNS `planify-kids-api.internal:3000`) ; job `deploy` CI (needs: all, push main only, `FLY_API_TOKEN` secret) ; `nginx.conf.template` → `${API_URL}` substitué au démarrage (nginx template)
 
 **Valeur** : prépare le déploiement réel pour de vraies familles.
 

@@ -9,6 +9,7 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default("7d"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
   CORS_ORIGINS: z.string().default("http://localhost:5173"),
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

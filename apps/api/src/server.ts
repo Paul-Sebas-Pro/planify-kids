@@ -4,6 +4,9 @@ import { env } from "./config/env.js";
 import { connectMongo } from "./config/mongo.js";
 import { prisma } from "./config/database.js";
 import { startPlanningCron } from "./services/planning-cron.js";
+import { initSentry } from "./config/sentry.js";
+
+initSentry();
 
 async function start() {
   // Connexions DB

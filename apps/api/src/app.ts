@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
 import mongoose from "mongoose";
 import { env } from "./config/env.js";
 import { prisma } from "./config/database.js";
 import { errorMiddleware } from "./core/middleware/error.middleware.js";
+import { requestLogger } from "./core/middleware/request-logger.js";
+import { captureException } from "./config/sentry.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { membersRoutes } from "./modules/members/members.routes.js";
 import { tasksRoutes } from "./modules/tasks/tasks.routes.js";
@@ -24,7 +25,7 @@ import { challengesRoutes } from "./modules/challenges/challenges.routes.js";
 const app = new Hono();
 
 // ─── Middlewares globaux ──────────────────────────────────────
-app.use("*", logger());
+app.use("*", requestLogger);
 app.use(
   "*",
   cors({
@@ -67,7 +68,10 @@ app.route("/events", eventsRoutes);
 app.route("/challenges", challengesRoutes);
 
 // ─── Gestion d'erreurs ────────────────────────────────────────
-app.onError((err: unknown, c: Context) => errorMiddleware(err, c));
+app.onError((err: unknown, c: Context) => {
+  captureException(err, { path: c.req.path, method: c.req.method });
+  return errorMiddleware(err, c);
+});
 app.notFound((c: Context) => c.json({ error: "Route introuvable" }, 404));
 
 export default app;

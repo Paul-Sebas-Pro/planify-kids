@@ -5,7 +5,9 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5 en cours — D1 ✅ D2 ✅ D3 ✅ D4 en cours
+- **Statut**: Sprint 5 en cours — D1 ✅ D2 ✅ D3 ✅ D4 🔲 (E2E ✅ Docker ✅ Monitoring ✅ CI/CD 🔲)
+- **Last Session**: 2026-06-28 — D4 : Monitoring (Sentry opt-in + structured JSON logging)
+- **Next Steps**: D4 CI/CD deploy (Fly.io ou Railway)
 
 ---
 
@@ -51,7 +53,7 @@
 
 - [x] **Tests E2E Playwright** — scénarios critiques : auth (login/erreur/déconnexion) + planning (charge + génère) + rapport (sélecteur semaine + affichage) ; job CI `e2e` (needs: api+smoke+web) — build + preview + Playwright chromium
 - [x] **Docker production** — multi-stage builds (3 stages API, 2 stages Web/nginx) ; `docker-compose.prod.yml` vars requises `:?` ; health checks `/health` + nginx ; `.env.prod.example` ; `pnpm prune --prod` stage runner
-- [ ] **Monitoring** — Sentry (erreurs) + structured logging API
+- [x] **Monitoring** — `requestLogger` middleware JSON (`ts/method/path/status/ms/familyId`) remplace Hono logger ; Sentry opt-in (`SENTRY_DSN` / `VITE_SENTRY_DSN`) — `initSentry()` no-op si absent ; `Sentry.ErrorBoundary` React avec fallback UI
 - [ ] **CI/CD deploy** — déploiement automatique sur push main (ex. Fly.io / Railway)
 
 **Valeur** : prépare le déploiement réel pour de vraies familles.
@@ -122,30 +124,39 @@
 
 ### Session 19 - 2026-06-28
 
-**Objectif**: Sprint 5 D4 — Tests E2E Playwright + CI/CD
+**Objectif**: Sprint 5 D4 — Tests E2E Playwright + Docker production
 
 **Concepts introduits**:
 
 - **`preview.proxy` Vite** : `vite preview` n'a pas de proxy par défaut — ajout `preview.proxy` identique à `server.proxy` pour que le build servi via `vite preview` route `/api/*` vers l'API `:3000`
-- **Job E2E CI `needs: [api, smoke, web]`** : E2E bloqué jusqu'à succès des 3 jobs amont — évite de lancer des tests browser si le backend ou le typecheck échoue
-- **`vite build && vite preview` vs `vite dev`** : preview sert le bundle compilé — plus stable en CI (pas de HMR, pas de TS compilation à la volée), proxy identique via `preview.proxy`
-- **`webServer: process.env["CI"] ? undefined`** : en CI, le web est démarré manuellement dans le job avant Playwright — `undefined` évite que Playwright tente de lancer son propre processus en doublon
+- **Job E2E CI `needs: [api, smoke, web]`** : E2E bloqué jusqu'à succès des 3 jobs amont — évite de lancer des tests browser si backend ou typecheck échouent
+- **`getByLabel` Playwright nécessite `htmlFor`/`id`** : `<label>` sans `htmlFor` associé = `getByLabel` ne trouve pas l'input — fix LoginPage + `role="alert"` sur le paragraphe d'erreur
+- **`getByText` strict mode** : si le texte existe en plusieurs éléments (nav + h2), Playwright strict mode = erreur — utiliser `getByRole("heading", ...)` pour cibler précisément
+- **Docker prod 3 stages API** : `deps → builder (prisma generate + tsc + pnpm prune --prod) → runner` — `pnpm prune` garde `.prisma/client` (non géré par pnpm), supprime devDeps
+- **`nginx.conf` SPA + SSE** : `try_files $uri $uri/ /index.html` pour React Router + `proxy_buffering off; proxy_read_timeout 3600s` pour SSE `/api/events`
 
 **Modifications**:
 
 ```diff
-+ apps/web/e2e/helpers.ts             (loginAs helper + DEMO_EMAIL/DEMO_PASSWORD)
++ apps/web/e2e/helpers.ts             (loginAs + DEMO_EMAIL/DEMO_PASSWORD)
 + apps/web/e2e/auth.spec.ts           (4 tests : login valide, erreur, redirect, déconnexion)
 + apps/web/e2e/planning.spec.ts       (3 tests : charge, génère, change statut)
 + apps/web/e2e/report.spec.ts         (3 tests : charge, affiche semaine courante, nav)
-+ apps/web/playwright.config.ts       (baseURL, chromium, webServer local uniquement)
++ apps/web/playwright.config.ts       (baseURL env-aware, webServer local seulement)
 M apps/web/package.json               (+ scripts e2e, e2e:ui)
 M apps/web/vite.config.ts             (+ preview.proxy /api → :3000)
-M .github/workflows/ci.yml            (+ job e2e : services PG+Mongo, seed, build, preview, Playwright)
-M .gitignore                          (+ playwright-report/ test-results/)
+M apps/web/src/features/auth/LoginPage.tsx  (+ htmlFor/id labels + role="alert" error)
+M .github/workflows/ci.yml            (+ job e2e : PG+Mongo services, seed, build preview, Playwright)
+M .gitignore                          (+ playwright-report/ test-results/ .env.prod)
++ docker/api.prod.Dockerfile          (3 stages : deps → builder → runner node:24-alpine)
++ docker/web.prod.Dockerfile          (2 stages : builder vite → nginx:1.27-alpine)
++ docker/nginx.conf                   (SPA fallback + proxy /api/ + SSE + gzip + cache)
++ docker/api-prod-entrypoint.sh       (db:push + node dist/server.js)
++ docker-compose.prod.yml             (vars requises :?, health checks, restart: always)
++ .env.prod.example
 ```
 
-**Résultats**: typecheck web 0 erreur. Playwright chromium installé. Job E2E prêt pour CI.
+**Résultats**: 10/10 tests Playwright ✅. typecheck API + Web 0 erreur. Docker prod prêt.
 
 ---
 

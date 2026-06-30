@@ -60,6 +60,79 @@
 
 ---
 
+## 🚀 Déploiement Fly.io — Procédure
+
+### Prérequis
+
+- `fly` CLI installé : `curl -L https://fly.io/install.sh | sh`
+- Compte Fly.io + `fly auth login`
+- MongoDB Atlas cluster disponible (URI de connexion prête)
+- PostgreSQL : soit Fly Postgres (ci-dessous), soit Supabase externe
+
+### 1. Créer les apps Fly
+
+```bash
+fly apps create planify-kids-api
+fly apps create planify-kids-web
+```
+
+### 2. Provisionner PostgreSQL (option Fly Postgres)
+
+```bash
+fly postgres create --name planify-kids-db --region cdg
+fly postgres attach planify-kids-db -a planify-kids-api
+# → injecte DATABASE_URL automatiquement dans planify-kids-api
+```
+
+### 3. Configurer les secrets API
+
+```bash
+fly secrets set -a planify-kids-api \
+  MONGODB_URI="mongodb+srv://user:pass@cluster.mongodb.net/planify-kids" \
+  JWT_SECRET="$(openssl rand -base64 48)" \
+  CORS_ORIGINS="https://planify-kids-web.fly.dev"
+```
+
+> `DATABASE_URL` est injectée automatiquement si Fly Postgres est attaché (étape 2).
+> Sinon : `fly secrets set -a planify-kids-api DATABASE_URL="postgresql://..."`.
+
+### 4. Configurer le secret GitHub CI/CD
+
+Dans le dépôt GitHub → **Settings → Secrets and variables → Actions** :
+
+| Nom             | Valeur                                                     |
+| --------------- | ---------------------------------------------------------- |
+| `FLY_API_TOKEN` | Résultat de `fly tokens create deploy -a planify-kids-api` |
+
+### 5. Premier déploiement manuel
+
+```bash
+# Depuis la racine du monorepo
+fly deploy --config fly.api.toml --remote-only
+fly deploy --config fly.web.toml --remote-only
+```
+
+### 6. Déploiements suivants — automatiques
+
+Chaque `push` sur `main` déclenche :
+
+1. Jobs CI : `api` (typecheck + tests) + `smoke` (démarrage API) + `web` (typecheck) + `e2e` (Playwright 10 tests)
+2. Job `deploy` (si tout passe) : `flyctl deploy` API puis Web
+
+### URLs de production (après déploiement)
+
+- **API** : `https://planify-kids-api.fly.dev`
+- **Web** : `https://planify-kids-web.fly.dev`
+- **Health** : `https://planify-kids-api.fly.dev/health`
+
+### Monitoring
+
+- Logs API en temps réel : `fly logs -a planify-kids-api`
+- Dashboard Fly : `https://fly.io/apps/planify-kids-api`
+- Sentry (si configuré) : ajouter `SENTRY_DSN` et `VITE_SENTRY_DSN` dans les secrets Fly + GitHub
+
+---
+
 ## 📋 Backlog Sprint 4 — Features fonctionnelles
 
 ### 🔴 Priorité 1 — Notifications in-app
@@ -793,50 +866,50 @@ M apps/api/src/app.ts            (montage /auth, /family/members, /tasks)
 
 ## 📋 Routes API disponibles
 
-| Méthode | Route                          | Auth | Rôle   |
-| ------- | ------------------------------ | ---- | ------ |
-| POST    | /auth/register                 | Non  | —      |
-| POST    | /auth/login                    | Non  | —      |
-| GET     | /auth/me                       | Oui  | any    |
-| GET     | /family/members                | Oui  | any    |
-| POST    | /family/members                | Oui  | PARENT |
-| PATCH   | /family/members/:id            | Oui  | PARENT |
-| DELETE  | /family/members/:id            | Oui  | PARENT |
-| GET     | /family/members/:id/timeline   | Oui  | any    |
-| GET     | /tasks                         | Oui  | any    |
-| POST    | /tasks                         | Oui  | PARENT |
-| PATCH   | /tasks/:id                     | Oui  | PARENT |
-| DELETE  | /tasks/:id                     | Oui  | PARENT |
-| POST    | /planning/generate             | Oui  | PARENT |
-| GET     | /planning                      | Oui  | any    |
-| GET     | /planning/:id                  | Oui  | any    |
-| PATCH   | /planning/items/:id            | Oui  | any    |
-| DELETE  | /planning/:id                  | Oui  | PARENT |
-| GET     | /family/stats                  | Oui  | any    |
-| GET     | /family/report                 | Oui  | any    |
-| PATCH   | /family                        | Oui  | PARENT |
-| PATCH   | /family/members/:id/pin        | Oui  | PARENT |
-| GET     | /rewards                       | Oui  | any    |
-| POST    | /rewards                       | Oui  | PARENT |
-| PATCH   | /rewards/:id                   | Oui  | PARENT |
-| DELETE  | /rewards/:id                   | Oui  | PARENT |
-| GET     | /rewards/claims                | Oui  | PARENT |
-| GET     | /rewards/my-claims             | Oui  | any    |
-| POST    | /rewards/:id/claim             | Oui  | any    |
-| PATCH   | /rewards/claims/:id            | Oui  | PARENT |
-| GET     | /badges                        | Oui  | any    |
-| GET     | /badges/member/:id             | Oui  | any    |
-| GET     | /exchanges                     | Oui  | any    |
-| POST    | /exchanges                     | Oui  | any    |
-| PATCH   | /exchanges/:id                 | Oui  | any    |
-| GET     | /notifications                 | Oui  | any    |
-| PATCH   | /notifications/read-all        | Oui  | any    |
-| PATCH   | /notifications/:id/read        | Oui  | any    |
-| GET     | /logs                          | Oui  | any    |
-| GET     | /events                        | Oui  | any    |
-| GET     | /challenges                    | Oui  | any    |
-| POST    | /challenges                    | Oui  | PARENT |
-| PATCH   | /challenges/:id                | Oui  | PARENT |
+| Méthode | Route                        | Auth | Rôle   |
+| ------- | ---------------------------- | ---- | ------ |
+| POST    | /auth/register               | Non  | —      |
+| POST    | /auth/login                  | Non  | —      |
+| GET     | /auth/me                     | Oui  | any    |
+| GET     | /family/members              | Oui  | any    |
+| POST    | /family/members              | Oui  | PARENT |
+| PATCH   | /family/members/:id          | Oui  | PARENT |
+| DELETE  | /family/members/:id          | Oui  | PARENT |
+| GET     | /family/members/:id/timeline | Oui  | any    |
+| GET     | /tasks                       | Oui  | any    |
+| POST    | /tasks                       | Oui  | PARENT |
+| PATCH   | /tasks/:id                   | Oui  | PARENT |
+| DELETE  | /tasks/:id                   | Oui  | PARENT |
+| POST    | /planning/generate           | Oui  | PARENT |
+| GET     | /planning                    | Oui  | any    |
+| GET     | /planning/:id                | Oui  | any    |
+| PATCH   | /planning/items/:id          | Oui  | any    |
+| DELETE  | /planning/:id                | Oui  | PARENT |
+| GET     | /family/stats                | Oui  | any    |
+| GET     | /family/report               | Oui  | any    |
+| PATCH   | /family                      | Oui  | PARENT |
+| PATCH   | /family/members/:id/pin      | Oui  | PARENT |
+| GET     | /rewards                     | Oui  | any    |
+| POST    | /rewards                     | Oui  | PARENT |
+| PATCH   | /rewards/:id                 | Oui  | PARENT |
+| DELETE  | /rewards/:id                 | Oui  | PARENT |
+| GET     | /rewards/claims              | Oui  | PARENT |
+| GET     | /rewards/my-claims           | Oui  | any    |
+| POST    | /rewards/:id/claim           | Oui  | any    |
+| PATCH   | /rewards/claims/:id          | Oui  | PARENT |
+| GET     | /badges                      | Oui  | any    |
+| GET     | /badges/member/:id           | Oui  | any    |
+| GET     | /exchanges                   | Oui  | any    |
+| POST    | /exchanges                   | Oui  | any    |
+| PATCH   | /exchanges/:id               | Oui  | any    |
+| GET     | /notifications               | Oui  | any    |
+| PATCH   | /notifications/read-all      | Oui  | any    |
+| PATCH   | /notifications/:id/read      | Oui  | any    |
+| GET     | /logs                        | Oui  | any    |
+| GET     | /events                      | Oui  | any    |
+| GET     | /challenges                  | Oui  | any    |
+| POST    | /challenges                  | Oui  | PARENT |
+| PATCH   | /challenges/:id              | Oui  | PARENT |
 
 ---
 

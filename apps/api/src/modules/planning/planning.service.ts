@@ -12,7 +12,7 @@ import {
   deleteSchedule,
 } from "./planning.repository";
 import { awardPointsForTask } from "../../services/gamification";
-import { notifyTaskCompleted } from "../notifications/notifications.service";
+import { notifyTaskCompleted, notifyTasksAssigned } from "../notifications/notifications.service";
 import { sseEmit } from "../../services/sse.service";
 import type {
   GeneratePlanningInput,
@@ -48,7 +48,20 @@ export async function generatePlanningService(
     startDate,
     endDate,
   );
-  return createScheduleWithItems(familyId, startDate, endDate, assignments);
+  const schedule = await createScheduleWithItems(familyId, startDate, endDate, assignments);
+
+  // Notifie chaque enfant du nombre de tâches qui lui sont assignées
+  const countByMember = new Map<string, number>();
+  for (const a of assignments) {
+    countByMember.set(a.assignedToMemberId, (countByMember.get(a.assignedToMemberId) ?? 0) + 1);
+  }
+  await Promise.all(
+    [...countByMember.entries()].map(([memberId, count]) =>
+      notifyTasksAssigned(memberId, familyId, count),
+    ),
+  );
+
+  return schedule;
 }
 
 export function listSchedulesService(familyId: string, limit: number) {

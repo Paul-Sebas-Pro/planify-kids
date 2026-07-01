@@ -6,7 +6,7 @@
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
 - **Statut**: Sprint 5 TERMINÉ — D1 ✅ D2 ✅ D3 ✅ D4 ✅
-- **Last Session**: 2026-06-28 — D4 complet : Monitoring + CI/CD deploy Fly.io
+- **Last Session**: 2026-06-30 — Notifications push FCM opt-in (backend + Flutter)
 - **Next Steps**: —
 
 ---
@@ -40,7 +40,7 @@
 
 ### Direction 3 — Features avancées
 
-- [ ] **Notifications push** — FCM (Firebase Cloud Messaging) → tablette enfant reçoit alerte quand tâche assignée
+- [x] **Notifications push** — FCM opt-in : `firebase-admin` backend, `FIREBASE_PROJECT_ID/CLIENT_EMAIL/PRIVATE_KEY` env vars ; `sendPushNotification()` no-op sans creds ; `notifyTasksAssigned()` crée notif in-app + push FCM par enfant après génération planning ; route `PATCH /family/members/:id/fcm-token` self-service ; Flutter `firebase_core` + `firebase_messaging` + `PushNotificationService` (skip si pas de config) ; plugin google-services Android conditionnel (`google-services.json` requis pour activer)
 - [x] **Real-time SSE** — `GET /events` Hono streamSSE, pub/sub par familyId ; emit task_completed + claim_submitted ; frontend EventSource + invalidate queries + toast natif
 - [x] **Challenges famille** — `FamilyChallenge` Prisma ; `GET/POST /challenges`, `PATCH /challenges/:id` ; check auto après attribution points ; ChallengesPage web + SSE `challenge_completed`
 - [x] **Timeline enfant** — `GET /family/members/:id/timeline` (tâches + badges + claims agrégés) ; `MemberTimelineModal` web depuis FamilyPage ; `HistoryScreen` Flutter poussée depuis Profile

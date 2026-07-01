@@ -25,6 +25,11 @@ export const updatePinSchema = z.object({
   pin: z.string().regex(/^\d{4}$/, { message: "PIN doit être 4 chiffres" }),
 });
 
+export const updateFcmTokenSchema = z.object({
+  fcmToken: z.string().min(1).max(4096),
+});
+
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
 export type UpdatePinInput = z.infer<typeof updatePinSchema>;
+export type UpdateFcmTokenInput = z.infer<typeof updateFcmTokenSchema>;

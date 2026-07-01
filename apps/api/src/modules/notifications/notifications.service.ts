@@ -1,4 +1,5 @@
 import { prisma } from "../../config/database";
+import { sendPushNotification } from "../../config/firebase";
 import {
   getNotifications,
   createNotification,
@@ -52,4 +53,28 @@ export async function notifyClaimReviewed(
       ? `Ta demande pour "${rewardName}" a été approuvée ! 🎉`
       : `Ta demande pour "${rewardName}" a été refusée.`,
   );
+}
+
+export async function notifyTasksAssigned(
+  memberId: string,
+  familyId: string,
+  count: number,
+) {
+  const message = `Tu as ${count} nouvelle${count > 1 ? "s" : ""} tâche${count > 1 ? "s" : ""} cette semaine !`;
+
+  await createNotification(memberId, familyId, "TASKS_ASSIGNED", message);
+
+  const member = await prisma.familyMember.findUnique({
+    where: { id: memberId },
+    select: { fcmToken: true },
+  });
+
+  if (member?.fcmToken) {
+    await sendPushNotification(
+      member.fcmToken,
+      "Nouveau planning 📋",
+      message,
+      { type: "TASKS_ASSIGNED", familyId },
+    );
+  }
 }

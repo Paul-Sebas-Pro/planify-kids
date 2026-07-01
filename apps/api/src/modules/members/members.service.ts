@@ -6,6 +6,7 @@ import {
   updateMember,
   deleteMember,
   updateMemberPin,
+  updateMemberFcmToken,
   getMemberTimelineData,
 } from "./members.repository";
 import type { CreateMemberInput, UpdateMemberInput } from "./members.schema";
@@ -41,6 +42,18 @@ export async function updatePinService(
   if (member.role !== "CHILD")
     throw new ForbiddenError("Le PIN ne s'applique qu'aux enfants");
   return updateMemberPin(id, pin);
+}
+
+export async function updateFcmTokenService(
+  id: string,
+  familyId: string,
+  requesterId: string,
+  fcmToken: string,
+) {
+  const member = await getMemberById(id, familyId);
+  if (!member) throw new NotFoundError("Membre");
+  if (member.id !== requesterId) throw new ForbiddenError("Token FCM : accès refusé");
+  return updateMemberFcmToken(id, fcmToken);
 }
 
 export async function getMemberTimelineService(id: string, familyId: string) {

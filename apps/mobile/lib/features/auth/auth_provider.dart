@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../models/auth_user.dart';
 import '../../shared/providers/providers.dart';
+import '../../shared/services/push_notification_service.dart';
 
 part 'auth_provider.g.dart';
 
@@ -36,6 +37,7 @@ class AuthNotifier extends _$AuthNotifier {
       await storage.saveToken(result.token);
       await storage.saveUserJson(jsonEncode(result.member.toJson()));
 
+      PushNotificationService.init(api, result.member.id).ignore();
       return result.member;
     });
   }
@@ -51,6 +53,7 @@ class AuthNotifier extends _$AuthNotifier {
       await storage.saveToken(result.token);
       await storage.saveUserJson(jsonEncode(result.member.toJson()));
 
+      PushNotificationService.init(api, result.member.id).ignore();
       return result.member;
     });
   }

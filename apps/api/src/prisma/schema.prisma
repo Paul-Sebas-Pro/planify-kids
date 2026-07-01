@@ -33,6 +33,7 @@ enum NotificationType {
   TASK_COMPLETED
   CLAIM_APPROVED
   CLAIM_REJECTED
+  TASKS_ASSIGNED
 }
 
 enum ChallengeStatus {
@@ -81,7 +82,8 @@ model FamilyMember {
   role      Role
   pin       String?
 
-  points Int @default(0)
+  points   Int     @default(0)
+  fcmToken String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -51,6 +51,10 @@ export async function updateMemberPin(id: string, pin: string) {
   return prisma.familyMember.update({ where: { id }, data: { pin: hash } });
 }
 
+export function updateMemberFcmToken(id: string, fcmToken: string) {
+  return prisma.familyMember.update({ where: { id }, data: { fcmToken } });
+}
+
 export async function getMemberTimelineData(memberId: string) {
   const [completedTasks, earnedBadges, approvedClaims] = await Promise.all([
     prisma.scheduleItem.findMany({

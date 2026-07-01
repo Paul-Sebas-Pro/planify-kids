@@ -4,6 +4,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Active le plugin Google Services uniquement si le fichier de config est présent.
+// Sans google-services.json, le build continue sans FCM.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "fr.planifykids.mobile"
     compileSdk = flutter.compileSdkVersion

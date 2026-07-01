@@ -208,4 +208,11 @@ class ApiClient {
         .map((e) => TimelineEvent.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  Future<void> registerFcmToken(String memberId, String fcmToken) async {
+    await _dio.patch(
+      '/family/members/$memberId/fcm-token',
+      data: {'fcmToken': fcmToken},
+    );
+  }
 }

@@ -8,12 +8,14 @@ import {
   createMemberSchema,
   updateMemberSchema,
   updatePinSchema,
+  updateFcmTokenSchema,
 } from "./members.schema";
 import {
   listMembersService,
   createMemberService,
   updateMemberService,
   updatePinService,
+  updateFcmTokenService,
   deleteMemberService,
   getMemberTimelineService,
 } from "./members.service";
@@ -67,6 +69,19 @@ membersRoutes.patch(
     const id = c.req.param("id");
     const { pin } = c.req.valid("json");
     await updatePinService(id, familyId, pin);
+    return c.json({ success: true });
+  },
+);
+
+// PATCH /family/members/:id/fcm-token  (self-service — tout rôle, soi-même uniquement)
+membersRoutes.patch(
+  "/:id/fcm-token",
+  zValidator("json", updateFcmTokenSchema),
+  async (c) => {
+    const { familyId, memberId } = c.get("user");
+    const id = c.req.param("id");
+    const { fcmToken } = c.req.valid("json");
+    await updateFcmTokenService(id, familyId, memberId, fcmToken);
     return c.json({ success: true });
   },
 );

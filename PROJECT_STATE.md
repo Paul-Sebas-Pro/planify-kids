@@ -66,8 +66,8 @@
 
 - `fly` CLI installé : `curl -L https://fly.io/install.sh | sh`
 - Compte Fly.io + `fly auth login`
-- MongoDB Atlas cluster disponible (URI de connexion prête)
-- PostgreSQL : soit Fly Postgres (ci-dessous), soit Supabase externe
+- Projet **Supabase** créé → récupérer la **Connection string** (Settings → Database → URI mode `Transaction pooler` sur port 6543)
+- **MongoDB Atlas** cluster disponible (URI de connexion prête)
 
 ### 1. Créer les apps Fly
 
@@ -76,25 +76,27 @@ fly apps create planify-kids-api
 fly apps create planify-kids-web
 ```
 
-### 2. Provisionner PostgreSQL (option Fly Postgres)
+### 2. PostgreSQL — Supabase (base de données externe)
 
-```bash
-fly postgres create --name planify-kids-db --region cdg
-fly postgres attach planify-kids-db -a planify-kids-api
-# → injecte DATABASE_URL automatiquement dans planify-kids-api
+Fly Postgres n'est pas utilisé. La base est gérée par Supabase.
+
+Récupère l'URI dans Supabase → **Settings → Database → Connection string → URI** :
+
 ```
+postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+```
+
+Injecte-la directement à l'étape 3.
 
 ### 3. Configurer les secrets API
 
 ```bash
 fly secrets set -a planify-kids-api \
+  DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres" \
   MONGODB_URI="mongodb+srv://user:pass@cluster.mongodb.net/planify-kids" \
   JWT_SECRET="$(openssl rand -base64 48)" \
   CORS_ORIGINS="https://planify-kids-web.fly.dev"
 ```
-
-> `DATABASE_URL` est injectée automatiquement si Fly Postgres est attaché (étape 2).
-> Sinon : `fly secrets set -a planify-kids-api DATABASE_URL="postgresql://..."`.
 
 ### 4. Configurer le secret GitHub CI/CD
 

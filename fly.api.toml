@@ -8,30 +8,26 @@ primary_region = "cdg"
   NODE_ENV = "production"
   PORT = "3000"
 
-[[services]]
+[http_service]
   internal_port = 3000
-  protocol = "tcp"
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
 
-  [[services.ports]]
-    port = 443
-    handlers = ["tls", "http"]
-
-  [[services.ports]]
-    port = 80
-    handlers = ["http"]
-
-  [services.concurrency]
+  [http_service.concurrency]
     type = "connections"
     hard_limit = 100
     soft_limit = 80
 
-  [[services.http_checks]]
-    interval = "15s"
-    timeout = "5s"
+  [[http_service.checks]]
     grace_period = "30s"
+    interval = "15s"
     method = "GET"
+    timeout = "5s"
     path = "/health"
-    protocol = "http"
 
-[mounts]
-  # Pas de volume — DB gérées en externe (Supabase + MongoDB Atlas)
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

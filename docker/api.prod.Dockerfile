@@ -23,8 +23,8 @@ RUN pnpm --filter @planify-kids/api db:generate
 # Compiler TypeScript → dist/
 RUN pnpm --filter @planify-kids/api build
 
-# Supprimer les devDependencies (garde .prisma/client intact car non géré par pnpm)
-RUN pnpm prune --prod --no-optional
+# Supprimer les devDependencies (CI=true requis : pnpm prune refuse sans TTY hors CI)
+RUN CI=true pnpm prune --prod --no-optional
 
 # ── Stage 3 : runner de production ───────────────────────────────────────────
 FROM node:24-alpine AS runner

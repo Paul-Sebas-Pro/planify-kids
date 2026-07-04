@@ -7,7 +7,7 @@
 - **Démarré le**: 2026-04-08
 - **Statut**: Sprint 5 TERMINÉ — D1 ✅ D2 ✅ D3 ✅ D4 ✅
 - **Last Session**: 2026-07-04 — Migration déploiement Fly.io → Vercel
-- **Next Steps**: Redéployer (fix dépendances `hono` racine) → revérifier `/api/health` → seeder Supabase
+- **Next Steps**: Seeder Supabase (`db:push` + `db:seed`) → tester login web sur `/` → vérifier planning/notifications end-to-end
 
 ---
 
@@ -265,7 +265,7 @@ M pnpm-lock.yaml                            (pnpm install après ajout dependenc
 - Décision session : reset complet Vercel (nouveau projet) + MongoDB Atlas (nouveau cluster, Network Access `0.0.0.0/0` dès la création) — Supabase conservé inchangé. Nouveau projet Vercel créé, domaine réutilisé `planify-kids-api.vercel.app`, env vars reconfigurées manuellement.
 - Fix timeouts déployé → toujours 300s hang, mais log révèle la vraie cause : `WARN: default export returned a Response` — `export default handle(root)` traité par le runtime Node Vercel en mode legacy `(req, res) => void` (pas le mode Web fetch-style), le `Response` retourné par `handle()` est ignoré silencieusement → attend un `res.end()` qui n'arrive jamais → hang jusqu'à `maxDuration`. Les timeouts DB étaient inutiles : la requête n'atteignait jamais le client de toute façon. Fix : remplacer `export default handle(root)` par des exports nommés par méthode HTTP (`GET`/`POST`/`PUT`/`PATCH`/`DELETE`/`OPTIONS`), pattern officiel Hono+Vercel pour le mode Web-standard.
 - Fix exports nommés déployé → `/api/health` répond enfin (`db: "ok"`) mais `mongo: "error"` persistant, même sur invocation chaude. Log révèle race condition cold start : réponse `/api/health` envoyée à `23:15:15.737`, log `"✅ MongoDB connecté"` imprimé 484ms après (`23:15:16.221`) — `connectMongo()` fire-and-forget (non attendu) au module top-level, la 1ère requête arrive avant la fin de connexion, `mongoose.connection.readyState` encore à 0. Fix : `await` explicite sur `prisma.$connect()` et `connectMongo()` en top-level await (permis car `"type": "module"`) — bloque le cold start jusqu'à connexion établie, coût unique (~qq centaines de ms à 8s max) amorti sur invocations chaudes suivantes.
-- Prochain déploiement à vérifier : `/api/health` doit enfin retourner `{ status: "ok", db: "ok", mongo: "ok" }`.
+- `/api/health` → `200 { status: "ok", db: "ok", mongo: "ok" }`. Déploiement Vercel fonctionnel de bout en bout.
 
 ---
 

@@ -10,10 +10,12 @@ import { initFirebase } from "../apps/api/src/config/firebase.js";
 export const config = { runtime: "nodejs" };
 
 // Initialisations au démarrage Lambda — réutilisées sur les invocations tièdes
+// Top-level await : bloque le cold start jusqu'à connexion établie (évite la race
+// où la 1ère requête arrive avant la fin de connectMongo/$connect fire-and-forget)
 initSentry();
 initFirebase();
-prisma.$connect().catch(console.error);
-connectMongo().catch(console.error);
+await prisma.$connect().catch(console.error);
+await connectMongo().catch(console.error);
 
 // Monte l'app au préfixe /api (rewrite Vercel conserve le path original)
 const root = new Hono();

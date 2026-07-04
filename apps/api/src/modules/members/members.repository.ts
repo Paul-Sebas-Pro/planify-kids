@@ -1,6 +1,6 @@
 import * as argon2 from "argon2";
-import { prisma } from "../../config/database";
-import type { CreateMemberInput, UpdateMemberInput } from "./members.schema";
+import { prisma } from "../../config/database.js";
+import type { CreateMemberInput, UpdateMemberInput } from "./members.schema.js";
 
 export function getMembersByFamily(familyId: string) {
   return prisma.familyMember.findMany({

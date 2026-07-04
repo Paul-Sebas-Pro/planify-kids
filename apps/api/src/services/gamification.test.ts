@@ -18,7 +18,7 @@ vi.mock("../config/database", () => ({
   },
 }));
 
-import { awardPointsForTask } from "./gamification";
+import { awardPointsForTask } from "./gamification.js";
 
 beforeEach(() => {
   vi.clearAllMocks();

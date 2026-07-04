@@ -40,8 +40,8 @@ vi.mock("./planning.service", () => ({
   deleteScheduleService: vi.fn(),
 }));
 
-import app from "../../app";
-import * as planningService from "./planning.service";
+import app from "../../app.js";
+import * as planningService from "./planning.service.js";
 
 const mockGenerate = vi.mocked(planningService.generatePlanningService);
 const mockList = vi.mocked(planningService.listSchedulesService);

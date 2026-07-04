@@ -3,13 +3,13 @@ import { zValidator } from "@hono/zod-validator";
 import {
   authMiddleware,
   requireRole,
-} from "../../core/middleware/auth.middleware";
+} from "../../core/middleware/auth.middleware.js";
 import {
   createRewardSchema,
   updateRewardSchema,
   claimRewardSchema,
   reviewClaimSchema,
-} from "./rewards.schema";
+} from "./rewards.schema.js";
 import {
   listRewardsService,
   createRewardService,
@@ -19,7 +19,7 @@ import {
   listMyClaimsService,
   claimRewardService,
   reviewClaimService,
-} from "./rewards.service";
+} from "./rewards.service.js";
 
 export const rewardsRoutes = new Hono();
 

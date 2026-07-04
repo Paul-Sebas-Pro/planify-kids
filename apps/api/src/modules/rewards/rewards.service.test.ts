@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AppError, NotFoundError } from "../../core/errors/AppError";
+import { AppError, NotFoundError } from "../../core/errors/AppError.js";
 
 vi.mock("../notifications/notifications.service", () => ({
   notifyClaimReviewed: vi.fn(),
@@ -22,14 +22,14 @@ vi.mock("../members/members.repository", () => ({
   getMemberById: vi.fn(),
 }));
 
-import * as repo from "./rewards.repository";
-import * as membersRepo from "../members/members.repository";
+import * as repo from "./rewards.repository.js";
+import * as membersRepo from "../members/members.repository.js";
 import {
   updateRewardService,
   deleteRewardService,
   claimRewardService,
   reviewClaimService,
-} from "./rewards.service";
+} from "./rewards.service.js";
 
 const mockGetRewardById = vi.mocked(repo.getRewardById);
 const mockUpdateReward = vi.mocked(repo.updateReward);

@@ -38,8 +38,8 @@ vi.mock("./rewards.service", () => ({
   reviewClaimService: vi.fn(),
 }));
 
-import app from "../../app";
-import * as rewardsService from "./rewards.service";
+import app from "../../app.js";
+import * as rewardsService from "./rewards.service.js";
 
 const mockList        = vi.mocked(rewardsService.listRewardsService);
 const mockCreate      = vi.mocked(rewardsService.createRewardService);

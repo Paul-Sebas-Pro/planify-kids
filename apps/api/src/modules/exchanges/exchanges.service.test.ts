@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AppError, NotFoundError } from "../../core/errors/AppError";
+import { AppError, NotFoundError } from "../../core/errors/AppError.js";
 
 vi.mock("./exchanges.repository", () => ({
   getExchangesByFamily: vi.fn(),
@@ -14,12 +14,12 @@ vi.mock("../members/members.repository", () => ({
   getMemberById: vi.fn(),
 }));
 
-import * as repo from "./exchanges.repository";
-import * as membersRepo from "../members/members.repository";
+import * as repo from "./exchanges.repository.js";
+import * as membersRepo from "../members/members.repository.js";
 import {
   proposeExchangeService,
   respondExchangeService,
-} from "./exchanges.service";
+} from "./exchanges.service.js";
 
 const mockGetExchangeById = vi.mocked(repo.getExchangeById);
 const mockGetPending = vi.mocked(repo.getPendingExchangeForItem);

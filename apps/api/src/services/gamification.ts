@@ -1,4 +1,4 @@
-import { prisma } from "../config/database";
+import { prisma } from "../config/database.js";
 import { GamificationLog } from "../config/gamification-log.model.js";
 import { checkChallengesAfterPoints } from "../modules/challenges/challenges.service.js";
 

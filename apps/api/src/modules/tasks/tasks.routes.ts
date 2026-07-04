@@ -3,14 +3,14 @@ import { zValidator } from "@hono/zod-validator";
 import {
   authMiddleware,
   requireRole,
-} from "../../core/middleware/auth.middleware";
-import { createTaskSchema, updateTaskSchema } from "./tasks.schema";
+} from "../../core/middleware/auth.middleware.js";
+import { createTaskSchema, updateTaskSchema } from "./tasks.schema.js";
 import {
   listTasksService,
   createTaskService,
   updateTaskService,
   deleteTaskService,
-} from "./tasks.service";
+} from "./tasks.service.js";
 
 export const tasksRoutes = new Hono();
 

@@ -1,6 +1,6 @@
 import * as argon2 from "argon2";
 import jwt, { type Secret } from "jsonwebtoken";
-import { env } from "../../config/env";
+import { env } from "../../config/env.js";
 import {
   ConflictError,
   UnauthorizedError,
@@ -10,8 +10,8 @@ import {
   createUserWithFamily,
   findFamilyByCode,
   findChildMember,
-} from "./auth.repository";
-import type { RegisterInput, LoginInput, LoginChildInput } from "./auth.schema";
+} from "./auth.repository.js";
+import type { RegisterInput, LoginInput, LoginChildInput } from "./auth.schema.js";
 
 function generateTokens(
   sub: string,

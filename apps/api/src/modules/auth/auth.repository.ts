@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
-import { prisma } from "../../config/database";
-import type { RegisterInput } from "./auth.schema";
+import { prisma } from "../../config/database.js";
+import type { RegisterInput } from "./auth.schema.js";
 
 function randomFamilyCode(): string {
   return Math.random().toString(36).slice(2, 8).toUpperCase();

@@ -1,12 +1,12 @@
-import { prisma } from "../../config/database";
-import { sendPushNotification } from "../../config/firebase";
+import { prisma } from "../../config/database.js";
+import { sendPushNotification } from "../../config/firebase.js";
 import {
   getNotifications,
   createNotification,
   createManyNotifications,
   markRead,
   markAllRead,
-} from "./notifications.repository";
+} from "./notifications.repository.js";
 
 export function listNotificationsService(memberId: string, familyId: string) {
   return getNotifications(memberId, familyId);

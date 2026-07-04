@@ -1,5 +1,5 @@
 import * as argon2 from "argon2";
-import { prisma } from "../config/database";
+import { prisma } from "../config/database.js";
 
 const badges = [
   {

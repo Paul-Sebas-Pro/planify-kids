@@ -35,8 +35,8 @@ vi.mock("./tasks.service", () => ({
   deleteTaskService: vi.fn(),
 }));
 
-import app from "../../app";
-import * as tasksService from "./tasks.service";
+import app from "../../app.js";
+import * as tasksService from "./tasks.service.js";
 
 const mockList   = vi.mocked(tasksService.listTasksService);
 const mockCreate = vi.mocked(tasksService.createTaskService);

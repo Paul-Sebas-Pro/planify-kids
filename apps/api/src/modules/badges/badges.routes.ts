@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { authMiddleware } from "../../core/middleware/auth.middleware";
-import { prisma } from "../../config/database";
+import { authMiddleware } from "../../core/middleware/auth.middleware.js";
+import { prisma } from "../../config/database.js";
 
 export const badgesRoutes = new Hono();
 

@@ -1,4 +1,4 @@
-import { NotFoundError, ForbiddenError } from "../../core/errors/AppError";
+import { NotFoundError, ForbiddenError } from "../../core/errors/AppError.js";
 import {
   getMembersByFamily,
   getMemberById,
@@ -8,8 +8,8 @@ import {
   updateMemberPin,
   updateMemberFcmToken,
   getMemberTimelineData,
-} from "./members.repository";
-import type { CreateMemberInput, UpdateMemberInput } from "./members.schema";
+} from "./members.repository.js";
+import type { CreateMemberInput, UpdateMemberInput } from "./members.schema.js";
 
 export function listMembersService(familyId: string) {
   return getMembersByFamily(familyId);

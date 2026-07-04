@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { authMiddleware } from "../../core/middleware/auth.middleware";
-import { prisma } from "../../config/database";
-import { AppError } from "../../core/errors/AppError";
+import { authMiddleware } from "../../core/middleware/auth.middleware.js";
+import { prisma } from "../../config/database.js";
+import { AppError } from "../../core/errors/AppError.js";
 
 export const familyReportRoutes = new Hono();
 

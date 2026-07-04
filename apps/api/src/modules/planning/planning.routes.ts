@@ -3,18 +3,18 @@ import { zValidator } from "@hono/zod-validator";
 import {
   authMiddleware,
   requireRole,
-} from "../../core/middleware/auth.middleware";
+} from "../../core/middleware/auth.middleware.js";
 import {
   generatePlanningSchema,
   updateScheduleItemSchema,
-} from "./planning.schema";
+} from "./planning.schema.js";
 import {
   generatePlanningService,
   listSchedulesService,
   getScheduleService,
   updateScheduleItemService,
   deleteScheduleService,
-} from "./planning.service";
+} from "./planning.service.js";
 
 export const planningRoutes = new Hono();
 

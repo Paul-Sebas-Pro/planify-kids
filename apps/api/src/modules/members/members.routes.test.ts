@@ -35,8 +35,8 @@ vi.mock("./members.service", () => ({
   deleteMemberService: vi.fn(),
 }));
 
-import app from "../../app";
-import * as membersService from "./members.service";
+import app from "../../app.js";
+import * as membersService from "./members.service.js";
 
 const mockList   = vi.mocked(membersService.listMembersService);
 const mockCreate = vi.mocked(membersService.createMemberService);

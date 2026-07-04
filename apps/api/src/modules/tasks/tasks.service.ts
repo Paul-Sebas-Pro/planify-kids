@@ -1,12 +1,12 @@
-import { NotFoundError } from "../../core/errors/AppError";
+import { NotFoundError } from "../../core/errors/AppError.js";
 import {
   getTasksByFamily,
   getTaskById,
   createTask,
   updateTask,
   deleteTask,
-} from "./tasks.repository";
-import type { CreateTaskInput, UpdateTaskInput } from "./tasks.schema";
+} from "./tasks.repository.js";
+import type { CreateTaskInput, UpdateTaskInput } from "./tasks.schema.js";
 
 export function listTasksService(familyId: string, activeOnly: boolean) {
   return getTasksByFamily(familyId, activeOnly);

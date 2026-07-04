@@ -1,7 +1,7 @@
-import { prisma } from "../../config/database";
+import { prisma } from "../../config/database.js";
 import type { Prisma } from "@prisma/client";
-import type { GreedyAssignment } from "../../services/planning-greedy";
-import type { UpdateScheduleItemInput } from "./planning.schema";
+import type { GreedyAssignment } from "../../services/planning-greedy.js";
+import type { UpdateScheduleItemInput } from "./planning.schema.js";
 
 export function getSchedulesByFamily(familyId: string, limit = 20) {
   return prisma.schedule.findMany({

@@ -1,5 +1,5 @@
-import { prisma } from "../../config/database";
-import type { CreateTaskInput, UpdateTaskInput } from "./tasks.schema";
+import { prisma } from "../../config/database.js";
+import type { CreateTaskInput, UpdateTaskInput } from "./tasks.schema.js";
 
 export function getTasksByFamily(familyId: string, activeOnly = true) {
   return prisma.taskTemplate.findMany({

@@ -34,8 +34,8 @@ vi.mock("./exchanges.service", () => ({
   respondExchangeService: vi.fn(),
 }));
 
-import app from "../../app";
-import * as exchangesService from "./exchanges.service";
+import app from "../../app.js";
+import * as exchangesService from "./exchanges.service.js";
 
 const mockList = vi.mocked(exchangesService.listExchangesService);
 const mockPropose = vi.mocked(exchangesService.proposeExchangeService);

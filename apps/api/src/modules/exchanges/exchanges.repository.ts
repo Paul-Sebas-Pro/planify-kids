@@ -1,5 +1,5 @@
-import { prisma } from "../../config/database";
-import type { ProposeExchangeInput } from "./exchanges.schema";
+import { prisma } from "../../config/database.js";
+import type { ProposeExchangeInput } from "./exchanges.schema.js";
 
 const exchangeInclude = {
   scheduleItem: {

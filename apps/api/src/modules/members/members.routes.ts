@@ -3,13 +3,13 @@ import { zValidator } from "@hono/zod-validator";
 import {
   authMiddleware,
   requireRole,
-} from "../../core/middleware/auth.middleware";
+} from "../../core/middleware/auth.middleware.js";
 import {
   createMemberSchema,
   updateMemberSchema,
   updatePinSchema,
   updateFcmTokenSchema,
-} from "./members.schema";
+} from "./members.schema.js";
 import {
   listMembersService,
   createMemberService,
@@ -18,7 +18,7 @@ import {
   updateFcmTokenService,
   deleteMemberService,
   getMemberTimelineService,
-} from "./members.service";
+} from "./members.service.js";
 
 export const membersRoutes = new Hono();
 

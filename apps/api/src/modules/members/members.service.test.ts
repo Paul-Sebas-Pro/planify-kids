@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NotFoundError, ForbiddenError } from "../../core/errors/AppError";
+import { NotFoundError, ForbiddenError } from "../../core/errors/AppError.js";
 
 vi.mock("./members.repository", () => ({
   getMembersByFamily: vi.fn(),
@@ -9,13 +9,13 @@ vi.mock("./members.repository", () => ({
   deleteMember: vi.fn(),
 }));
 
-import * as repo from "./members.repository";
+import * as repo from "./members.repository.js";
 import {
   listMembersService,
   createMemberService,
   updateMemberService,
   deleteMemberService,
-} from "./members.service";
+} from "./members.service.js";
 
 const mockGetByFamily = vi.mocked(repo.getMembersByFamily);
 const mockGetById = vi.mocked(repo.getMemberById);

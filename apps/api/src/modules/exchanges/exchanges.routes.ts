@@ -1,15 +1,15 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { authMiddleware } from "../../core/middleware/auth.middleware";
+import { authMiddleware } from "../../core/middleware/auth.middleware.js";
 import {
   proposeExchangeSchema,
   respondExchangeSchema,
-} from "./exchanges.schema";
+} from "./exchanges.schema.js";
 import {
   listExchangesService,
   proposeExchangeService,
   respondExchangeService,
-} from "./exchanges.service";
+} from "./exchanges.service.js";
 
 export const exchangesRoutes = new Hono();
 

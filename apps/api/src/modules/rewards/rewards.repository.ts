@@ -1,9 +1,9 @@
-import { prisma } from "../../config/database";
+import { prisma } from "../../config/database.js";
 import type {
   CreateRewardInput,
   UpdateRewardInput,
   ReviewClaimInput,
-} from "./rewards.schema";
+} from "./rewards.schema.js";
 
 export function getRewardsByFamily(familyId: string) {
   return prisma.reward.findMany({

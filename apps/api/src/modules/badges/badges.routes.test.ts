@@ -34,8 +34,8 @@ vi.mock("../../core/middleware/auth.middleware", () => ({
   }),
 }));
 
-import app from "../../app";
-import { prisma } from "../../config/database";
+import app from "../../app.js";
+import { prisma } from "../../config/database.js";
 
 const mockBadgeFindMany       = vi.mocked((prisma.badge as any).findMany);
 const mockMemberBadgeFindMany = vi.mocked((prisma.memberBadge as any).findMany);

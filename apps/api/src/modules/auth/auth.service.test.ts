@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ConflictError, UnauthorizedError } from "../../core/errors/AppError";
+import { ConflictError, UnauthorizedError } from "../../core/errors/AppError.js";
 
 // Mocks hoistés avant les imports du module testé
 vi.mock("../../config/env", () => ({
@@ -21,9 +21,9 @@ vi.mock("argon2", () => ({
   verify: vi.fn(),
 }));
 
-import * as repo from "./auth.repository";
+import * as repo from "./auth.repository.js";
 import * as argon2 from "argon2";
-import { registerService, loginService } from "./auth.service";
+import { registerService, loginService } from "./auth.service.js";
 
 const mockHash = vi.mocked(argon2.hash);
 const mockVerify = vi.mocked(argon2.verify);

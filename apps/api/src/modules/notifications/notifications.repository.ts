@@ -1,4 +1,4 @@
-import { prisma } from "../../config/database";
+import { prisma } from "../../config/database.js";
 import type { NotificationType } from "@prisma/client";
 
 export function getNotifications(memberId: string, familyId: string, limit = 30) {

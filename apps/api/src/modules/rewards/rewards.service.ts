@@ -1,4 +1,4 @@
-import { AppError, NotFoundError } from "../../core/errors/AppError";
+import { AppError, NotFoundError } from "../../core/errors/AppError.js";
 import {
   getRewardsByFamily,
   getRewardById,
@@ -11,16 +11,16 @@ import {
   createClaim,
   updateClaim,
   deductPoints,
-} from "./rewards.repository";
-import { getMemberById } from "../members/members.repository";
-import { notifyClaimReviewed } from "../notifications/notifications.service";
-import { sseEmit } from "../../services/sse.service";
+} from "./rewards.repository.js";
+import { getMemberById } from "../members/members.repository.js";
+import { notifyClaimReviewed } from "../notifications/notifications.service.js";
+import { sseEmit } from "../../services/sse.service.js";
 import type {
   CreateRewardInput,
   UpdateRewardInput,
   ClaimRewardInput,
   ReviewClaimInput,
-} from "./rewards.schema";
+} from "./rewards.schema.js";
 
 export function listRewardsService(familyId: string) {
   return getRewardsByFamily(familyId);

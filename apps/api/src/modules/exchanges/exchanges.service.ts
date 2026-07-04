@@ -1,5 +1,5 @@
-import { AppError, NotFoundError } from "../../core/errors/AppError";
-import { getMemberById } from "../members/members.repository";
+import { AppError, NotFoundError } from "../../core/errors/AppError.js";
+import { getMemberById } from "../members/members.repository.js";
 import {
   getExchangesByFamily,
   getExchangeById,
@@ -7,11 +7,11 @@ import {
   createExchange,
   updateExchangeStatus,
   reassignScheduleItem,
-} from "./exchanges.repository";
+} from "./exchanges.repository.js";
 import type {
   ProposeExchangeInput,
   RespondExchangeInput,
-} from "./exchanges.schema";
+} from "./exchanges.schema.js";
 
 export function listExchangesService(
   familyId: string,

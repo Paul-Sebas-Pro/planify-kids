@@ -29,8 +29,8 @@ vi.mock("../../core/middleware/auth.middleware", () => ({
   requireRole: vi.fn(() => async (_c: any, next: any) => await next()),
 }));
 
-import app from "../../app";
-import * as authService from "./auth.service";
+import app from "../../app.js";
+import * as authService from "./auth.service.js";
 
 const mockRegister = vi.mocked(authService.registerService);
 const mockLogin = vi.mocked(authService.loginService);

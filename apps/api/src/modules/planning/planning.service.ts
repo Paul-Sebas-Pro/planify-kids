@@ -1,8 +1,8 @@
 import type { FamilyMember } from "@prisma/client";
-import { AppError, NotFoundError } from "../../core/errors/AppError";
-import { getTasksByFamily } from "../tasks/tasks.repository";
-import { getMembersByFamily } from "../members/members.repository";
-import { generatePlanningGreedy } from "../../services/planning-greedy";
+import { AppError, NotFoundError } from "../../core/errors/AppError.js";
+import { getTasksByFamily } from "../tasks/tasks.repository.js";
+import { getMembersByFamily } from "../members/members.repository.js";
+import { generatePlanningGreedy } from "../../services/planning-greedy.js";
 import {
   createScheduleWithItems,
   getSchedulesByFamily,
@@ -10,14 +10,14 @@ import {
   getScheduleItemWithTask,
   updateScheduleItem,
   deleteSchedule,
-} from "./planning.repository";
-import { awardPointsForTask } from "../../services/gamification";
-import { notifyTaskCompleted, notifyTasksAssigned } from "../notifications/notifications.service";
-import { sseEmit } from "../../services/sse.service";
+} from "./planning.repository.js";
+import { awardPointsForTask } from "../../services/gamification.js";
+import { notifyTaskCompleted, notifyTasksAssigned } from "../notifications/notifications.service.js";
+import { sseEmit } from "../../services/sse.service.js";
 import type {
   GeneratePlanningInput,
   UpdateScheduleItemInput,
-} from "./planning.schema";
+} from "./planning.schema.js";
 
 export async function generatePlanningService(
   familyId: string,

@@ -4,8 +4,8 @@ import { z } from "zod";
 import {
   authMiddleware,
   requireRole,
-} from "../../core/middleware/auth.middleware";
-import { prisma } from "../../config/database";
+} from "../../core/middleware/auth.middleware.js";
+import { prisma } from "../../config/database.js";
 
 export const familySettingsRoutes = new Hono();
 

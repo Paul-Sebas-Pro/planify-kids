@@ -8,3 +8,7 @@ overrides:
 onlyBuiltDependencies:
   - esbuild
   - argon2
+  - "@prisma/engines"
+  - prisma
+  - "@firebase/util"
+  - protobufjs

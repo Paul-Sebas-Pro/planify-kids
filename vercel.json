@@ -2,7 +2,7 @@
   "version": 2,
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter @planify-kids/api db:generate && pnpm --filter @planify-kids/web build",
+  "buildCommand": "DATABASE_URL=postgresql://build:build@localhost/build pnpm --filter @planify-kids/api db:generate && pnpm --filter @planify-kids/web build",
   "outputDirectory": "apps/web/dist",
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api" },

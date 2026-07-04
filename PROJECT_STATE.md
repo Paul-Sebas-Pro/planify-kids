@@ -60,78 +60,101 @@
 
 ---
 
-## 🚀 Déploiement Fly.io — Procédure
+## 🚀 Déploiement Vercel — Procédure
+
+**Architecture** :
+
+- **Web** (React/Vite) → Vercel static site (`apps/web/dist`)
+- **API** (Hono) → Vercel Serverless Function Node.js (`api/index.ts`) — routée via `vercel.json` rewrite `/api/*`
+- **PostgreSQL** → Supabase (Session pooler port 5432)
+- **MongoDB** → MongoDB Atlas
+
+**Limitations à connaître** :
+
+- `GET /events` (SSE) : timeout Serverless Function 10s (Hobby) → connexions SSE coupées, dégradé en polling TanStack Query
+- Cron planning (`node-cron`) : ne tourne pas en serverless → génération semaine suivante manuelle via `POST /planning/generate` (Vercel Cron à implémenter ultérieurement)
+- Node.js runtime : Vercel supporte max 22.x — le projet déclare `>=24` mais le code compilé tourne sur 22 sans problème
 
 ### Prérequis
 
-- `fly` CLI installé : `curl -L https://fly.io/install.sh | sh`
-- Compte Fly.io + `fly auth login`
-- Projet **Supabase** créé → récupérer la **Connection string** (Settings → Database → URI mode `Transaction pooler` sur port 6543)
-- **MongoDB Atlas** cluster disponible (URI de connexion prête)
+- Compte Vercel (gratuit, sans CB)
+- Projet **Supabase** créé
+- **MongoDB Atlas** cluster disponible
 
-### 1. Créer les apps Fly
+### 1. PostgreSQL — Supabase
+
+Récupère l'URI dans Supabase → **Settings → Database → Connection string → URI** (mode **Session pooler**, port **5432**) :
+
+```
+postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+```
+
+Si le mot de passe contient `@`, l'encoder en `%40`.
+
+### 2. Synchroniser le schéma Supabase
 
 ```bash
-fly apps create planify-kids-api
-fly apps create planify-kids-web
+# Depuis la racine du monorepo (à relancer après chaque modification schema.prisma)
+DATABASE_URL="postgresql://..." pnpm --filter @planify-kids/api db:push --accept-data-loss
 ```
 
-### 2. PostgreSQL — Supabase (base de données externe)
-
-Fly Postgres n'est pas utilisé. La base est gérée par Supabase.
-
-Récupère l'URI dans Supabase → **Settings → Database → Connection string → URI** :
-
-```
-postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
-```
-
-Injecte-la directement à l'étape 3.
-
-### 3. Configurer les secrets API
+### 3. Seeder la base de données
 
 ```bash
-fly secrets set -a planify-kids-api \
-  DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres" \
-  MONGODB_URI="mongodb+srv://user:pass@cluster.mongodb.net/planify-kids" \
-  JWT_SECRET="$(openssl rand -base64 48)" \
-  CORS_ORIGINS="https://planify-kids-web.fly.dev"
+DATABASE_URL="postgresql://..." MONGODB_URI="mongodb+srv://..." JWT_SECRET="..." \
+  pnpm --filter @planify-kids/api db:seed
 ```
 
-### 4. Configurer le secret GitHub CI/CD
+### 4. Connecter le dépôt GitHub à Vercel
 
-Dans le dépôt GitHub → **Settings → Secrets and variables → Actions** :
+1. Vercel → **Add New Project → Import Git Repository**
+2. Sélectionner le dépôt GitHub
+3. Vercel détecte automatiquement `vercel.json` à la racine
+4. **Framework Preset** → choisir **Other** (pas Next.js)
+5. Build command, output dir et install command sont pré-remplis depuis `vercel.json`
 
-| Nom             | Valeur                                                     |
-| --------------- | ---------------------------------------------------------- |
-| `FLY_API_TOKEN` | Résultat de `fly tokens create deploy -a planify-kids-api` |
+### 5. Configurer les variables d'environnement Vercel
 
-### 5. Premier déploiement manuel
+Dans Vercel → **Settings → Environment Variables** (cocher Production + Preview + Development) :
 
-```bash
-# Depuis la racine du monorepo
-fly deploy --config fly.api.toml --remote-only
-fly deploy --config fly.web.toml --remote-only
-```
+| Variable       | Valeur                                                                                    |
+| -------------- | ----------------------------------------------------------------------------------------- |
+| `DATABASE_URL` | `postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres` |
+| `MONGODB_URI`  | `mongodb+srv://user:pass@cluster.mongodb.net/planify-kids`                                |
+| `JWT_SECRET`   | Chaîne aléatoire 48+ chars (`openssl rand -base64 48`)                                    |
+| `CORS_ORIGINS` | `https://[nom-projet].vercel.app`                                                         |
 
-### 6. Déploiements suivants — automatiques
+Variables optionnelles (opt-in) :
+
+| Variable                | Valeur                           |
+| ----------------------- | -------------------------------- |
+| `SENTRY_DSN`            | DSN Sentry (opt-in)              |
+| `VITE_SENTRY_DSN`       | DSN Sentry côté web (opt-in)     |
+| `FIREBASE_PROJECT_ID`   | ID projet Firebase (opt-in, FCM) |
+| `FIREBASE_CLIENT_EMAIL` | Client email Firebase (opt-in)   |
+| `FIREBASE_PRIVATE_KEY`  | Clé privée Firebase (opt-in)     |
+
+### 6. Déploiements — automatiques
 
 Chaque `push` sur `main` déclenche :
 
-1. Jobs CI : `api` (typecheck + tests) + `smoke` (démarrage API) + `web` (typecheck) + `e2e` (Playwright 10 tests)
-2. Job `deploy` (si tout passe) : `flyctl deploy` API puis Web
+1. CI GitHub Actions : `api` (typecheck + tests) + `smoke` + `web` + `e2e`
+2. **Vercel** détecte le push et lance son propre build + deploy en parallèle
 
-### URLs de production (après déploiement)
+Les PRs génèrent automatiquement des preview deployments Vercel.
 
-- **API** : `https://planify-kids-api.fly.dev`
-- **Web** : `https://planify-kids-web.fly.dev`
-- **Health** : `https://planify-kids-api.fly.dev/health`
+### URLs de production
+
+- **Web + API** : `https://[nom-projet].vercel.app`
+- **Health** : `https://[nom-projet].vercel.app/api/health`
+- **API base** : `https://[nom-projet].vercel.app/api`
+
+> Pour Flutter : `API_BASE_URL = "https://[nom-projet].vercel.app/api"`
 
 ### Monitoring
 
-- Logs API en temps réel : `fly logs -a planify-kids-api`
-- Dashboard Fly : `https://fly.io/apps/planify-kids-api`
-- Sentry (si configuré) : ajouter `SENTRY_DSN` et `VITE_SENTRY_DSN` dans les secrets Fly + GitHub
+- Logs fonction : Vercel → **Functions** tab → `api/index`
+- Sentry (si configuré) : ajouter `SENTRY_DSN` dans les env vars Vercel
 
 ---
 

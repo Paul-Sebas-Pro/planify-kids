@@ -6,8 +6,8 @@
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
 - **Statut**: Sprint 5 TERMINÉ — D1 ✅ D2 ✅ D3 ✅ D4 ✅
-- **Last Session**: 2026-06-30 — Notifications push FCM opt-in (backend + Flutter)
-- **Next Steps**: —
+- **Last Session**: 2026-07-04 — Migration déploiement Fly.io → Vercel
+- **Next Steps**: Redéployer (fix dépendances `hono` racine) → revérifier `/api/health` → seeder Supabase
 
 ---
 
@@ -54,7 +54,7 @@
 - [x] **Tests E2E Playwright** — scénarios critiques : auth (login/erreur/déconnexion) + planning (charge + génère) + rapport (sélecteur semaine + affichage) ; job CI `e2e` (needs: api+smoke+web) — build + preview + Playwright chromium
 - [x] **Docker production** — multi-stage builds (3 stages API, 2 stages Web/nginx) ; `docker-compose.prod.yml` vars requises `:?` ; health checks `/health` + nginx ; `.env.prod.example` ; `pnpm prune --prod` stage runner
 - [x] **Monitoring** — `requestLogger` middleware JSON (`ts/method/path/status/ms/familyId`) remplace Hono logger ; Sentry opt-in (`SENTRY_DSN` / `VITE_SENTRY_DSN`) — `initSentry()` no-op si absent ; `Sentry.ErrorBoundary` React avec fallback UI
-- [x] **CI/CD deploy** — Fly.io : `fly.api.toml` (region cdg, health check /health) + `fly.web.toml` (nginx + Fly private DNS `planify-kids-api.internal:3000`) ; job `deploy` CI (needs: all, push main only, `FLY_API_TOKEN` secret) ; `nginx.conf.template` → `${API_URL}` substitué au démarrage (nginx template)
+- [x] **CI/CD deploy** — Vercel : `vercel.json` (`framework: null`, buildCommand avec `DATABASE_URL` fictive pour `prisma generate`, `outputDirectory: apps/web/dist`, rewrites `/api/*` → fonction) ; `api/index.ts` (Hono `handle`, `runtime: "nodejs"`, mount `/api`, init Sentry/Firebase/Prisma/Mongo) ; deploy automatique sur push main via intégration GitHub Vercel ; `pnpm-workspace.yaml` `onlyBuiltDependencies` étendu (@prisma/engines, @firebase/util, protobufjs) ; `binaryTargets: rhel-openssl-3.0.x` dans schema.prisma
 
 **Valeur** : prépare le déploiement réel pour de vraies familles.
 
@@ -219,6 +219,49 @@ Les PRs génèrent automatiquement des preview deployments Vercel.
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 20 - 2026-07-04
+
+**Objectif**: Migration déploiement Fly.io → Vercel + Supabase
+
+**Concepts introduits**:
+
+- **Vercel monorepo pnpm** : `vercel.json` avec `"framework": null` (empêche la détection auto qui écrase `buildCommand`) + `buildCommand` / `outputDirectory` / `installCommand` explicites
+- **`hono/vercel` adapter** : `handle(root)` + `export const config = { runtime: "nodejs" }` — runtime Node.js obligatoire pour les native addons (argon2, firebase-admin) ; Edge runtime les interdit
+- **`DATABASE_URL` fictive au build** : `prisma.config.ts` valide `env("DATABASE_URL")` au chargement du module, même pendant `prisma generate` — fix : préfixer le buildCommand avec `DATABASE_URL=postgresql://build:build@localhost/build`
+- **`onlyBuiltDependencies` pnpm** : pnpm 10 ignore les build scripts par sécurité — `@prisma/engines`, `prisma`, `@firebase/util`, `protobufjs` doivent être listés pour que Prisma génère son client
+- **`binaryTargets` Prisma** : `["native", "rhel-openssl-3.0.x"]` pour compatibilité Lambda Amazon Linux 2023 (runtime Vercel/AWS)
+- **Limitations Vercel Hobby** : SSE (`GET /events`) coupé à 10s (Lambda timeout) → dégradé en polling TanStack Query ; cron `node-cron` non fonctionnel en serverless → génération planning manuelle
+
+**Modifications**:
+
+```diff
++ vercel.json                               (framework null, buildCommand DATABASE_URL fictive, outputDirectory, rewrites /api/* + SPA)
++ api/index.ts                              (Hono handle Vercel, runtime nodejs, mount /api, init Sentry/Firebase/Prisma/Mongo)
+M apps/api/src/prisma/schema.prisma         (+ binaryTargets native + rhel-openssl-3.0.x)
+M pnpm-workspace.yaml                       (+ @prisma/engines, prisma, @firebase/util, protobufjs dans onlyBuiltDependencies)
+M .github/workflows/ci.yml                  (suppression job deploy Fly.io — Vercel deploy géré nativement)
+M PROJECT_STATE.md                          (procédure déploiement Vercel, D4 mis à jour)
+D fly.api.toml, fly.web.toml               (Fly.io retiré)
+D docker/api.prod.Dockerfile               (Docker prod retiré — Vercel gère le build)
+D docker/web.prod.Dockerfile
+D docker/api-prod-entrypoint.sh
+D docker/nginx.conf, docker/nginx.conf.template
+D docker-compose.prod.yml
+M package.json                              (+ dependencies runtime dupliquées d'apps/api — hono, prisma, argon2, mongoose, firebase-admin… résolubles depuis /api/index.ts)
+M pnpm-lock.yaml                            (pnpm install après ajout dependencies racine)
+```
+
+**Résultats**:
+
+- Build Vercel #1 échoué : `PrismaConfigEnvError` (DATABASE_URL absente au build) + build scripts pnpm ignorés → fixes appliqués (commits précédents).
+- Build Vercel #2 échoué : "No Output Directory named dist" → Root Directory dashboard réglé sur `api` par erreur → corrigé à `./` (racine repo), Output Directory `apps/web/dist` confirmé.
+- Build Vercel #3 réussi (warnings TS non-bloquants sur extensions `.js`/imports — esbuild bundle sans typecheck strict, ignorés).
+- Env vars configurées manuellement dans dashboard Vercel : `DATABASE_URL` (Supabase session pooler), `MONGODB_URI` (Atlas), `JWT_SECRET`, `CORS_ORIGINS`.
+- `GET /api/health` → 500 `FUNCTION_INVOCATION_FAILED` : `Cannot find module 'hono'`. Cause : `api/index.ts` vit à la racine du repo, hors des workspaces pnpm ; `hono` (et toutes les deps runtime) déclarées uniquement dans `apps/api/package.json` → pnpm strict n'installe pas ces packages au `node_modules` racine → tracing Vercel (`@vercel/nft`) ne trouve pas le module. Fix : dupliquer les dependencies runtime d'`apps/api` dans le `package.json` racine + `pnpm install` (crée les symlinks `.pnpm` résolubles depuis `/api/index.ts`).
+- Prochain déploiement à vérifier : `/api/health` doit retourner `{ status, db, mongo }`.
+
+---
 
 ### Session 19 - 2026-06-28
 

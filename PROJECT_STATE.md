@@ -248,7 +248,7 @@ D docker/web.prod.Dockerfile
 D docker/api-prod-entrypoint.sh
 D docker/nginx.conf, docker/nginx.conf.template
 D docker-compose.prod.yml
-M package.json                              (+ dependencies runtime dupliquées d'apps/api — hono, prisma, argon2, mongoose, firebase-admin… résolubles depuis /api/index.ts)
+M package.json                              (+ dependencies runtime dupliquées d'apps/api — hono, prisma, argon2, mongoose, firebase-admin… résolubles depuis /api/index.ts ; + "type": "module")
 M pnpm-lock.yaml                            (pnpm install après ajout dependencies racine)
 ```
 
@@ -259,6 +259,7 @@ M pnpm-lock.yaml                            (pnpm install après ajout dependenc
 - Build Vercel #3 réussi (warnings TS non-bloquants sur extensions `.js`/imports — esbuild bundle sans typecheck strict, ignorés).
 - Env vars configurées manuellement dans dashboard Vercel : `DATABASE_URL` (Supabase session pooler), `MONGODB_URI` (Atlas), `JWT_SECRET`, `CORS_ORIGINS`.
 - `GET /api/health` → 500 `FUNCTION_INVOCATION_FAILED` : `Cannot find module 'hono'`. Cause : `api/index.ts` vit à la racine du repo, hors des workspaces pnpm ; `hono` (et toutes les deps runtime) déclarées uniquement dans `apps/api/package.json` → pnpm strict n'installe pas ces packages au `node_modules` racine → tracing Vercel (`@vercel/nft`) ne trouve pas le module. Fix : dupliquer les dependencies runtime d'`apps/api` dans le `package.json` racine + `pnpm install` (crée les symlinks `.pnpm` résolubles depuis `/api/index.ts`).
+- Fix dépendances déployé → nouvelle erreur `/api/health` : 500 `FUNCTION_INVOCATION_FAILED`, `Error [ERR_REQUIRE_ESM]: require() of ES Module /var/task/apps/api/src/app.js from /var/task/api/index.js not supported`. Cause : `package.json` racine sans `"type": "module"` → Vercel compile `api/index.ts` en sortie CommonJS (défaut), mais `apps/api/src/app.js` est un vrai module ESM (`apps/api/package.json` a `"type": "module"`) → `require()` échoue sur cible ESM. Fix : `"type": "module"` ajouté au `package.json` racine (cohérent avec `api/index.ts` qui utilise déjà la syntaxe `import`).
 - Prochain déploiement à vérifier : `/api/health` doit retourner `{ status, db, mongo }`.
 
 ---

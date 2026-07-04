@@ -19,4 +19,9 @@ connectMongo().catch(console.error);
 const root = new Hono();
 root.route("/api", app);
 
-export default handle(root);
+export const GET = handle(root);
+export const POST = handle(root);
+export const PUT = handle(root);
+export const PATCH = handle(root);
+export const DELETE = handle(root);
+export const OPTIONS = handle(root);

@@ -5,9 +5,9 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5 TERMINÉ — D1 ✅ D2 ✅ D3 ✅ D4 ✅
-- **Last Session**: 2026-07-05 — Migration déploiement Fly.io → Vercel (validée en prod) + fix logout web
-- **Next Steps**: Build APK release Flutter (`API_BASE_URL` prod) + installation sur tablette Android — voir section 📱 Installation Android ci-dessous
+- **Statut**: Sprint 5 TERMINÉ — D1 ✅ D2 ✅ D3 ✅ D4 ✅ — APK release buildé + installé sur tablette réelle ✅
+- **Last Session**: 2026-07-05 — Build APK release (PC Windows/Intel, contournement blocage NDK arm64) + install tablette + premiers retours terrain
+- **Next Steps**: Sprint 6 — corriger les 4 retours terrain listés en section 📋 Backlog Sprint 6 ci-dessous (priorité : bug 4 login enfant, bloquant onboarding)
 
 ---
 
@@ -210,6 +210,41 @@ adb install -r apps/mobile/build/app/outputs/flutter-apk/app-release.apk
 ### Mise à jour de l'app
 
 Pas de mécanisme d'auto-update — reproduire les étapes 1-2 à chaque nouvelle version (nouvel APK avec `versionCode` incrémenté dans `pubspec.yaml`, `adb install -r` remplace en conservant les données locales).
+
+### Build sur WSL2/ARM64 — bloqué, contournement PC Intel
+
+Tentative de build sur machine dev principale (WSL2, host **aarch64**) : échec définitif. Le NDK Android ne fournit pas de toolchain native Linux ARM64 (clang packagé `linux-x86_64` en dur, peu importe la version) — nécessite émulation qemu-x86_64, qui elle-même requiert les libs userspace amd64 (`libc6:amd64`...) absentes du miroir `ports.ubuntu.com` (dédié ARM, pas de paquets amd64 disponibles). Pas de solution apt simple sur cette machine.
+
+**Solution retenue** : build effectué sur PC Windows 11 **Intel i7** (x86_64 natif) — Flutter (channel master, pour matcher `sdk: ^3.13.0-201.0.dev` du `pubspec.yaml`), Android Studio (SDK + NDK 28.2.13676358 + cmake/ninja installés nativement, licences acceptées via l'UI).
+
+Deux fixes supplémentaires nécessaires côté Windows (déjà commités) :
+
+- `apps/mobile/android/gradle.properties` : `kotlin.incremental=false` — bug connu Kotlin/Gradle sous Windows quand le cache pub (`C:\Users\...`) et le projet (`D:\...`) sont sur des lettres de lecteur différentes (`IllegalArgumentException: this and base files have different roots`)
+- `apps/mobile/android/app/build.gradle.kts` : `isCoreLibraryDesugaringEnabled = true` + dépendance `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")` — requis par `flutter_local_notifications`
+
+**Résultat** : build APK release réussi, installation tablette réussie, premiers tests réels effectués (cf. backlog Sprint 6 ci-dessous pour les retours).
+
+---
+
+## 📋 Backlog Sprint 6 — Retours terrain tablette (2026-07-05)
+
+Retours du premier test réel sur tablette Android (login enfant + usage quotidien) :
+
+### 🔴 Priorité 1 — Bloquant onboarding
+
+- [ ] **Bug 4a — Code famille non visible pour l'enfant** : l'écran de login enfant Flutter (`login_screen.dart`, `_ChildLoginForm`) demande le code famille (`Family.code`), mais ce code n'est actuellement visible que côté base de données (pas affiché sur l'app web parent). Il faut l'afficher quelque part côté parent (ex: page Famille) pour que l'enfant puisse le saisir sur la tablette sans intervention manuelle en DB.
+- [ ] **Bug 4b — Bouton "Sélectionner" pas réactif après saisie PIN** : dans `_ChildLoginForm`, après saisie code famille → sélection enfant (`FilterChip`) → frappe PIN, le bouton de validation reste désactivé tant qu'on n'a pas resélectionné un autre enfant. Probable état du formulaire (`setState`/`TextEditingController` du champ PIN) non écouté pour recalculer la validité du bouton — à vérifier dans `login_screen.dart`.
+
+### 🟠 Priorité 2 — Fonctionnalité manquante
+
+- [ ] **Bug 2 — Proposer un échange de tâche (côté enfant)** : actuellement `exchanges_screen.dart`/`exchanges_provider.dart` ne permettent que de consulter/répondre aux échanges (`GET /exchanges`, `PATCH` réponse) — pas de flow enfant pour **proposer** un échange de tâche. Vérifier existence de `POST /exchanges` côté API (`apps/api/src/modules/exchanges`) et ajouter l'UI Flutter manquante (sélection tâche à échanger + destinataire).
+
+### 🟡 Priorité 3 — Bugs UX
+
+- [ ] **Bug 1 — Pas de retour arrière "Fait" → "À faire"** : dans `task_card.dart`, le bouton "Fait !" marque la tâche `COMPLETED` (`markCompleted`) mais aucune action ne permet de revenir à `PENDING` en cas d'erreur de l'enfant. Web a déjà un pattern de cycle de statut (`STATUS_NEXT` dans `PlanningPage.tsx`, session 14) — envisager un pattern similaire côté Flutter (tap sur statut "Fait" → confirmation → retour `PENDING`).
+- [ ] **Bug 3 — Message d'erreur générique dans "Échanges"** : `exchanges_screen.dart` affiche "Une erreur est survenue. Réessayer" sans détail exploitable — à investiguer : probable erreur API silencieuse (401/403/500) mal remontée par `ApiErrorWidget` ou `exchanges_provider.dart`. Ajouter logging/detail erreur pour diagnostiquer la cause réelle avant de fixer.
+
+**Valeur** : ces 4 points bloquent ou dégradent l'usage quotidien réel par les enfants — priorité haute avant tout nouveau développement de feature.
 
 ---
 

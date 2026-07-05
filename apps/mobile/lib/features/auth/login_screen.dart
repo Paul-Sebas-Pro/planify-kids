@@ -298,6 +298,7 @@ class _ChildLoginFormState extends ConsumerState<_ChildLoginForm> {
               prefixIcon: Icon(Icons.pin_outlined),
               counterText: '',
             ),
+            onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 16),
           FilledButton(

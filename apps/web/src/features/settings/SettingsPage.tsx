@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { familyApi } from "@/services/api";
@@ -11,6 +11,12 @@ interface FamilyFormValues {
 export function SettingsPage() {
   const { family, setFamily } = useAuthStore();
   const [saved, setSaved] = useState(false);
+
+  const { data: familyQuery } = useQuery({
+    queryKey: ["family"],
+    queryFn: familyApi.get,
+  });
+  const familyCode = familyQuery?.data.code ?? family?.code;
 
   const { register, handleSubmit, formState: { isDirty } } = useForm<FamilyFormValues>({
     defaultValues: { name: family?.name ?? "" },
@@ -31,7 +37,19 @@ export function SettingsPage() {
         Paramètres
       </h2>
 
-      <div className="max-w-sm">
+      <div className="max-w-sm space-y-6">
+        <div className="bg-white rounded-card shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+            Code famille
+          </h3>
+          <p className="text-xs text-gray-500 mb-2">
+            À saisir sur la tablette pour la connexion enfant.
+          </p>
+          <p className="text-2xl font-title font-bold tracking-widest text-primary">
+            {familyCode ?? "—"}
+          </p>
+        </div>
+
         <div className="bg-white rounded-card shadow-sm p-6">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
             Famille

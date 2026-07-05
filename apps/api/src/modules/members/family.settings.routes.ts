@@ -15,6 +15,16 @@ const patchFamilySchema = z.object({
   name: z.string().min(1).max(80),
 });
 
+// GET /family  (parent uniquement) — inclut le code famille pour le login enfant tablette
+familySettingsRoutes.get("/", requireRole("PARENT"), async (c) => {
+  const { familyId } = c.get("user");
+  const family = await prisma.family.findUniqueOrThrow({
+    where: { id: familyId },
+    select: { id: true, name: true, code: true },
+  });
+  return c.json({ success: true, data: family });
+});
+
 // PATCH /family  (parent uniquement)
 familySettingsRoutes.patch(
   "/",
@@ -26,7 +36,7 @@ familySettingsRoutes.patch(
     const family = await prisma.family.update({
       where: { id: familyId },
       data: { name },
-      select: { id: true, name: true },
+      select: { id: true, name: true, code: true },
     });
     return c.json({ success: true, data: family });
   },

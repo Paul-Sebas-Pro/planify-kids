@@ -3,6 +3,7 @@ export type Role = "PARENT" | "CHILD";
 export interface Family {
   id: string;
   name: string;
+  code?: string | null;
   timezone: string;
   locale: string;
   createdAt: string;

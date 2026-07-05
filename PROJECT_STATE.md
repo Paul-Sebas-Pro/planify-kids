@@ -232,8 +232,8 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 
 ### 🔴 Priorité 1 — Bloquant onboarding
 
-- [ ] **Bug 4a — Code famille non visible pour l'enfant** : l'écran de login enfant Flutter (`login_screen.dart`, `_ChildLoginForm`) demande le code famille (`Family.code`), mais ce code n'est actuellement visible que côté base de données (pas affiché sur l'app web parent). Il faut l'afficher quelque part côté parent (ex: page Famille) pour que l'enfant puisse le saisir sur la tablette sans intervention manuelle en DB.
-- [ ] **Bug 4b — Bouton "Sélectionner" pas réactif après saisie PIN** : dans `_ChildLoginForm`, après saisie code famille → sélection enfant (`FilterChip`) → frappe PIN, le bouton de validation reste désactivé tant qu'on n'a pas resélectionné un autre enfant. Probable état du formulaire (`setState`/`TextEditingController` du champ PIN) non écouté pour recalculer la validité du bouton — à vérifier dans `login_screen.dart`.
+- [x] **Bug 4a — Code famille non visible pour l'enfant** : ajouté `code` au type `Family` (`packages/types/src/family.ts`), exposé dans `registerService`/`loginService` (`auth.service.ts`) + nouvelle route `GET /family` (`family.settings.routes.ts`, parent only). Affiché dans `SettingsPage.tsx` web (bloc "Code famille" en tête de page). **Non vérifié en réel** : nécessite redéploiement Vercel (web) avant test.
+- [x] **Bug 4b — Bouton "Sélectionner" pas réactif après saisie PIN** : cause confirmée — le `TextField` du PIN (`login_screen.dart`, `_ChildLoginForm`) n'avait pas de `onChanged`, donc `setState` jamais déclenché à la frappe (le bouton ne se recalculait qu'au `setState` du `FilterChip` de sélection enfant). Fix : `onChanged: (_) => setState(() {})` ajouté. `flutter analyze` 0 issue. **Non vérifié en réel** : nécessite rebuild APK + réinstall tablette avant test.
 
 ### 🟠 Priorité 2 — Fonctionnalité manquante
 

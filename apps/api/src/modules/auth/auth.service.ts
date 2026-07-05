@@ -49,7 +49,7 @@ export async function registerService(input: RegisterInput) {
   return {
     tokens,
     user: { id: user.id, email: user.email },
-    family: { id: family.id, name: family.name },
+    family: { id: family.id, name: family.name, code: family.code },
     member: { id: member.id, name: member.name, role: member.role },
   };
 }
@@ -75,7 +75,11 @@ export async function loginService(input: LoginInput) {
   return {
     tokens,
     user: { id: user.id, email: user.email },
-    family: { id: parentMember.familyId, name: parentMember.family.name },
+    family: {
+      id: parentMember.familyId,
+      name: parentMember.family.name,
+      code: parentMember.family.code,
+    },
     member: {
       id: parentMember.id,
       name: parentMember.name,

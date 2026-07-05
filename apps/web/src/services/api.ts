@@ -90,8 +90,10 @@ export const authApi = {
 export const familyApi = {
   stats: () =>
     request<{ success: boolean; data: FamilyStats }>("GET", "/family/stats"),
+  get: () =>
+    request<{ success: boolean; data: Family }>("GET", "/family"),
   update: (name: string) =>
-    request<{ success: boolean; data: { id: string; name: string } }>(
+    request<{ success: boolean; data: Family }>(
       "PATCH",
       "/family",
       { name },

@@ -145,16 +145,71 @@ Les PRs génèrent automatiquement des preview deployments Vercel.
 
 ### URLs de production
 
-- **Web + API** : `https://[nom-projet].vercel.app`
-- **Health** : `https://[nom-projet].vercel.app/api/health`
-- **API base** : `https://[nom-projet].vercel.app/api`
+- **Web + API** : `https://planify-kids-api.vercel.app`
+- **Health** : `https://planify-kids-api.vercel.app/api/health`
+- **API base** : `https://planify-kids-api.vercel.app/api`
 
-> Pour Flutter : `API_BASE_URL = "https://[nom-projet].vercel.app/api"`
+> Pour Flutter : `API_BASE_URL = "https://planify-kids-api.vercel.app/api"`
 
 ### Monitoring
 
 - Logs fonction : Vercel → **Functions** tab → `api/index`
 - Sentry (si configuré) : ajouter `SENTRY_DSN` dans les env vars Vercel
+
+---
+
+## 📱 Installation Android — Procédure (tablette enfant)
+
+**Contexte** : l'app Flutter (`apps/mobile`) est l'interface enfant. Pas de publication Play Store prévue — installation directe (sideload) sur les tablettes familiales. Build release signé avec la clé debug (suffisant pour du sideload, pas pour le Play Store).
+
+### Prérequis Android
+
+- Flutter SDK installé sur la machine de build (`flutter --version` ≥ 3.13)
+- Tablette Android avec **Sources inconnues** activées (Paramètres → Sécurité) — nécessaire pour installer un APK hors Play Store
+- Optionnel (installation via câble) : **Débogage USB** activé (Paramètres → Options développeur) + `adb` installé sur la machine de build
+
+### 1. Générer l'APK release avec l'URL API de production
+
+Depuis `apps/mobile` :
+
+```bash
+flutter build apk --release \
+  --dart-define=API_BASE_URL=https://planify-kids-api.vercel.app/api
+```
+
+> Sans ce flag, l'app pointe vers `http://10.0.2.2:3000` (valeur par défaut, réservée à l'émulateur Android en dev local) — indispensable pour un vrai appareil.
+
+L'APK généré se trouve dans :
+
+```text
+apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+```
+
+### 2. Installer sur la tablette
+
+**Option A — via câble USB (`adb`)** :
+
+```bash
+adb install -r apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+```
+
+**Option B — sans câble** : transférer `app-release.apk` sur la tablette (clé USB, Drive, email, etc.), l'ouvrir depuis le gestionnaire de fichiers de la tablette, autoriser l'installation depuis cette source si demandé.
+
+### 3. Premier lancement
+
+1. Ouvrir l'app "mobile" (nom d'affichage actuel — cosmétique, `android:label="mobile"` dans `AndroidManifest.xml`, à renommer si besoin)
+2. Onglet **Enfant** → saisir le **code famille** (visible côté web parent, page Famille) → sélectionner le profil enfant → saisir le **PIN** 4 chiffres
+3. Vérifier l'écran "Aujourd'hui" : tâches du jour visibles, marquage complété fonctionnel
+
+### Limitations connues sur tablette
+
+- **PowerSync / sync offline** : scaffoldé mais non fonctionnel sans instance PowerSync cloud (reporté, cf. Direction 1 Sprint 5) — l'app fonctionne en mode 100% API (nécessite connexion internet)
+- **Notifications push FCM** : nécessite `google-services.json` dans `apps/mobile/android/app/` + env vars Firebase côté Vercel (`FIREBASE_PROJECT_ID`/`CLIENT_EMAIL`/`PRIVATE_KEY`) — sans ça, no-op silencieux, pas de crash
+- **SSE temps réel** : dégradé en polling TanStack Query côté web ; côté Flutter, pas de SSE utilisé (polling natif)
+
+### Mise à jour de l'app
+
+Pas de mécanisme d'auto-update — reproduire les étapes 1-2 à chaque nouvelle version (nouvel APK avec `versionCode` incrémenté dans `pubspec.yaml`, `adb install -r` remplace en conservant les données locales).
 
 ---
 

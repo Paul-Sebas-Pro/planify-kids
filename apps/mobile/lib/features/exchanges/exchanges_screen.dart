@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/exchange.dart';
+import '../../models/family_member.dart';
+import '../../models/schedule_item.dart';
 import '../../shared/widgets/api_error_widget.dart';
 import '../auth/auth_provider.dart';
+import '../tasks/tasks_provider.dart';
 import 'exchanges_provider.dart';
 
 class ExchangesScreen extends ConsumerWidget {
@@ -25,6 +28,17 @@ class ExchangesScreen extends ConsumerWidget {
           ),
         ],
       ),
+      floatingActionButton: currentUser == null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) =>
+                    _ProposeExchangeDialog(fromMemberId: currentUser.id),
+              ),
+              icon: const Icon(Icons.swap_horiz),
+              label: const Text('Proposer'),
+            ),
       body: exchangesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ApiErrorWidget(
@@ -210,6 +224,137 @@ class _ExchangeCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ProposeExchangeDialog extends ConsumerStatefulWidget {
+  final String fromMemberId;
+  const _ProposeExchangeDialog({required this.fromMemberId});
+
+  @override
+  ConsumerState<_ProposeExchangeDialog> createState() =>
+      _ProposeExchangeDialogState();
+}
+
+class _ProposeExchangeDialogState
+    extends ConsumerState<_ProposeExchangeDialog> {
+  ScheduleItem? _selectedItem;
+  FamilyMember? _selectedMember;
+  bool _submitting = false;
+  String? _error;
+
+  Future<void> _submit() async {
+    if (_selectedItem == null || _selectedMember == null) return;
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      await ref.read(exchangesProvider.notifier).propose(
+            scheduleItemId: _selectedItem!.id,
+            fromMemberId: widget.fromMemberId,
+            toMemberId: _selectedMember!.id,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (_) {
+      setState(() => _error = 'Impossible de proposer cet échange.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tasksAsync = ref.watch(todayTasksProvider);
+    final membersAsync = ref.watch(familyMembersProvider);
+
+    return AlertDialog(
+      title: const Text('Proposer un échange'),
+      content: SizedBox(
+        width: 320,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            tasksAsync.when(
+              loading: () => const CircularProgressIndicator(),
+              error: (_, _) => const Text('Erreur de chargement des tâches'),
+              data: (items) {
+                final pending = items
+                    .where((i) =>
+                        i.isPending && i.assignedToMemberId == widget.fromMemberId)
+                    .toList();
+                if (pending.isEmpty) {
+                  return const Text(
+                      'Aucune tâche à échanger aujourd\'hui.');
+                }
+                return DropdownButtonFormField<ScheduleItem>(
+                  initialValue: _selectedItem,
+                  decoration: const InputDecoration(labelText: 'Ma tâche'),
+                  items: pending
+                      .map((i) => DropdownMenuItem(
+                            value: i,
+                            child: Text('${i.taskIcon ?? '📋'} ${i.taskName}'),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedItem = v),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            membersAsync.when(
+              loading: () => const CircularProgressIndicator(),
+              error: (_, _) => const Text('Erreur de chargement des membres'),
+              data: (members) {
+                final siblings = members
+                    .where((m) =>
+                        m.role == 'CHILD' && m.id != widget.fromMemberId)
+                    .toList();
+                if (siblings.isEmpty) {
+                  return const Text('Aucun autre enfant dans la famille.');
+                }
+                return DropdownButtonFormField<FamilyMember>(
+                  initialValue: _selectedMember,
+                  decoration: const InputDecoration(labelText: 'Échanger avec'),
+                  items: siblings
+                      .map((m) => DropdownMenuItem(
+                            value: m,
+                            child: Text(m.name),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedMember = v),
+                );
+              },
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(
+          onPressed: (_selectedItem == null ||
+                  _selectedMember == null ||
+                  _submitting)
+              ? null
+              : _submit,
+          child: _submitting
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Proposer'),
+        ),
+      ],
     );
   }
 }

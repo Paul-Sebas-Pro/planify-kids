@@ -33,7 +33,7 @@ final class ExchangesNotifierProvider
   ExchangesNotifier create() => ExchangesNotifier();
 }
 
-String _$exchangesNotifierHash() => r'327f01aab5a4e3a2bd4f9db713b38df799e93b3d';
+String _$exchangesNotifierHash() => r'07702aa946446201b4d4fe752da5fd1d44fa61d1';
 
 abstract class _$ExchangesNotifier extends $AsyncNotifier<List<Exchange>> {
   FutureOr<List<Exchange>> build();
@@ -52,3 +52,44 @@ abstract class _$ExchangesNotifier extends $AsyncNotifier<List<Exchange>> {
     return element.handleCreate(ref, build);
   }
 }
+
+@ProviderFor(familyMembers)
+final familyMembersProvider = FamilyMembersProvider._();
+
+final class FamilyMembersProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<FamilyMember>>,
+          List<FamilyMember>,
+          FutureOr<List<FamilyMember>>
+        >
+    with
+        $FutureModifier<List<FamilyMember>>,
+        $FutureProvider<List<FamilyMember>> {
+  FamilyMembersProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'familyMembersProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$familyMembersHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<FamilyMember>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<FamilyMember>> create(Ref ref) {
+    return familyMembers(ref);
+  }
+}
+
+String _$familyMembersHash() => r'5a7bf36d7528ecd8fc6941cc12c721b46de21f00';

@@ -237,7 +237,7 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 
 ### 🟠 Priorité 2 — Fonctionnalité manquante
 
-- [ ] **Bug 2 — Proposer un échange de tâche (côté enfant)** : actuellement `exchanges_screen.dart`/`exchanges_provider.dart` ne permettent que de consulter/répondre aux échanges (`GET /exchanges`, `PATCH` réponse) — pas de flow enfant pour **proposer** un échange de tâche. Vérifier existence de `POST /exchanges` côté API (`apps/api/src/modules/exchanges`) et ajouter l'UI Flutter manquante (sélection tâche à échanger + destinataire).
+- [x] **Bug 2 — Proposer un échange de tâche (côté enfant)** : `POST /exchanges` existait déjà côté API et même `ApiClient.proposeExchange()` était déjà écrit côté Flutter — seule l'UI manquait. Ajouté : `ExchangesNotifier.propose()` + provider `familyMembersProvider` (`exchanges_provider.dart`), FAB "Proposer" + dialog `_ProposeExchangeDialog` (`exchanges_screen.dart`) — sélection tâche du jour (`todayTasksProvider`, PENDING uniquement) + sélection enfant destinataire (`familyMembersProvider`, exclut soi-même). `flutter analyze` 0 issue sur tout `lib/`. **Non vérifié en réel** : nécessite rebuild APK + réinstall tablette avant test.
 
 ### 🟡 Priorité 3 — Bugs UX
 

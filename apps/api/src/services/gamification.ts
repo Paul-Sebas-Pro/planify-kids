@@ -22,6 +22,25 @@ export async function awardPointsForTask(
   checkChallengesAfterPoints(member.familyId).catch(() => {});
 }
 
+// Annule les points d'une tâche revenue de COMPLETED à un autre statut (undo enfant/parent)
+// Ne retire pas les badges déjà décernés — un badge gagné reste acquis.
+export async function revokePointsForTask(
+  memberId: string,
+  points: number,
+): Promise<void> {
+  const member = await prisma.familyMember.update({
+    where: { id: memberId },
+    data: { points: { decrement: points } },
+  });
+
+  GamificationLog.create({
+    type: "POINTS_REVOKED",
+    memberId,
+    familyId: member.familyId,
+    data: { points: -points },
+  }).catch(() => {});
+}
+
 async function checkAndAwardBadges(
   memberId: string,
   totalPoints: number,

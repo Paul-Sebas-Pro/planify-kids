@@ -33,4 +33,17 @@ class TasksNotifier extends _$TasksNotifier {
           [],
     );
   }
+
+  Future<void> markPending(String itemId) async {
+    final api = ref.read(apiClientProvider);
+    await api.updateScheduleItemStatus(itemId, 'PENDING');
+
+    state = AsyncData(
+      state.value
+              ?.map((item) =>
+                  item.id == itemId ? item.copyWith(status: 'PENDING') : item)
+              .toList() ??
+          [],
+    );
+  }
 }

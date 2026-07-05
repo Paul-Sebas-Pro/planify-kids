@@ -1,7 +1,10 @@
 import mongoose, { Schema, model, type Model } from "mongoose";
 const { models } = mongoose;
 
-export type GamificationLogType = "POINTS_EARNED" | "BADGE_EARNED";
+export type GamificationLogType =
+  | "POINTS_EARNED"
+  | "POINTS_REVOKED"
+  | "BADGE_EARNED";
 
 export interface IGamificationLog {
   type: GamificationLogType;

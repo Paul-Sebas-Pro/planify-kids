@@ -94,7 +94,10 @@ class TodayScreen extends ConsumerWidget {
                   label: 'Terminé (${done.length})',
                   icon: Icons.check_circle_outline,
                 ),
-                ...done.map((item) => TaskCard(item: item)),
+                ...done.map((item) => TaskCard(
+                      item: item,
+                      onUndo: () => _confirmUndo(context, ref, item.id),
+                    )),
               ],
               if (other.isNotEmpty) ...[
                 _SectionHeader(
@@ -109,6 +112,35 @@ class TodayScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+}
+
+Future<void> _confirmUndo(
+  BuildContext context,
+  WidgetRef ref,
+  String itemId,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Annuler cette tâche ?'),
+      content: const Text(
+        'La tâche repassera en "À faire" et les points gagnés seront retirés.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: const Text('Confirmer'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed == true) {
+    await ref.read(tasksProvider.notifier).markPending(itemId);
   }
 }
 

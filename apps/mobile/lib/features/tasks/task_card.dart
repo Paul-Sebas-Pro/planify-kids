@@ -6,8 +6,14 @@ import '../../models/schedule_item.dart';
 class TaskCard extends StatelessWidget {
   final ScheduleItem item;
   final VoidCallback? onComplete;
+  final VoidCallback? onUndo;
 
-  const TaskCard({super.key, required this.item, this.onComplete});
+  const TaskCard({
+    super.key,
+    required this.item,
+    this.onComplete,
+    this.onUndo,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +26,13 @@ class TaskCard extends StatelessWidget {
           const Color(0xFFB8E6B8),
           const Color(0xFF4CAF50),
           const Color(0xFF4CAF50),
-          _StatusChip(label: 'Fait ✓', color: const Color(0xFF4CAF50)),
+          onUndo != null
+              ? _StatusChip(
+                  label: 'Fait ✓',
+                  color: const Color(0xFF4CAF50),
+                  onTap: onUndo,
+                )
+              : _StatusChip(label: 'Fait ✓', color: const Color(0xFF4CAF50)),
         ),
       'SKIPPED' => (
           const Color(0xFFFFF8F0),
@@ -113,24 +125,40 @@ class TaskCard extends StatelessWidget {
 class _StatusChip extends StatelessWidget {
   final String label;
   final Color color;
-  const _StatusChip({required this.label, required this.color});
+  final VoidCallback? onTap;
+  const _StatusChip({required this.label, required this.color, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+          if (onTap != null) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.undo, size: 14, color: color),
+          ],
+        ],
       ),
+    );
+    if (onTap == null) return chip;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: chip,
     );
   }
 }

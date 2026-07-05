@@ -11,7 +11,10 @@ import {
   updateScheduleItem,
   deleteSchedule,
 } from "./planning.repository.js";
-import { awardPointsForTask } from "../../services/gamification.js";
+import {
+  awardPointsForTask,
+  revokePointsForTask,
+} from "../../services/gamification.js";
 import { notifyTaskCompleted, notifyTasksAssigned } from "../notifications/notifications.service.js";
 import { sseEmit } from "../../services/sse.service.js";
 import type {
@@ -78,25 +81,31 @@ export async function updateScheduleItemService(
   itemId: string,
   input: UpdateScheduleItemInput,
 ) {
-  if (input.status === "COMPLETED") {
-    const before = await getScheduleItemWithTask(itemId);
-    const updated = await updateScheduleItem(itemId, input);
-    if (before && before.status !== "COMPLETED") {
-      await awardPointsForTask(before.assignedToMemberId, before.task.points);
-      await notifyTaskCompleted(
-        before.schedule.familyId,
-        before.member.name,
-        before.task.name,
-      );
-      sseEmit(before.schedule.familyId, "task_completed", {
-        memberName: before.member.name,
-        taskName: before.task.name,
-        points: before.task.points,
-      });
-    }
-    return updated;
+  const before = await getScheduleItemWithTask(itemId);
+  const updated = await updateScheduleItem(itemId, input);
+
+  if (before && input.status === "COMPLETED" && before.status !== "COMPLETED") {
+    await awardPointsForTask(before.assignedToMemberId, before.task.points);
+    await notifyTaskCompleted(
+      before.schedule.familyId,
+      before.member.name,
+      before.task.name,
+    );
+    sseEmit(before.schedule.familyId, "task_completed", {
+      memberName: before.member.name,
+      taskName: before.task.name,
+      points: before.task.points,
+    });
+  } else if (
+    before &&
+    input.status !== "COMPLETED" &&
+    before.status === "COMPLETED"
+  ) {
+    // Retour en arrière (undo) depuis COMPLETED — retire les points crédités à tort
+    await revokePointsForTask(before.assignedToMemberId, before.task.points);
   }
-  return updateScheduleItem(itemId, input);
+
+  return updated;
 }
 
 export async function deleteScheduleService(

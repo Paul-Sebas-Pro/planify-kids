@@ -5,6 +5,7 @@ const exchangeInclude = {
   scheduleItem: {
     select: {
       date: true,
+      assignedToMemberId: true,
       task: { select: { name: true, icon: true, points: true } },
     },
   },

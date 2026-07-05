@@ -60,6 +60,10 @@ class ApiErrorWidget extends ConsumerWidget {
         ? 'Serveur inaccessible. Vérifie ta connexion.'
         : 'Une erreur est survenue.';
 
+    if (!_isNetworkError) {
+      debugPrint('ApiErrorWidget: $error');
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),

@@ -5,9 +5,9 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5 TERMINÉ — D1 ✅ D2 ✅ D3 ✅ D4 ✅ — APK release buildé + installé sur tablette réelle ✅
-- **Last Session**: 2026-07-05 — Build APK release (PC Windows/Intel, contournement blocage NDK arm64) + install tablette + premiers retours terrain
-- **Next Steps**: Sprint 6 — corriger les 4 retours terrain listés en section 📋 Backlog Sprint 6 ci-dessous (priorité : bug 4 login enfant, bloquant onboarding)
+- **Statut**: Sprint 5 TERMINÉ ✅ — Sprint 6 (retours terrain tablette) TERMINÉ EN CODE ✅ — non vérifié en réel
+- **Last Session**: 2026-07-05 — Build APK release (PC Windows/Intel, contournement blocage NDK arm64) + install tablette + fix des 5 retours terrain (login enfant, échange de tâche, undo tâche + exploit points, crash parsing Échanges)
+- **Next Steps**: Redéployer le web (Vercel) + rebuild APK (PC Intel) + réinstaller sur tablette pour vérifier en conditions réelles les 5 fixes du backlog Sprint 6
 
 ---
 
@@ -242,7 +242,7 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 ### 🟡 Priorité 3 — Bugs UX
 
 - [x] **Bug 1 — Pas de retour arrière "Fait" → "À faire"** : tap sur le badge "Fait ✓" (`task_card.dart`, icône ↩️ ajoutée) → dialog de confirmation (`today_screen.dart`, `_confirmUndo`) → `TasksNotifier.markPending()` (`tasks_provider.dart`). **Bug de fond découvert et corrigé en même temps** : l'API (`planning.service.ts`, `updateScheduleItemService`) ne retirait jamais les points crédités quand une tâche repassait de `COMPLETED` à un autre statut — exploit possible (re-compléter après un undo redonnait les points une 2ᵉ fois). Ce bug touchait aussi le web (`PlanningPage.tsx` cycle déjà `COMPLETED → SKIPPED → PENDING` sans déduction). Fix : nouvelle fonction `revokePointsForTask()` (`gamification.ts`, décrémente + log Mongo `POINTS_REVOKED`) appelée symétriquement à `awardPointsForTask()` — corrige web et mobile en un seul point (le service layer partagé). Les badges déjà décernés ne sont pas repris (décision : un badge gagné reste acquis). 122/122 tests + typecheck API/web 0 erreur + `flutter analyze` 0 issue. **Non vérifié en réel** : nécessite redéploiement Vercel + rebuild APK.
-- [ ] **Bug 3 — Message d'erreur générique dans "Échanges"** : `exchanges_screen.dart` affiche "Une erreur est survenue. Réessayer" sans détail exploitable — à investiguer : probable erreur API silencieuse (401/403/500) mal remontée par `ApiErrorWidget` ou `exchanges_provider.dart`. Ajouter logging/detail erreur pour diagnostiquer la cause réelle avant de fixer.
+- [x] **Bug 3 — Message d'erreur générique dans "Échanges"** : root cause trouvée par lecture de code (pas juste un message vague à améliorer) — `exchangeInclude.scheduleItem.select` (`exchanges.repository.ts`) n'incluait pas `assignedToMemberId`, alors que `ScheduleItemInfo.fromJson` (Flutter, `models/exchange.dart`) le cast en `String` non-nullable. Dès qu'un échange existait, `GET /exchanges` renvoyait ce champ `null` → crash de parsing Dart (`TypeError`, pas un `DioException`) → `ApiErrorWidget` tombait dans le cas générique faute de reconnaître l'erreur. Fix : `assignedToMemberId` ajouté au select API (cohérent avec `getExchangeById` qui l'avait déjà séparément) + parsing Flutter rendu tolérant (`as String? ?? ''`) en défense en profondeur. Ajouté aussi un `debugPrint(error)` dans `ApiErrorWidget` pour que les prochaines erreurs génériques restent diagnosticables sans changer le message affiché à l'enfant. 122/122 tests + typecheck API 0 erreur + `flutter analyze` 0 issue. **Non vérifié en réel** : nécessite redéploiement Vercel + rebuild APK.
 
 **Valeur** : ces 4 points bloquent ou dégradent l'usage quotidien réel par les enfants — priorité haute avant tout nouveau développement de feature.
 

@@ -54,7 +54,7 @@ class ScheduleItemInfo {
     final task = json['task'] as Map<String, dynamic>? ?? {};
     return ScheduleItemInfo(
       date: DateTime.parse(json['date'] as String),
-      assignedToMemberId: json['assignedToMemberId'] as String,
+      assignedToMemberId: json['assignedToMemberId'] as String? ?? '',
       taskName: task['name'] as String? ?? '',
       taskIcon: task['icon'] as String?,
       taskPoints: (task['points'] as int?) ?? 0,

@@ -6,8 +6,8 @@
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
 - **Statut**: Sprint 5 TERMINÉ — D1 ✅ D2 ✅ D3 ✅ D4 ✅
-- **Last Session**: 2026-07-04 — Migration déploiement Fly.io → Vercel
-- **Next Steps**: Migration Vercel terminée et validée en production. Prochaine session : reprendre Direction 1 Sprint 5 (Flutter enfant) ou nouvelle priorité à définir
+- **Last Session**: 2026-07-05 — Migration déploiement Fly.io → Vercel (validée en prod) + fix logout web
+- **Next Steps**: Build APK release Flutter (`API_BASE_URL` prod) + installation sur tablette Android — voir section 📱 Installation Android ci-dessous
 
 ---
 

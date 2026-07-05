@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import { NavLink, Outlet, useNavigate } from "react-router";
 import { useAuthStore } from "@/store/auth.store";
 import { NotificationBell } from "./NotificationBell";
@@ -22,8 +23,8 @@ export function AppLayout() {
   useServerEvents();
 
   function handleLogout() {
-    logout();
-    navigate("/");
+    flushSync(() => logout());
+    navigate("/", { replace: true });
   }
 
   const sidebar = (

@@ -23,9 +23,9 @@ test.describe("Authentification", () => {
     await expect(page).toHaveURL(/\/dashboard/);
   });
 
-  test("déconnexion → retour sur login", async ({ page }) => {
+  test("déconnexion → retour sur page par défaut", async ({ page }) => {
     await loginAs(page);
     await page.getByRole("button", { name: /déconnexion/i }).click();
-    await expect(page).toHaveURL(/\/(login|$)/);
+    await expect(page).toHaveURL(/\/$/);
   });
 });

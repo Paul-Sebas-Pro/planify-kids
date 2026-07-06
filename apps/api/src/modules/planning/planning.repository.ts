@@ -66,6 +66,31 @@ export function createScheduleWithItems(
   });
 }
 
+export async function getMemberLoadHistory(
+  familyId: string,
+  beforeDate: Date,
+): Promise<Map<string, number>> {
+  const items = await prisma.scheduleItem.findMany({
+    where: {
+      schedule: { familyId },
+      date: { lt: beforeDate },
+    },
+    select: {
+      assignedToMemberId: true,
+      task: { select: { points: true } },
+    },
+  });
+
+  const load = new Map<string, number>();
+  for (const item of items) {
+    load.set(
+      item.assignedToMemberId,
+      (load.get(item.assignedToMemberId) ?? 0) + item.task.points,
+    );
+  }
+  return load;
+}
+
 export function getScheduleItemWithTask(itemId: string) {
   return prisma.scheduleItem.findUnique({
     where: { id: itemId },

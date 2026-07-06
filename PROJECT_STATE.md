@@ -226,6 +226,29 @@ Deux fixes supplémentaires nécessaires côté Windows (déjà commités) :
 
 ---
 
+## 📋 Backlog Sprint 7 — Audit cahier des charges + bug distribution planning (2026-07-06)
+
+### 🔴 Priorité 1 — Bug de fond confirmé (rotation planning)
+
+- [x] **Bug — Pas de rotation des tâches entre les semaines** : signalé par l'utilisateur ("les mêmes tâches sont affectées à chaque enfant toutes les semaines"). **Root cause confirmée par lecture de code** : `generatePlanningGreedy()` (`apps/api/src/services/planning-greedy.ts`) réinitialise la charge cumulée (`load`) à **zéro pour chaque appel** de génération hebdomadaire — aucune mémoire des semaines précédentes n'est transmise ni lue en DB. De plus, `leastLoadedChild()` départage les égalités de charge par ordre d'itération du `Map` (= ordre des enfants passés en paramètre, stable). Conséquence : à charge égale (toujours 0-0 en début de semaine), la 1ère occurrence de tâche (tri déterministe : obligatoire d'abord, puis difficulté décroissante, puis chronologique) est **systématiquement** assignée au même enfant, semaine après semaine, à l'identique. La rotation "équitable" ne s'applique qu'*à l'intérieur* d'une semaine, jamais *entre* les semaines. **Fix appliqué (2026-07-06)** : (a) nouveau paramètre `initialLoad` sur `generatePlanningGreedy()`, alimenté par `getMemberLoadHistory()` (`planning.repository.ts`, nouvelle fonction — somme des `TaskTemplate.points` de tous les `ScheduleItem` antérieurs à `startDate`, groupés par `assignedToMemberId`) et branché dans `generatePlanningService()` (`planning.service.ts`) ; (b) rotation de l'ordre de départage des égalités par numéro de semaine (`Math.floor(startDate.getTime() / 7j) % children.length`) pour couvrir aussi le cas sans historique (1ère génération). 4 nouveaux tests `planning-greedy.test.ts` (rotation inter-semaines, prise en compte `initialLoad`, rétrocompatibilité sans le paramètre). 252/252 tests + typecheck API 0 erreur.
+
+### Améliorations issues de l'audit cahier des charges (2026-07-06)
+
+Audit complet `CAHIER_CHARGES.md` vs code réel effectué — écarts identifiés, classés par valeur réelle pour une famille utilisatrice (pas un simple cochage de cases) :
+
+- [ ] **Notification "badge gagné" manquante** : un badge est décerné (`checkAndAwardBadges()`, `apps/api/src/services/gamification.ts`) et loggé en Mongo (`BADGE_EARNED`), mais aucune notification in-app/push n'est créée pour l'enfant — contrairement au flow points/claims qui notifie déjà (`notifyTaskCompleted`, `notifyClaimReviewed`). Fix ciblé : ajouter un appel notification dans `checkAndAwardBadges()`.
+- [ ] **Bonus série (streak) absent de la gamification** : `Badge.conditionType` (schema.prisma) et `checkAndAwardBadges()` ne supportent que `"POINTS"` et `"TASKS_COMPLETED"` — aucun suivi de jours consécutifs. C'est pourtant la mécanique la plus motivante pour un enfant ("3 jours d'affilée !"). Ajouter un `conditionType: "STREAK"` calculé sur les `ScheduleItem` COMPLETED consécutifs par jour.
+- [ ] **Notification "tâche oubliée" absente** : aucun rappel proactif après échéance manquée. Le cron existant (`apps/api/src/services/planning-cron.ts`, génère déjà le planning de la semaine suivante) pourrait être étendu pour scanner les `ScheduleItem` PENDING dont la date est dépassée et notifier parent + enfant.
+- [ ] **Notification "rappel tâche" absente** : pas de rappel le matin pour les tâches du jour. Même mécanisme cron que ci-dessus, à exécuter quotidiennement.
+- [ ] **Règle 80/20 parents/enfants non implémentée** : `apps/api/src/modules/planning/planning.service.ts` (ligne ~38) filtre les membres sur `role === "CHILD"` uniquement — les parents ne reçoivent jamais de tâche, contrairement à la règle métier 5 du cahier des charges. Fix : inclure les membres PARENT dans le pool de `generatePlanningGreedy()` avec un ratio de charge dédié (80% du volume aux enfants, 20% aux parents).
+- [ ] **i18n absent (multi-langue FR/EN/ES/PT prévu au cahier)** : zéro librairie i18n (`react-i18next`/`easy_localization` etc.), tous les textes UI sont en français en dur. Proposer un chantier minimal FR/EN d'abord (pas les 4 langues d'un coup) — `react-i18next` côté web, `easy_localization`/`flutter_localizations` côté Flutter.
+- [ ] **Offline réel non tenu (PowerSync)** : promesse produit centrale du cahier (§2, §9, règle métier 6) actuellement 100% non respectée — `apps/mobile/lib/database/database.dart` scaffold PowerSync mais n'est interrogé nulle part, tout transite par `ApiClient` (Dio HTTP). Arbitrage à faire : finaliser PowerSync (investissement lourd, instance cloud requise) vs cache local minimal en lecture seule (mode dégradé simple) pour un premier pas.
+- [ ] **Écran "Planning mural" dédié absent** : le cahier des charges prévoit un affichage tableau pensé pour être collé au mur (lecture à distance, vue famille complète), distinct de "Mes tâches" par enfant connecté. Actuellement rien de tel : web = vue admin/grille de gestion (`PlanningPage.tsx`), mobile = vue par enfant après login individuel (`TodayScreen`). Proposer un écran "vue famille" en lecture seule sur tablette, sans login enfant individuel requis.
+
+**Valeur** : items classés par impact réel constaté (émotionnel enfant, équité familiale, fiabilité produit) plutôt que par simple conformité au cahier des charges.
+
+---
+
 ## 📋 Backlog Sprint 6 — Retours terrain tablette (2026-07-05)
 
 Retours du premier test réel sur tablette Android (login enfant + usage quotidien) :

@@ -8,6 +8,7 @@ import {
   getSchedulesByFamily,
   getScheduleWithItems,
   getScheduleItemWithTask,
+  getMemberLoadHistory,
   updateScheduleItem,
   deleteSchedule,
 } from "./planning.repository.js";
@@ -45,11 +46,13 @@ export async function generatePlanningService(
     throw new AppError("Aucune tâche active dans la famille", 400);
   }
 
+  const initialLoad = await getMemberLoadHistory(familyId, startDate);
   const assignments = generatePlanningGreedy(
     tasks,
     children,
     startDate,
     endDate,
+    initialLoad,
   );
   const schedule = await createScheduleWithItems(familyId, startDate, endDate, assignments);
 

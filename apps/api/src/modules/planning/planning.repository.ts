@@ -66,14 +66,19 @@ export function createScheduleWithItems(
   });
 }
 
+const LOAD_HISTORY_WINDOW_DAYS = 28;
+
 export async function getMemberLoadHistory(
   familyId: string,
   beforeDate: Date,
 ): Promise<Map<string, number>> {
+  const since = new Date(beforeDate);
+  since.setDate(since.getDate() - LOAD_HISTORY_WINDOW_DAYS);
+
   const items = await prisma.scheduleItem.findMany({
     where: {
       schedule: { familyId },
-      date: { lt: beforeDate },
+      date: { gte: since, lt: beforeDate },
     },
     select: {
       assignedToMemberId: true,

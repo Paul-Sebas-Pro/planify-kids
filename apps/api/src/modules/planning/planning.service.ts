@@ -23,6 +23,9 @@ import type {
   UpdateScheduleItemInput,
 } from "./planning.schema.js";
 
+// Règle métier 5 (cahier des charges) : 80% de la charge de tâches va aux enfants.
+const CHILD_SHARE = 0.8;
+
 export async function generatePlanningService(
   familyId: string,
   input: GeneratePlanningInput,
@@ -37,6 +40,7 @@ export async function generatePlanningService(
   const tasks = await getTasksByFamily(familyId, true);
   const members = await getMembersByFamily(familyId);
   const children = members.filter((m: FamilyMember) => m.role === "CHILD");
+  const parents = members.filter((m: FamilyMember) => m.role === "PARENT");
 
   if (children.length === 0) {
     throw new AppError("Aucun enfant dans la famille", 400);
@@ -46,10 +50,20 @@ export async function generatePlanningService(
     throw new AppError("Aucune tâche active dans la famille", 400);
   }
 
+  // Règle métier 5 (cahier des charges) : répartition 80% enfants / 20% parents.
+  // Poids relatif par membre = part du groupe divisée par sa taille, comparé
+  // ensuite à la charge cumulée dans generatePlanningGreedy (charge / poids).
+  const childWeight = CHILD_SHARE / children.length;
+  const parentWeight = parents.length > 0 ? (1 - CHILD_SHARE) / parents.length : 0;
+  const pool = [
+    ...children.map((c) => ({ id: c.id, weight: childWeight })),
+    ...parents.map((p) => ({ id: p.id, weight: parentWeight })),
+  ];
+
   const initialLoad = await getMemberLoadHistory(familyId, startDate);
   const assignments = generatePlanningGreedy(
     tasks,
-    children,
+    pool,
     startDate,
     endDate,
     initialLoad,

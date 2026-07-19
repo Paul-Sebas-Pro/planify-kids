@@ -76,4 +76,42 @@ describe("generatePlanningGreedy", () => {
 
     expect(assignments).toHaveLength(1);
   });
+
+  it("répartit ~80/20 entre enfants et parents pondérés (règle métier 5)", () => {
+    // 1 enfant (poids 0.8) + 1 parent (poids 0.2) — sur 100 occurrences à
+    // charge égale, le parent doit recevoir environ 20% du volume, pas 50%.
+    const pool: GreedyChild[] = [
+      { id: "child-1", weight: 0.8 },
+      { id: "parent-1", weight: 0.2 },
+    ];
+
+    const assignments = generatePlanningGreedy(
+      [task({ frequency: "daily", points: 1 })],
+      pool,
+      new Date("2026-01-01"),
+      new Date("2026-04-10"), // 100 jours
+    );
+
+    const parentCount = assignments.filter(
+      (a) => a.assignedToMemberId === "parent-1",
+    ).length;
+
+    expect(assignments).toHaveLength(100);
+    expect(parentCount).toBeGreaterThanOrEqual(18);
+    expect(parentCount).toBeLessThanOrEqual(22);
+  });
+
+  it("poids égaux par défaut = comportement identique à la charge brute", () => {
+    // Sans weight explicite, la pondération ne doit rien changer par
+    // rapport à l'équilibrage historique (rétrocompatibilité).
+    const assignments = generatePlanningGreedy(
+      [task({ frequency: "daily", points: 10 })],
+      children,
+      new Date("2026-07-06"),
+      new Date("2026-07-07"),
+    );
+
+    const assignedIds = assignments.map((a) => a.assignedToMemberId).sort();
+    expect(assignedIds).toEqual(["alice", "tom"]);
+  });
 });

@@ -5,9 +5,9 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5/6 TERMINÉS ✅ — Sprint 7 en cours (bug rotation planning fixé ; 3 demandes UX/produit du 2026-07-19 en traitement)
-- **Last Session**: 2026-07-19 — UI Planning : texte tronqué dans les cartes de la vue calendrier semaine corrigé (`WeekCalendar`, `PlanningPage.tsx`)
-- **Next Steps**: Règle 80/20 parents/enfants dans `generatePlanningGreedy()` + persistance du code famille sur l'app mobile enfant (voir section "📋 Backlog Sprint 7")
+- **Statut**: Sprint 5/6 TERMINÉS ✅ — Sprint 7 en cours (bug rotation planning fixé ; 2/3 demandes UX/produit du 2026-07-19 faites)
+- **Last Session**: 2026-07-19 — UI Planning (texte tronqué) + règle 80/20 parents/enfants dans le générateur de planning, tous deux fixés et vérifiés en réel
+- **Next Steps**: Persistance du code famille sur l'app mobile enfant (voir section "📋 Backlog Sprint 7")
 
 ---
 
@@ -235,7 +235,7 @@ Deux fixes supplémentaires nécessaires côté Windows (déjà commités) :
 ### 🟠 Demandes utilisateur (2026-07-19)
 
 - [x] **UI Planning — texte tronqué dans les cartes** : vue calendrier semaine (`WeekCalendar`, `PlanningPage.tsx`), colonnes 7 jours très étroites (`min-w-140`) + `truncate` coupait net le nom du membre et le nom de la tâche dès qu'ils dépassaient la largeur de colonne. Fix : colonnes élargies (`min-w-180`) + `truncate` remplacé par `line-clamp-2` sur les deux (texte enveloppé sur 2 lignes, ellipsis seulement si toujours trop long), ligne membre passée en `items-start` avec pastille couleur alignée (`mt-0.5`) pour rester propre quand le nom wrap. Vérifié visuellement (Playwright + capture d'écran) avec noms longs injectés.
-- [ ] **Règle 80/20 parents/enfants absente du planning** : `planning.service.ts` (ligne ~38) filtre `role === "CHILD"` uniquement — les parents ne reçoivent jamais de tâche alors que le cahier des charges prévoit un partage 80% enfants / 20% parents. Piste retenue : inclure les `PARENT` dans le pool passé à `generatePlanningGreedy()` et remplacer le tri "least loaded" brut par une comparaison pondérée (poids enfant = `0.8/nbEnfants`, poids parent = `0.2/nbParents`, comparaison sur `charge/poids`).
+- [x] **Règle 80/20 parents/enfants absente du planning** : `planning.service.ts` filtrait `role === "CHILD"` uniquement — les parents ne recevaient jamais de tâche. Fix : `PARENT` inclus dans le pool passé à `generatePlanningGreedy()` (`planning.service.ts`, constante `CHILD_SHARE = 0.8`) + nouveau champ `weight` sur `GreedyChild` (poids enfant = `0.8/nbEnfants`, poids parent = `0.2/nbParents`) ; `leastLoadedChild()` compare `charge/poids` au lieu de la charge brute (`planning-greedy.ts`). **Piège découvert au test réel** : sur la famille démo (historique 28j 100% enfants, 0% parent), le déséquilibre historique écrasait le ratio de poids — le parent restait "moins chargé" en valeur absolue pendant toute la génération, résultat : 100% des tâches basculaient sur le parent (symétrique inverse du bug initial). Fix : la charge initiale (`initialLoad`) est recentrée **par groupe de poids** sur sa propre moyenne avant comparaison — un déséquilibre historique *entre* groupes (enfants vs parents) ne pèse plus sur le ratio de CETTE génération, seule la fairness *interne* à un groupe (rotation entre enfants) reste pilotée par l'historique. Vérifié en réel (génération semaine réelle, famille démo 2 enfants + 1 parent : ~24% parent sur 28 tâches, répartition mixte confirmée visuellement). 6 tests `planning-greedy.test.ts` (dont 2 nouveaux : split pondéré ~80/20, rétrocompatibilité poids égaux). 256/256 tests + typecheck API/web 0 erreur.
 - [ ] **Persistance code famille — app mobile enfant** : `_ChildLoginFormState` (`login_screen.dart`) repart toujours avec un champ code famille vide, et `AuthNotifier.logout()` (`auth_provider.dart:61-65`) fait un `storage.clear()` complet (`SharedPreferences`) qui empêcherait de toute façon de le garder. Piste retenue : nouvelle clé `familyCode` dédiée dans `SecureStorageService`, sauvegardée après un `loginChild()` réussi, non effacée par le logout (nouvelle méthode `clearSession()` qui ne retire que token+user) ; préchargée + auto-fetch des enfants au `initState()` du formulaire.
 
 ### Améliorations issues de l'audit cahier des charges (2026-07-06)

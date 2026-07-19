@@ -183,10 +183,24 @@ class _ChildLoginFormState extends ConsumerState<_ChildLoginForm> {
   final _pinCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _restoreFamilyCode();
+  }
+
+  @override
   void dispose() {
     _codeCtrl.dispose();
     _pinCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _restoreFamilyCode() async {
+    final storage = ref.read(secureStorageServiceProvider);
+    final saved = await storage.getFamilyCode();
+    if (saved == null || saved.isEmpty || !mounted) return;
+    _codeCtrl.text = saved;
+    await _loadChildren();
   }
 
   Future<void> _loadChildren() async {

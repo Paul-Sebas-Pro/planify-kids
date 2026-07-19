@@ -18,7 +18,7 @@ class AuthNotifier extends _$AuthNotifier {
 
     final userJson = await storage.getUserJson();
     if (userJson == null) {
-      await storage.clear();
+      await storage.clearSession();
       return null;
     }
 
@@ -52,6 +52,7 @@ class AuthNotifier extends _$AuthNotifier {
       final storage = ref.read(secureStorageServiceProvider);
       await storage.saveToken(result.token);
       await storage.saveUserJson(jsonEncode(result.member.toJson()));
+      await storage.saveFamilyCode(familyCode);
 
       PushNotificationService.init(api, result.member.id).ignore();
       return result.member;
@@ -60,7 +61,7 @@ class AuthNotifier extends _$AuthNotifier {
 
   Future<void> logout() async {
     final storage = ref.read(secureStorageServiceProvider);
-    await storage.clear();
+    await storage.clearSession();
     state = const AsyncData(null);
   }
 }

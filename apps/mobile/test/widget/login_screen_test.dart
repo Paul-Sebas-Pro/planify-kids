@@ -31,6 +31,18 @@ class _FakeStorage extends SecureStorageService {
   Future<void> saveUserJson(String json) async => _data['user'] = json;
 
   @override
+  Future<String?> getFamilyCode() async => _data['familyCode'];
+
+  @override
+  Future<void> saveFamilyCode(String code) async => _data['familyCode'] = code;
+
+  @override
+  Future<void> clearSession() async {
+    _data.remove('token');
+    _data.remove('user');
+  }
+
+  @override
   Future<void> clear() async => _data.clear();
 }
 
@@ -48,12 +60,11 @@ class _FakeApiClient extends ApiClient {
   }
 }
 
-Widget _wrap() {
-  final storage = _FakeStorage();
+Widget _wrap({_FakeStorage? storage}) {
   return ProviderScope(
     overrides: [
       authProvider.overrideWith(() => _FakeAuthNotifier()),
-      secureStorageServiceProvider.overrideWithValue(storage),
+      secureStorageServiceProvider.overrideWithValue(storage ?? _FakeStorage()),
       apiClientProvider.overrideWithValue(_FakeApiClient()),
     ],
     child: const MaterialApp(home: LoginScreen()),
@@ -105,6 +116,20 @@ void main() {
       await tester.tap(find.byIcon(Icons.search));
       await tester.pumpAndSettle();
 
+      expect(find.text('Alice'), findsOneWidget);
+    });
+
+    testWidgets(
+        'onglet Enfant — code famille mémorisé préchargé et recherché automatiquement',
+        (tester) async {
+      final storage = _FakeStorage();
+      await storage.saveFamilyCode('DEMO01');
+
+      await tester.pumpWidget(_wrap(storage: storage));
+      await tester.tap(find.text('Enfant'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('DEMO01'), findsOneWidget);
       expect(find.text('Alice'), findsOneWidget);
     });
   });

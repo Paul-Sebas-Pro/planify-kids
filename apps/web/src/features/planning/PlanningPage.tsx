@@ -494,7 +494,7 @@ function WeekCalendar({
   return (
     <div className="overflow-x-auto">
       <div
-        className="grid gap-2 min-w-140"
+        className="grid gap-2 min-w-180"
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
       >
         {/* En-têtes jours */}
@@ -521,20 +521,20 @@ function WeekCalendar({
                   className={`rounded-xl p-2 shadow-sm text-xs ${STATUS_BG[item.status] ?? "bg-white border border-gray-200"}`}
                 >
                   {/* Membre */}
-                  <div className="flex items-center gap-1.5 mb-1">
+                  <div className="flex items-start gap-1.5 mb-1">
                     <div
-                      className="w-4 h-4 rounded-full shrink-0"
+                      className="w-4 h-4 rounded-full shrink-0 mt-0.5"
                       style={{
                         backgroundColor: item.member.color ?? "#9e9e9e",
                       }}
                     />
-                    <span className="font-medium truncate text-gray-700">
+                    <span className="font-medium line-clamp-2 text-gray-700">
                       {item.member.name}
                     </span>
                   </div>
 
                   {/* Tâche */}
-                  <p className="truncate text-gray-800 font-medium leading-snug">
+                  <p className="line-clamp-2 text-gray-800 font-medium leading-snug">
                     {item.task.icon} {item.task.name}
                   </p>
 

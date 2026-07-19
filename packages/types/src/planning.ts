@@ -1,11 +1,19 @@
 import type { TaskStatus } from "./task.js";
 
+export type Slot = "NOON" | "EVENING";
+
+export const SLOT_LABELS: Record<Slot, string> = {
+  NOON: "Midi",
+  EVENING: "Soir",
+};
+
 export interface ScheduleItem {
   id: string;
   scheduleId: string;
   taskTemplateId: string;
   assignedToMemberId: string;
   date: string;
+  slot: Slot;
   status: TaskStatus;
   completedAt?: string;
   updatedAt: string;

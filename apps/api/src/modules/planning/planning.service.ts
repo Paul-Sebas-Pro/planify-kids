@@ -9,9 +9,11 @@ import {
   getScheduleWithItems,
   getScheduleItemWithTask,
   getMemberLoadHistory,
+  getFamilySchoolZone,
   updateScheduleItem,
   deleteSchedule,
 } from "./planning.repository.js";
+import { classifyDays } from "../../services/school-calendar.js";
 import {
   awardPointsForTask,
   revokePointsForTask,
@@ -61,12 +63,22 @@ export async function generatePlanningService(
   ];
 
   const initialLoad = await getMemberLoadHistory(familyId, startDate);
+
+  // Créneau midi+soir les jours sans école (weekend, férié, vacances) —
+  // uniquement si la famille a renseigné sa zone (Paramètres) ; sinon
+  // comportement historique (1 créneau/jour, le soir).
+  const schoolZone = await getFamilySchoolZone(familyId);
+  const dayTypes = schoolZone
+    ? await classifyDays(schoolZone, startDate, endDate)
+    : new Map<string, "SCHOOL_DAY" | "OFF_DAY">();
+
   const assignments = generatePlanningGreedy(
     tasks,
     pool,
     startDate,
     endDate,
     initialLoad,
+    dayTypes,
   );
   const schedule = await createScheduleWithItems(familyId, startDate, endDate, assignments);
 

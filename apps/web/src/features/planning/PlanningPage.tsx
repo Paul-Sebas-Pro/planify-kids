@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import type { ScheduleDetail, ScheduleItemDetail, TaskExchange } from "@planify-kids/types";
+import { SLOT_LABELS } from "@planify-kids/types";
 import { planningApi, exchangesApi } from "@/services/planning.api";
 import { membersApi } from "@/services/api";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -520,16 +521,21 @@ function WeekCalendar({
                 <div
                   className={`rounded-xl p-2 shadow-sm text-xs ${STATUS_BG[item.status] ?? "bg-white border border-gray-200"}`}
                 >
-                  {/* Membre */}
-                  <div className="flex items-start gap-1.5 mb-1">
-                    <div
-                      className="w-4 h-4 rounded-full shrink-0 mt-0.5"
-                      style={{
-                        backgroundColor: item.member.color ?? "#9e9e9e",
-                      }}
-                    />
-                    <span className="font-medium line-clamp-2 text-gray-700">
-                      {item.member.name}
+                  {/* Membre + créneau */}
+                  <div className="flex items-start justify-between gap-1.5 mb-1">
+                    <div className="flex items-start gap-1.5 min-w-0">
+                      <div
+                        className="w-4 h-4 rounded-full shrink-0 mt-0.5"
+                        style={{
+                          backgroundColor: item.member.color ?? "#9e9e9e",
+                        }}
+                      />
+                      <span className="font-medium line-clamp-2 text-gray-700">
+                        {item.member.name}
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+                      {SLOT_LABELS[item.slot]}
                     </span>
                   </div>
 

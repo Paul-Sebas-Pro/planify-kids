@@ -43,6 +43,37 @@ enum ChallengeStatus {
   FAILED
 }
 
+// Zone vacances scolaires (métropole A/B/C) + territoires DOM-TOM. Détermine
+// à la fois la zone jours fériés (calendrier.api.gouv.fr) et la zone vacances
+// scolaires (data.education.gouv.fr) — voir services/school-calendar.ts.
+// Limite connue : Alsace-Moselle (2 jours fériés en plus) non distingué de
+// Zone B ; Saint-Barthélemy/Saint-Martin rattachés à Guadeloupe (pas de zone
+// vacances scolaires distincte dans le dataset officiel).
+enum CalendarZone {
+  ZONE_A
+  ZONE_B
+  ZONE_C
+  GUADELOUPE
+  GUYANE
+  MARTINIQUE
+  LA_REUNION
+  MAYOTTE
+  NOUVELLE_CALEDONIE
+  POLYNESIE_FRANCAISE
+  SAINT_PIERRE_ET_MIQUELON
+  WALLIS_ET_FUTUNA
+}
+
+enum CalendarDayType {
+  HOLIDAY
+  VACATION
+}
+
+enum Slot {
+  NOON
+  EVENING
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -55,11 +86,12 @@ model User {
 }
 
 model Family {
-  id       String @id @default(uuid())
-  name     String
-  code     String? @unique
-  timezone String @default("Europe/Paris")
-  locale   String @default("fr")
+  id         String        @id @default(uuid())
+  name       String
+  code       String?       @unique
+  timezone   String        @default("Europe/Paris")
+  locale     String        @default("fr")
+  schoolZone CalendarZone?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -148,6 +180,7 @@ model ScheduleItem {
   assignedToMemberId String
 
   date        DateTime
+  slot        Slot       @default(EVENING)
   status      TaskStatus @default(PENDING)
   completedAt DateTime?
 
@@ -268,4 +301,21 @@ model FamilyChallenge {
   family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   @@index([familyId])
+}
+
+// Cache local des jours fériés / vacances scolaires par zone (évite un appel
+// aux API gouv à chaque génération de planning — voir services/school-calendar.ts).
+// Une ligne = un jour non-scolaire pour une zone donnée (férié et/ou vacances,
+// les deux peuvent coexister pour la même date via des lignes distinctes).
+model SchoolCalendarCache {
+  id    String          @id @default(uuid())
+  zone  CalendarZone
+  date  DateTime        @db.Date
+  type  CalendarDayType
+  label String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([zone, date, type])
+  @@index([zone, date])
 }

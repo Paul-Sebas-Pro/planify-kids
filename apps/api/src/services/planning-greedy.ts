@@ -20,10 +20,14 @@ export interface GreedyChild {
   weight?: number;
 }
 
+export type DayType = "SCHOOL_DAY" | "OFF_DAY";
+export type Slot = "NOON" | "EVENING";
+
 export interface GreedyAssignment {
   taskTemplateId: string;
   assignedToMemberId: string;
   date: Date;
+  slot: Slot;
 }
 
 export function generatePlanningGreedy(
@@ -32,6 +36,7 @@ export function generatePlanningGreedy(
   startDate: Date,
   endDate: Date,
   initialLoad: Map<string, number> = new Map(),
+  dayTypes: Map<string, DayType> = new Map(),
 ): GreedyAssignment[] {
   if (children.length === 0 || tasks.length === 0) return [];
 
@@ -41,13 +46,13 @@ export function generatePlanningGreedy(
     return b.difficulty - a.difficulty;
   });
 
-  // Génère toutes les occurrences (tâche, date) sur la plage
-  const occurrences: { taskTemplateId: string; date: Date; points: number }[] =
+  // Génère toutes les occurrences (tâche, date, créneau) sur la plage
+  const occurrences: { taskTemplateId: string; date: Date; points: number; slot: Slot }[] =
     [];
 
   for (const task of sorted) {
-    for (const date of getOccurrences(task.frequency, startDate, endDate)) {
-      occurrences.push({ taskTemplateId: task.id, date, points: task.points });
+    for (const occ of getOccurrences(task.frequency, startDate, endDate, dayTypes)) {
+      occurrences.push({ taskTemplateId: task.id, date: occ.date, points: task.points, slot: occ.slot });
     }
   }
 
@@ -102,6 +107,7 @@ export function generatePlanningGreedy(
       taskTemplateId: occ.taskTemplateId,
       assignedToMemberId: chosen,
       date: occ.date,
+      slot: occ.slot,
     });
     load.set(chosen, (load.get(chosen) ?? 0) + occ.points);
   }
@@ -129,30 +135,56 @@ function leastLoadedChild(
   return chosen;
 }
 
+// Journée d'école (weekend/férié/vacances inconnu du planning, ex: famille
+// n'ayant pas renseigné sa zone) : un seul créneau, le soir — comportement
+// historique inchangé. Journée OFF_DAY (weekend, férié ou vacances) : les
+// tâches quotidiennes gagnent un 2nd créneau à midi. Seule la fréquence
+// "daily" est concernée — les tâches hebdo/mensuelles restent un seul
+// créneau (soir), ce ne sont pas des routines quotidiennes à dédoubler.
+function withSlot(date: Date, hour: number): Date {
+  const d = new Date(date);
+  d.setHours(hour, 0, 0, 0);
+  return d;
+}
+
 function getOccurrences(
   frequency: string,
   start: Date,
   end: Date,
-): Date[] {
-  const dates: Date[] = [];
+  dayTypes: Map<string, DayType>,
+): { date: Date; slot: Slot }[] {
+  const occurrences: { date: Date; slot: Slot }[] = [];
   const cur = new Date(start);
+
+  const pushDay = (d: Date) => {
+    if (frequency === "daily") {
+      const key = d.toISOString().slice(0, 10);
+      const dayType = dayTypes.get(key) ?? "SCHOOL_DAY";
+      if (dayType === "OFF_DAY") {
+        occurrences.push({ date: withSlot(d, 12), slot: "NOON" });
+      }
+      occurrences.push({ date: withSlot(d, 19), slot: "EVENING" });
+    } else {
+      occurrences.push({ date: withSlot(d, 19), slot: "EVENING" });
+    }
+  };
 
   if (frequency === "daily") {
     while (cur <= end) {
-      dates.push(new Date(cur));
+      pushDay(new Date(cur));
       cur.setDate(cur.getDate() + 1);
     }
   } else if (frequency === "weekly") {
     while (cur <= end) {
-      dates.push(new Date(cur));
+      pushDay(new Date(cur));
       cur.setDate(cur.getDate() + 7);
     }
   } else if (frequency === "monthly") {
     while (cur <= end) {
-      dates.push(new Date(cur));
+      pushDay(new Date(cur));
       cur.setMonth(cur.getMonth() + 1);
     }
   }
 
-  return dates;
+  return occurrences;
 }

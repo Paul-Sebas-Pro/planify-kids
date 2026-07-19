@@ -10,6 +10,7 @@ import type {
   CreateTaskRequest,
   UpdateTaskRequest,
   TimelineEvent,
+  CalendarZone,
 } from "@planify-kids/types";
 
 const BASE = "/api";
@@ -92,11 +93,11 @@ export const familyApi = {
     request<{ success: boolean; data: FamilyStats }>("GET", "/family/stats"),
   get: () =>
     request<{ success: boolean; data: Family }>("GET", "/family"),
-  update: (name: string) =>
+  update: (body: { name?: string; schoolZone?: CalendarZone | null }) =>
     request<{ success: boolean; data: Family }>(
       "PATCH",
       "/family",
-      { name },
+      body,
     ),
 };
 

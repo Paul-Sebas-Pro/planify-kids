@@ -25,6 +25,7 @@ export function getScheduleWithItems(scheduleId: string, familyId: string) {
     where: { id: scheduleId, familyId },
     include: {
       items: {
+        // date encode déjà l'heure (12h=midi, 19h=soir) — le tri chronologique suffit
         orderBy: { date: "asc" },
         include: {
           task: {
@@ -37,6 +38,12 @@ export function getScheduleWithItems(scheduleId: string, familyId: string) {
       },
     },
   });
+}
+
+export function getFamilySchoolZone(familyId: string) {
+  return prisma.family
+    .findUniqueOrThrow({ where: { id: familyId }, select: { schoolZone: true } })
+    .then((f) => f.schoolZone);
 }
 
 export function createScheduleWithItems(
@@ -57,6 +64,7 @@ export function createScheduleWithItems(
           taskTemplateId: a.taskTemplateId,
           assignedToMemberId: a.assignedToMemberId,
           date: a.date,
+          slot: a.slot,
           status: "PENDING",
         })),
       });

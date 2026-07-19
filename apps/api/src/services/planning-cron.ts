@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { prisma } from "../config/database.js";
 import { generatePlanningService } from "../modules/planning/planning.service.js";
+import { syncCalendarZone } from "./school-calendar.js";
 
 function nextWeekRange(): { startDate: string; endDate: string } {
   const today = new Date();
@@ -51,4 +52,34 @@ export function startPlanningCron(): void {
   });
 
   console.log("⏰ Cron planning auto démarré (quotidien 00:01)");
+}
+
+export function startCalendarSyncCron(): void {
+  // Tous les dimanches à 03:00 — rafraîchit le cache jours fériés/vacances
+  // pour chaque zone réellement utilisée par une famille. Ne tourne pas en
+  // serverless (Vercel) ; le lazy-fill de school-calendar.ts sert de filet
+  // de sécurité pour une zone jamais synchronisée (même limite documentée
+  // que le cron planning ci-dessus).
+  cron.schedule("0 3 * * 0", async () => {
+    console.log("[cron] Sync calendrier jours fériés/vacances…");
+    const zones = await prisma.family.findMany({
+      where: { schoolZone: { not: null } },
+      select: { schoolZone: true },
+      distinct: ["schoolZone"],
+    });
+
+    for (const { schoolZone } of zones) {
+      if (!schoolZone) continue;
+      try {
+        await syncCalendarZone(schoolZone);
+        console.log(`[cron] Zone synchronisée — ${schoolZone}`);
+      } catch (err) {
+        console.warn(`[cron] Échec sync zone ${schoolZone}:`, (err as Error).message);
+      }
+    }
+
+    console.log("[cron] Sync calendrier terminée.");
+  });
+
+  console.log("⏰ Cron sync calendrier démarré (hebdomadaire, dimanche 03:00)");
 }

@@ -114,4 +114,77 @@ describe("generatePlanningGreedy", () => {
     const assignedIds = assignments.map((a) => a.assignedToMemberId).sort();
     expect(assignedIds).toEqual(["alice", "tom"]);
   });
+
+  it("1 seul créneau (soir) un jour d'école, sans dayTypes fourni (rétrocompatible)", () => {
+    const assignments = generatePlanningGreedy(
+      [task({ frequency: "daily" })],
+      children,
+      new Date("2026-07-06"),
+      new Date("2026-07-06"),
+    );
+
+    expect(assignments).toHaveLength(1);
+    expect(assignments[0]?.slot).toBe("EVENING");
+    expect(assignments[0]?.date.getHours()).toBe(19);
+  });
+
+  it("2 créneaux (midi + soir) un jour OFF_DAY pour une tâche quotidienne", () => {
+    const dayTypes = new Map([["2026-07-06", "OFF_DAY" as const]]);
+
+    const assignments = generatePlanningGreedy(
+      [task({ frequency: "daily" })],
+      children,
+      new Date("2026-07-06"),
+      new Date("2026-07-06"),
+      new Map(),
+      dayTypes,
+    );
+
+    expect(assignments).toHaveLength(2);
+    const slots = assignments.map((a) => a.slot).sort();
+    expect(slots).toEqual(["EVENING", "NOON"]);
+    const noon = assignments.find((a) => a.slot === "NOON");
+    expect(noon?.date.getHours()).toBe(12);
+  });
+
+  it("reste à 1 créneau (soir) un OFF_DAY pour une tâche hebdomadaire/mensuelle", () => {
+    const dayTypes = new Map([["2026-07-06", "OFF_DAY" as const]]);
+
+    const assignments = generatePlanningGreedy(
+      [task({ frequency: "weekly" })],
+      children,
+      new Date("2026-07-06"),
+      new Date("2026-07-06"),
+      new Map(),
+      dayTypes,
+    );
+
+    expect(assignments).toHaveLength(1);
+    expect(assignments[0]?.slot).toBe("EVENING");
+  });
+
+  it("mix école/OFF_DAY sur une semaine — le nombre d'occurrences reflète les créneaux", () => {
+    // Lundi-vendredi école (1 créneau), samedi-dimanche OFF_DAY (2 créneaux)
+    const dayTypes = new Map<string, "SCHOOL_DAY" | "OFF_DAY">([
+      ["2026-07-06", "SCHOOL_DAY"], // lundi
+      ["2026-07-07", "SCHOOL_DAY"],
+      ["2026-07-08", "SCHOOL_DAY"],
+      ["2026-07-09", "SCHOOL_DAY"],
+      ["2026-07-10", "SCHOOL_DAY"], // vendredi
+      ["2026-07-11", "OFF_DAY"], // samedi
+      ["2026-07-12", "OFF_DAY"], // dimanche
+    ]);
+
+    const assignments = generatePlanningGreedy(
+      [task({ frequency: "daily" })],
+      children,
+      new Date("2026-07-06"),
+      new Date("2026-07-12"),
+      new Map(),
+      dayTypes,
+    );
+
+    // 5 jours × 1 créneau + 2 jours × 2 créneaux = 9
+    expect(assignments).toHaveLength(9);
+  });
 });

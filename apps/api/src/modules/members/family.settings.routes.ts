@@ -11,8 +11,24 @@ export const familySettingsRoutes = new Hono();
 
 familySettingsRoutes.use("*", authMiddleware);
 
+const CALENDAR_ZONES = [
+  "ZONE_A",
+  "ZONE_B",
+  "ZONE_C",
+  "GUADELOUPE",
+  "GUYANE",
+  "MARTINIQUE",
+  "LA_REUNION",
+  "MAYOTTE",
+  "NOUVELLE_CALEDONIE",
+  "POLYNESIE_FRANCAISE",
+  "SAINT_PIERRE_ET_MIQUELON",
+  "WALLIS_ET_FUTUNA",
+] as const;
+
 const patchFamilySchema = z.object({
-  name: z.string().min(1).max(80),
+  name: z.string().min(1).max(80).optional(),
+  schoolZone: z.enum(CALENDAR_ZONES).nullable().optional(),
 });
 
 // GET /family  (parent uniquement) — inclut le code famille pour le login enfant tablette
@@ -20,7 +36,7 @@ familySettingsRoutes.get("/", requireRole("PARENT"), async (c) => {
   const { familyId } = c.get("user");
   const family = await prisma.family.findUniqueOrThrow({
     where: { id: familyId },
-    select: { id: true, name: true, code: true },
+    select: { id: true, name: true, code: true, schoolZone: true },
   });
   return c.json({ success: true, data: family });
 });
@@ -32,11 +48,14 @@ familySettingsRoutes.patch(
   zValidator("json", patchFamilySchema),
   async (c) => {
     const { familyId } = c.get("user");
-    const { name } = c.req.valid("json");
+    const body = c.req.valid("json");
     const family = await prisma.family.update({
       where: { id: familyId },
-      data: { name },
-      select: { id: true, name: true, code: true },
+      data: {
+        ...(body.name !== undefined && { name: body.name }),
+        ...(body.schoolZone !== undefined && { schoolZone: body.schoolZone }),
+      },
+      select: { id: true, name: true, code: true, schoolZone: true },
     });
     return c.json({ success: true, data: family });
   },

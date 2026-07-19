@@ -5,12 +5,18 @@ import type { Reward, RewardClaim } from "@planify-kids/types";
 import { rewardsApi } from "@/services/rewards.api";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SkeletonList } from "@/components/shared/Skeleton";
+import { IconPicker } from "@/components/shared/IconPicker";
 
 interface RewardFormValues {
   name: string;
   icon: string;
   pointsCost: number;
 }
+
+const REWARD_ICONS = [
+  "🎁", "🍦", "🎮", "🍫", "🎬", "🎡",
+  "🍕", "🧸", "🎨", "🚲", "🏊", "🎢",
+];
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "En attente",
@@ -44,7 +50,8 @@ export function RewardsPage() {
   const claims: RewardClaim[] = claimsData?.data ?? [];
   const pendingClaims = claims.filter((c) => c.status === "PENDING");
 
-  const { register, handleSubmit, reset, setValue } = useForm<RewardFormValues>();
+  const { register, handleSubmit, reset, setValue, watch } = useForm<RewardFormValues>();
+  const selectedIcon = watch("icon");
 
   const createMutation = useMutation({
     mutationFn: (data: RewardFormValues) =>
@@ -94,7 +101,7 @@ export function RewardsPage() {
 
   function openCreate() {
     setEditing(null);
-    reset({ name: "", icon: "", pointsCost: 0 });
+    reset({ name: "", icon: REWARD_ICONS[0], pointsCost: 0 });
     setApiError(null);
     setShowForm(true);
   }
@@ -157,28 +164,26 @@ export function RewardsPage() {
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Icône
-                </label>
-                <input
-                  {...register("icon", { required: true })}
-                  placeholder="ex. 🎬"
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Coût (points)
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  {...register("pointsCost", { required: true, min: 1 })}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Icône
+              </label>
+              <IconPicker
+                value={selectedIcon}
+                onChange={(icon) => setValue("icon", icon)}
+                options={REWARD_ICONS}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Coût (points)
+              </label>
+              <input
+                type="number"
+                min={1}
+                {...register("pointsCost", { required: true, min: 1 })}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
             </div>
             <div className="flex gap-3">
               <button

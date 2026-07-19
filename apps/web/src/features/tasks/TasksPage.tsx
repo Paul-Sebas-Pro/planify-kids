@@ -5,10 +5,12 @@ import type { TaskTemplate, Frequency } from "@planify-kids/types";
 import { tasksApi } from "@/services/api";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SkeletonList } from "@/components/shared/Skeleton";
+import { IconPicker } from "@/components/shared/IconPicker";
 
 interface TaskFormValues {
   name: string;
   description: string;
+  icon: string;
   difficulty: number;
   duration: number;
   points: number;
@@ -16,6 +18,11 @@ interface TaskFormValues {
   isMandatory: boolean;
   isActive: boolean;
 }
+
+const TASK_ICONS = [
+  "🧹", "🧺", "🍽️", "🛏️", "🐕", "📚",
+  "🌱", "🧽", "🚮", "🧼", "🍳", "👕",
+];
 
 const DIFFICULTY_LABELS: Record<number, string> = {
   1: "Facile",
@@ -70,8 +77,9 @@ export function TasksPage() {
     onError: (err: Error) => setApiError(err.message),
   });
 
-  const { register, handleSubmit, reset } = useForm<TaskFormValues>({
+  const { register, handleSubmit, reset, watch, setValue } = useForm<TaskFormValues>({
     defaultValues: {
+      icon: TASK_ICONS[0],
       difficulty: 1,
       frequency: "daily",
       isMandatory: false,
@@ -79,8 +87,11 @@ export function TasksPage() {
     },
   });
 
+  const selectedIcon = watch("icon");
+
   function openCreate() {
     reset({
+      icon: TASK_ICONS[0],
       difficulty: 1,
       frequency: "daily",
       isMandatory: false,
@@ -95,6 +106,7 @@ export function TasksPage() {
     reset({
       name: t.name,
       description: t.description ?? "",
+      icon: t.icon || TASK_ICONS[0],
       difficulty: t.difficulty,
       duration: t.duration,
       points: t.points,
@@ -118,6 +130,7 @@ export function TasksPage() {
     const body = {
       name: values.name,
       description: values.description || undefined,
+      icon: values.icon,
       difficulty: Number(values.difficulty),
       duration: Number(values.duration),
       points: Number(values.points),
@@ -180,6 +193,7 @@ export function TasksPage() {
                 !t.isActive ? "opacity-50" : ""
               }`}
             >
+              <span className="text-2xl shrink-0">{t.icon || "🧹"}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <p className="font-semibold text-sm">{t.name}</p>
@@ -251,6 +265,17 @@ export function TasksPage() {
                   {...register("description")}
                   rows={2}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Icône
+                </label>
+                <IconPicker
+                  value={selectedIcon}
+                  onChange={(icon) => setValue("icon", icon)}
+                  options={TASK_ICONS}
                 />
               </div>
 

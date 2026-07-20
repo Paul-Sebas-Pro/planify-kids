@@ -5,9 +5,9 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5/6 TERMINÉS ✅ — Sprint 7 : bug rotation planning fixé, les 3 demandes UX/produit du 2026-07-19 faites, créneaux midi/soir (backend + web + mobile) faits et vérifiés en réel, incident credentials Supabase résolu, notifications badge/rappel/oubli faites, 4 améliorations UX/bug (WeekCalendar taille, Midi/Soir mobile, suppression récompenses, visuel jours fériés/vacances) faites — à valider en réel une fois l'APK reconstruit
-- **Last Session**: 2026-07-20 — Fix bug suppression récompenses (soft-delete `isActive`, `RewardClaim.reward` sans cascade cassait le delete dès qu'une récompense avait été réclamée), WeekCalendar web taille cohérente (grille 7 colonnes fixes + fix troncature silencieuse >7 jours), visuel jours fériés/vacances sur le planning web (`GET /planning/calendar`, badge + teinte colonne), séparation visuelle Midi/Soir sur mobile (sous-groupes + bande d'accent colorée sur `TaskCard`). 270/270 tests API, `flutter analyze` 0 issue. APK mobile toujours pas reconstruit (bloqué sur cette machine aarch64).
-- **Next Steps**: **APK mobile à reconstruire et réinstaller sur la tablette** (persistance code famille, badge Midi/Soir, 3 notifications, séparation Midi/Soir UI — rien de tout ça n'est encore sur l'appareil réel, Flutter n'a pas d'auto-update — voir section "Installation Android" pour la procédure PC Windows). Reprendre ensuite le reste du backlog Sprint 7 — voir section "📋 Backlog Sprint 7" : streak, i18n, offline PowerSync, écran planning mural. Note : `task_card_test.dart` a 4 échecs pré-existants côté mobile (points formatés "+10 pts" vs test attend "10 pts", tests PENDING/sans-onComplete oublient de passer le callback, test COMPLETED cherche une icône `Icons.check_circle` qui n'existe pas dans le composant actuel), confirmés non liés à cette session — jamais fixés, à investiguer si besoin.
+- **Statut**: Sprint 5/6 TERMINÉS ✅ — Sprint 7 : bug rotation planning fixé, 3 demandes UX/produit + créneaux midi/soir + notifications badge/rappel/oubli + 4 fix UX (WeekCalendar/rewards/calendrier scolaire/Midi-Soir mobile) faits, **APK mobile reconstruit et vérifié en réel sur PC Windows** (persistance code famille + Midi/Soir OK), 2 bugs post-build corrigés (400 édition membre, modale qui ne se fermait pas), streak fait (backend, seed à lancer)
+- **Last Session**: 2026-07-21 — Fix 400 HTTP sur modif membre (`FamilyPage.tsx` réinjectait `birthDate` en ISO datetime complet dans le form, RHF soumettait la valeur brute cachée malgré le champ affiché vide), fix modale édition membre qui ne se fermait pas (`updateMutation.onSuccess` oubliait `setShowForm(false)`), agrandissement badges Midi/Soir mobile (pill coloré ambre/indigo), **streak/bonus série** : `conditionType: "STREAK"` dans `checkAndAwardBadges()`, 3 badges seedés (En feu 3j/Semaine parfaite 7j/Invincible 30j), `seedBadges()` rendu additif par nom. 272/272 tests API, typecheck 0 erreur, `flutter analyze` 0 issue.
+- **Next Steps**: Lancer `pnpm --filter @planify-kids/api db:seed` (env locale + prod) pour peupler les 3 nouveaux badges STREAK — pas fait cette session (env locale incomplète). Puis reprendre le backlog Sprint 7 — voir section "📋 Backlog Sprint 7" : écran planning mural, i18n FR/EN, offline PowerSync. Note : `task_card_test.dart` a 4 échecs pré-existants côté mobile (points formatés "+10 pts" vs test attend "10 pts", tests PENDING/sans-onComplete oublient de passer le callback, test COMPLETED cherche une icône `Icons.check_circle` qui n'existe pas dans le composant actuel), confirmés non liés à cette session — jamais fixés, à investiguer si besoin.
 
 ---
 
@@ -254,7 +254,7 @@ Deux fixes supplémentaires nécessaires côté Windows (déjà commités) :
 Audit complet `CAHIER_CHARGES.md` vs code réel effectué — écarts identifiés, classés par valeur réelle pour une famille utilisatrice (pas un simple cochage de cases) :
 
 - [x] **Notification "badge gagné" manquante** : un badge est décerné (`checkAndAwardBadges()`, `apps/api/src/services/gamification.ts`) et loggé en Mongo (`BADGE_EARNED`), mais aucune notification in-app/push n'était créée. Fix (2026-07-20) : `notifyBadgeEarned()` (`notifications.service.ts`, même pattern in-app + push FCM que `notifyTasksAssigned`) appelé dans `checkAndAwardBadges()` pour chaque badge nouvellement décerné. Nouvelle valeur enum `NotificationType.BADGE_EARNED`.
-- [ ] **Bonus série (streak) absent de la gamification** : `Badge.conditionType` (schema.prisma) et `checkAndAwardBadges()` ne supportent que `"POINTS"` et `"TASKS_COMPLETED"` — aucun suivi de jours consécutifs. C'est pourtant la mécanique la plus motivante pour un enfant ("3 jours d'affilée !"). Ajouter un `conditionType: "STREAK"` calculé sur les `ScheduleItem` COMPLETED consécutifs par jour.
+- [x] **Bonus série (streak) absent de la gamification** : `checkAndAwardBadges()` ne supportait que `"POINTS"` et `"TASKS_COMPLETED"`. Fix (2026-07-21) : `conditionType: "STREAK"` (pas de champ enum Prisma — `conditionType` est un `String` libre, pas de migration nécessaire), calculé via `computeStreak()` (`gamification.ts`) — jours consécutifs (dérivés localement des `completedAt`, piège timezone déjà documenté évité) en remontant depuis aujourd'hui tant qu'au moins une tâche a été complétée ce jour-là. 3 badges seedés (`En feu` 3j, `Semaine parfaite` 7j, `Invincible` 30j). `seedBadges()` rendu additif par nom (au lieu de "skip si déjà seedé") — sinon un nouveau badge ajouté au tableau n'a aucun effet sur une DB déjà seedée (dev local, famille démo prod). 2 nouveaux tests `gamification.test.ts` (série atteinte / série interrompue). 272/272 tests, typecheck 0 erreur. **Non vérifié en live** : `pnpm db:seed` pas exécuté ici (env locale incomplète, `MONGODB_URI`/`JWT_SECRET` absents de `.env`) — à lancer avant prochaine session pour peupler les 3 nouveaux badges.
 - [x] **Notification "tâche oubliée" absente** : aucun rappel proactif après échéance manquée. Fix (2026-07-20) : cron `startForgottenTaskCron()` (`planning-cron.ts`, quotidien 20:00) scanne les `ScheduleItem` PENDING du jour et notifie chaque membre via `notifyTasksForgotten()`.
 - [x] **Notification "rappel tâche" absente** : pas de rappel le matin pour les tâches du jour. Fix (2026-07-20) : cron `startTaskReminderCron()` (`planning-cron.ts`, quotidien 08:00), même logique de scan que ci-dessus via `notifyTasksReminder()`. Les deux crons partagent `notifyPendingTasksForToday()` (bornes du jour en heure locale, pas de piège `setHours`+`toISOString` — cf. leçon Session 21).
 - [x] **Règle 80/20 parents/enfants non implémentée** : doublon avec l'entrée déjà cochée dans "Demandes utilisateur (2026-07-19)" plus haut — fait via commit `40304f7`, jamais mise à jour ici lors de l'audit initial.
@@ -349,6 +349,42 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 24 - 2026-07-21
+
+**Objectif**: APK mobile reconstruit et vérifié en réel (PC Windows). 2 bugs post-build (400 édition membre, modale qui ne se ferme pas), amélioration visuelle badges Midi/Soir mobile, streak/bonus série (backlog Sprint 7).
+
+**Concepts introduits**:
+
+- **react-hook-form soumet la valeur cachée de `reset()`, pas la valeur DOM corrigée par le navigateur** : un `<input type="date">` alimenté par une valeur invalide (ISO datetime complet au lieu de `YYYY-MM-DD`) s'affiche vide côté navigateur (normalisation HTML5 standard), mais RHF garde en interne la valeur brute passée à `reset()` et la soumet telle quelle au submit — piège découvert en écrivant un test e2e qui passait à tort en ne vérifiant que le champ affiché, pas le payload réellement envoyé. Repro confirmée via Playwright (`page.route` + inspection du body de la requête interceptée) avant de conclure, pas de déduction seule.
+- **Un test e2e peut être un faux positif silencieux** : le premier test écrit pour le bug "modale ne se ferme pas" passait alors que le bug était bel et bien présent — l'assertion ne vérifiait que la disparition du heading "Modifier le membre", qui redevient invisible dès que `editTarget` repasse à `null`, même si la modale reste ouverte (elle change juste de heading vers "Nouveau membre", `showForm` restant `true`). Un test qui passe avant même d'écrire le fix est suspect — vérifié explicitement ici en stashant le fix et en confirmant que le test échoue bien sans lui, avant de le considérer fiable.
+- **`Badge.conditionType` est un `String` libre, pas un enum Prisma** : ajouter `"STREAK"` comme nouvelle valeur ne nécessite aucune migration/`db push`, juste du code + des données seedées.
+- **`seedBadges()` "skip si count>0" bloque tout ajout futur** : ajouter un badge au tableau `badges` de `seed.ts` n'a aucun effet sur une DB déjà seedée (dev local, famille démo prod) avec ce garde-fou — rendu additif par nom pour que ce type d'ajout reste déployable sans wipe complet.
+
+**Modifications** :
+
+```diff
+M apps/web/src/features/family/FamilyPage.tsx        (fix birthDate slice YYYY-MM-DD, fix setShowForm(false) manquant)
++ apps/web/e2e/family.spec.ts                          (test régression 400 + fermeture modale, durci après faux positif détecté)
+M apps/mobile/lib/features/tasks/today_screen.dart     (_SlotSubHeader : pill coloré ambre/indigo, icône 20px, texte 15px)
+M apps/api/src/services/gamification.ts                (conditionType STREAK, computeStreak/dayKey)
+M apps/api/src/services/gamification.test.ts            (2 tests STREAK : série atteinte / interrompue)
+M apps/api/src/prisma/seed.ts                            (3 badges STREAK, seedBadges() additif par nom)
+```
+
+**Résultats**:
+
+- 272/272 tests API, typecheck API + web 0 erreur, `flutter analyze` 0 issue, `flutter test` +12 -4 (échecs pré-existants inchangés).
+- 400 édition membre + modale non fermée : vérifiés en réel par l'utilisateur ("l'erreur 400 a disparu" / confirmé après fix modale).
+- APK mobile : reconstruit sur PC Windows, persistance code famille + séparation Midi/Soir confirmées en réel (le doute initial venait d'un checkout pas à jour, pas d'un bug de code).
+- Streak : **non vérifié en live** — `pnpm db:seed` pas lancé (env locale incomplète, `MONGODB_URI`/`JWT_SECRET` absents de `.env`), donc les 3 nouveaux badges n'existent pas encore en DB (dev ni prod).
+
+**Prochaine session** :
+
+1. Lancer `pnpm --filter @planify-kids/api db:seed` (local + prod) pour peupler les badges STREAK, puis vérifier en réel qu'un enfant avec plusieurs jours consécutifs de tâches complétées reçoit bien le badge.
+2. Backlog Sprint 7 restant : écran "Planning mural", i18n FR/EN, offline PowerSync (arbitrage nécessaire).
+
+---
 
 ### Session 23 - 2026-07-20
 

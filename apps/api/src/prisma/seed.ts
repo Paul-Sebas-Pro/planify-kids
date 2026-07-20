@@ -51,16 +51,47 @@ const badges = [
     conditionType: "POINTS",
     conditionValue: 1000,
   },
+  {
+    name: "En feu",
+    description: "3 jours d'affilée avec au moins une tâche complétée",
+    icon: "🔥",
+    conditionType: "STREAK",
+    conditionValue: 3,
+  },
+  {
+    name: "Semaine parfaite",
+    description: "7 jours d'affilée avec au moins une tâche complétée",
+    icon: "🔥🔥",
+    conditionType: "STREAK",
+    conditionValue: 7,
+  },
+  {
+    name: "Invincible",
+    description: "30 jours d'affilée avec au moins une tâche complétée",
+    icon: "🔥🔥🔥",
+    conditionType: "STREAK",
+    conditionValue: 30,
+  },
 ];
 
+// Additif (par nom) plutôt que "skip si déjà seedé" — sinon ajouter un
+// nouveau badge (ex STREAK) ici n'a aucun effet sur une DB déjà seedée
+// (dev local, famille démo prod) tant qu'elle n'est pas entièrement réinitialisée.
 async function seedBadges() {
-  const existing = await prisma.badge.count();
-  if (existing > 0) {
-    console.log(`Badges already seeded (${existing} found), skipping.`);
+  const existingNames = new Set(
+    (await prisma.badge.findMany({ select: { name: true } })).map(
+      (b: { name: string }) => b.name,
+    ),
+  );
+  const missing = badges.filter((b) => !existingNames.has(b.name));
+  if (missing.length === 0) {
+    console.log(`Badges already seeded (${existingNames.size} found), skipping.`);
     return;
   }
-  await prisma.badge.createMany({ data: badges });
-  console.log(`${badges.length} badges seeded.`);
+  await prisma.badge.createMany({ data: missing });
+  console.log(
+    `${missing.length} new badge(s) seeded (${existingNames.size} already present).`,
+  );
 }
 
 async function seedDemoFamily() {

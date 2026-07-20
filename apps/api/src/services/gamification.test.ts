@@ -1,20 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockUpdate, mockFindManyBadges, mockFindManyMemberBadges, mockCount, mockCreateMany } =
-  vi.hoisted(() => ({
-    mockUpdate: vi.fn(),
-    mockFindManyBadges: vi.fn(),
-    mockFindManyMemberBadges: vi.fn(),
-    mockCount: vi.fn(),
-    mockCreateMany: vi.fn(),
-  }));
+const {
+  mockUpdate,
+  mockFindManyBadges,
+  mockFindManyMemberBadges,
+  mockCount,
+  mockFindManyScheduleItems,
+  mockCreateMany,
+} = vi.hoisted(() => ({
+  mockUpdate: vi.fn(),
+  mockFindManyBadges: vi.fn(),
+  mockFindManyMemberBadges: vi.fn(),
+  mockCount: vi.fn(),
+  mockFindManyScheduleItems: vi.fn(),
+  mockCreateMany: vi.fn(),
+}));
 
 vi.mock("../config/database", () => ({
   prisma: {
     familyMember: { update: mockUpdate },
     badge: { findMany: mockFindManyBadges },
     memberBadge: { findMany: mockFindManyMemberBadges, createMany: mockCreateMany },
-    scheduleItem: { count: mockCount },
+    scheduleItem: { count: mockCount, findMany: mockFindManyScheduleItems },
   },
 }));
 
@@ -30,7 +37,14 @@ import { awardPointsForTask } from "./gamification.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockFindManyScheduleItems.mockResolvedValue([]);
 });
+
+function daysAgo(n: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
 
 const fakeMember = (points: number) => ({
   id: "member-1",
@@ -97,6 +111,45 @@ describe("awardPointsForTask", () => {
     ]);
     mockFindManyMemberBadges.mockResolvedValue([{ badgeId: "badge-pts" }]);
     mockCount.mockResolvedValue(0);
+
+    await awardPointsForTask("member-1", 10);
+
+    expect(mockCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("attribue badge STREAK quand jours consécutifs atteints", async () => {
+    mockUpdate.mockResolvedValue(fakeMember(30));
+    mockFindManyBadges.mockResolvedValue([
+      { id: "badge-streak", name: "En feu", conditionType: "STREAK", conditionValue: 3 },
+    ]);
+    mockFindManyMemberBadges.mockResolvedValue([]);
+    mockCount.mockResolvedValue(3);
+    mockFindManyScheduleItems.mockResolvedValue([
+      { completedAt: daysAgo(0) },
+      { completedAt: daysAgo(1) },
+      { completedAt: daysAgo(2) },
+    ]);
+
+    await awardPointsForTask("member-1", 10);
+
+    expect(mockCreateMany).toHaveBeenCalledWith({
+      data: [{ memberId: "member-1", badgeId: "badge-streak" }],
+      skipDuplicates: true,
+    });
+  });
+
+  it("n'attribue pas badge STREAK si la série est interrompue", async () => {
+    mockUpdate.mockResolvedValue(fakeMember(30));
+    mockFindManyBadges.mockResolvedValue([
+      { id: "badge-streak", conditionType: "STREAK", conditionValue: 3 },
+    ]);
+    mockFindManyMemberBadges.mockResolvedValue([]);
+    mockCount.mockResolvedValue(2);
+    // Trou à J-1 : la série ne remonte qu'à aujourd'hui (1 jour), pas 3
+    mockFindManyScheduleItems.mockResolvedValue([
+      { completedAt: daysAgo(0) },
+      { completedAt: daysAgo(2) },
+    ]);
 
     await awardPointsForTask("member-1", 10);
 

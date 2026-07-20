@@ -89,6 +89,24 @@ class TaskCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      Icon(
+                        item.isNoon ? Icons.wb_sunny_outlined : Icons.nights_stay_outlined,
+                        size: 11,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        item.isNoon ? 'Midi' : 'Soir',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
+                    ],
+                  ),
                   Text(
                     item.taskName,
                     style: theme.textTheme.titleSmall?.copyWith(

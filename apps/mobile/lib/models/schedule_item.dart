@@ -7,6 +7,7 @@ class ScheduleItem {
   final String assignedToMemberId;
   final DateTime date;
   final String status;
+  final String slot;
 
   const ScheduleItem({
     required this.id,
@@ -17,12 +18,14 @@ class ScheduleItem {
     required this.assignedToMemberId,
     required this.date,
     required this.status,
+    this.slot = 'EVENING',
   });
 
   bool get isPending => status == 'PENDING';
   bool get isCompleted => status == 'COMPLETED';
   bool get isSkipped => status == 'SKIPPED';
   bool get isLate => status == 'LATE';
+  bool get isNoon => slot == 'NOON';
 
   factory ScheduleItem.fromJson(Map<String, dynamic> json) {
     final task = json['task'] as Map<String, dynamic>? ?? {};
@@ -35,6 +38,7 @@ class ScheduleItem {
       assignedToMemberId: json['assignedToMemberId'] as String,
       date: DateTime.parse(json['date'] as String),
       status: json['status'] as String,
+      slot: json['slot'] as String? ?? 'EVENING',
     );
   }
 
@@ -48,6 +52,7 @@ class ScheduleItem {
       assignedToMemberId: assignedToMemberId,
       date: date,
       status: status ?? this.status,
+      slot: slot,
     );
   }
 }

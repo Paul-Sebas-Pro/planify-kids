@@ -96,7 +96,13 @@ export function FamilyPage() {
       role: m.role,
       color: m.color ?? COLORS[0] ?? "#FF9800",
       avatar: m.avatar ?? "",
-      birthDate: m.birthDate ?? "",
+      // L'API renvoie birthDate en ISO datetime complet (ex "2015-06-01T00:00:00.000Z"),
+      // mais <input type="date"> et le schéma Zod (z.iso.date()) attendent du
+      // YYYY-MM-DD. Sans ce slice, le champ s'affiche vide (le navigateur rejette
+      // le format et vide le champ) MAIS react-hook-form soumet quand même la
+      // valeur brute mise en cache par reset() → 400 systématique dès qu'un
+      // membre a une date de naissance, quel que soit le champ modifié.
+      birthDate: m.birthDate ? m.birthDate.slice(0, 10) : "",
     });
     setEditTarget(m);
     setApiError(null);

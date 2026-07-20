@@ -6,6 +6,7 @@ export interface Reward {
   name: string;
   icon: string;
   pointsCost: number;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }

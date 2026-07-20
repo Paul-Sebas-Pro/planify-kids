@@ -4,7 +4,7 @@ import {
   getRewardById,
   createReward,
   updateReward,
-  deleteReward,
+  archiveReward,
   getClaimsByFamily,
   getClaimsByMember,
   getClaimById,
@@ -46,7 +46,7 @@ export async function updateRewardService(
 export async function deleteRewardService(id: string, familyId: string) {
   const reward = await getRewardById(id, familyId);
   if (!reward) throw new NotFoundError("Récompense");
-  return deleteReward(id);
+  return archiveReward(id);
 }
 
 export function listClaimsService(familyId: string) {
@@ -63,7 +63,7 @@ export async function claimRewardService(
   input: ClaimRewardInput,
 ) {
   const reward = await getRewardById(rewardId, familyId);
-  if (!reward) throw new NotFoundError("Récompense");
+  if (!reward || !reward.isActive) throw new NotFoundError("Récompense");
 
   const member = await getMemberById(input.memberId, familyId);
   if (!member) throw new NotFoundError("Membre");

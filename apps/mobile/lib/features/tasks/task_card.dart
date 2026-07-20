@@ -59,6 +59,10 @@ class TaskCard extends StatelessWidget {
         ),
     };
 
+    final slotColor = item.isNoon
+        ? const Color(0xFFFFA726)
+        : const Color(0xFF5C6BC0);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       decoration: BoxDecoration(
@@ -66,74 +70,77 @@ class TaskCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: iconBg.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(
-                child: Text(
-                  item.taskIcon ?? '✅',
-                  style: const TextStyle(fontSize: 26),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+      // Border ne supporte pas un borderRadius avec des BorderSide non
+      // uniformes (Flutter le rejette au paint) — la bande d'accent créneau
+      // est donc un enfant clippé plutôt qu'un côté de bordure.
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(19),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 4, color: slotColor),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  child: Row(
                     children: [
-                      Icon(
-                        item.isNoon ? Icons.wb_sunny_outlined : Icons.nights_stay_outlined,
-                        size: 11,
-                        color: Colors.grey.shade400,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        item.isNoon ? 'Midi' : 'Soir',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade400,
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: iconBg.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Center(
+                          child: Text(
+                            item.taskIcon ?? '✅',
+                            style: const TextStyle(fontSize: 26),
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.taskName,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                decoration:
+                                    item.isCompleted || item.isSkipped
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                color: item.isPending
+                                    ? const Color(0xFF1A1A2E)
+                                    : Colors.grey.shade500,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '+${item.taskPoints} pts',
+                              style: GoogleFonts.baloo2(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: item.isPending
+                                    ? pointsColor
+                                    : Colors.grey.shade400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      trailing,
                     ],
                   ),
-                  Text(
-                    item.taskName,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      decoration: item.isCompleted || item.isSkipped
-                          ? TextDecoration.lineThrough
-                          : null,
-                      color: item.isPending
-                          ? const Color(0xFF1A1A2E)
-                          : Colors.grey.shade500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '+${item.taskPoints} pts',
-                    style: GoogleFonts.baloo2(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color:
-                          item.isPending ? pointsColor : Colors.grey.shade400,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-            trailing,
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -7,7 +7,7 @@ import type {
 
 export function getRewardsByFamily(familyId: string) {
   return prisma.reward.findMany({
-    where: { familyId },
+    where: { familyId, isActive: true },
     orderBy: { pointsCost: "asc" },
   });
 }
@@ -38,8 +38,12 @@ export function updateReward(id: string, input: UpdateRewardInput) {
   });
 }
 
-export function deleteReward(id: string) {
-  return prisma.reward.delete({ where: { id } });
+// Archive plutôt que suppression réelle : RewardClaim.reward n'a pas de
+// onDelete cascade — une récompense déjà réclamée (même une seule fois,
+// même une demande refusée) casse la contrainte FK en delete réel. Archiver
+// préserve aussi l'historique des demandes passées.
+export function archiveReward(id: string) {
+  return prisma.reward.update({ where: { id }, data: { isActive: false } });
 }
 
 export function getClaimsByMember(memberId: string) {

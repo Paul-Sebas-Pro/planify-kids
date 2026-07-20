@@ -36,6 +36,7 @@ vi.mock("./planning.service", () => ({
   generatePlanningService: vi.fn(),
   listSchedulesService: vi.fn(),
   getScheduleService: vi.fn(),
+  getSchoolCalendarService: vi.fn(),
   updateScheduleItemService: vi.fn(),
   deleteScheduleService: vi.fn(),
 }));
@@ -46,6 +47,7 @@ import * as planningService from "./planning.service.js";
 const mockGenerate = vi.mocked(planningService.generatePlanningService);
 const mockList = vi.mocked(planningService.listSchedulesService);
 const mockGetOne = vi.mocked(planningService.getScheduleService);
+const mockGetCalendar = vi.mocked(planningService.getSchoolCalendarService);
 const mockUpdateItem = vi.mocked(planningService.updateScheduleItemService);
 
 const json = (body: unknown) => JSON.stringify(body);
@@ -147,6 +149,45 @@ describe("GET /planning", () => {
     expect(res.status).toBe(200);
     const body = await res.json() as any;
     expect(body.data).toHaveLength(0);
+  });
+});
+
+// ── GET /planning/calendar ────────────────────────────────────────────────────
+
+describe("GET /planning/calendar", () => {
+  it("200 avec les entrées calendrier", async () => {
+    mockGetCalendar.mockResolvedValue([
+      { date: "2026-06-18", type: "HOLIDAY", label: "Fête des Pères" },
+    ] as any);
+
+    const res = await app.request(
+      "/planning/calendar?startDate=2026-06-16&endDate=2026-06-22",
+      { headers },
+    );
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.data).toHaveLength(1);
+    expect(mockGetCalendar).toHaveBeenCalledWith("fam-1", "2026-06-16", "2026-06-22");
+  });
+
+  it("400 si startDate/endDate manquants", async () => {
+    const res = await app.request("/planning/calendar", { headers });
+
+    expect(res.status).toBe(400);
+    expect(mockGetCalendar).not.toHaveBeenCalled();
+  });
+
+  it("n'est pas capturé par la route /:id (ordre de déclaration)", async () => {
+    mockGetCalendar.mockResolvedValue([]);
+
+    const res = await app.request(
+      "/planning/calendar?startDate=2026-06-16&endDate=2026-06-22",
+      { headers },
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockGetOne).not.toHaveBeenCalled();
   });
 });
 

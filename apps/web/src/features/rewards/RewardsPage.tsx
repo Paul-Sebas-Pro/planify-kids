@@ -83,7 +83,11 @@ export function RewardsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => rewardsApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["rewards"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["rewards"] });
+      setApiError(null);
+    },
+    onError: (err: Error) => setApiError(err.message),
   });
 
   const reviewMutation = useMutation({

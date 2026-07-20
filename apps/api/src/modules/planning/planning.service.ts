@@ -13,7 +13,7 @@ import {
   updateScheduleItem,
   deleteSchedule,
 } from "./planning.repository.js";
-import { classifyDays } from "../../services/school-calendar.js";
+import { classifyDays, getCalendarEntries } from "../../services/school-calendar.js";
 import {
   awardPointsForTask,
   revokePointsForTask,
@@ -104,6 +104,17 @@ export async function getScheduleService(scheduleId: string, familyId: string) {
   const schedule = await getScheduleWithItems(scheduleId, familyId);
   if (!schedule) throw new NotFoundError("Planning");
   return schedule;
+}
+
+// Jours fériés/vacances de la zone scolaire famille — [] si aucune zone configurée.
+export async function getSchoolCalendarService(
+  familyId: string,
+  startDate: string,
+  endDate: string,
+) {
+  const schoolZone = await getFamilySchoolZone(familyId);
+  if (!schoolZone) return [];
+  return getCalendarEntries(schoolZone, new Date(startDate), new Date(endDate));
 }
 
 export async function updateScheduleItemService(

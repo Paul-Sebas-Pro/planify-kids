@@ -7,11 +7,13 @@ import {
 import {
   generatePlanningSchema,
   updateScheduleItemSchema,
+  calendarQuerySchema,
 } from "./planning.schema.js";
 import {
   generatePlanningService,
   listSchedulesService,
   getScheduleService,
+  getSchoolCalendarService,
   updateScheduleItemService,
   deleteScheduleService,
 } from "./planning.service.js";
@@ -40,6 +42,18 @@ planningRoutes.get("/", async (c) => {
   const schedules = await listSchedulesService(familyId, limit);
   return c.json({ success: true, data: schedules });
 });
+
+// GET /planning/calendar?startDate&endDate  (déclaré AVANT /:id, sinon capturé comme id)
+planningRoutes.get(
+  "/calendar",
+  zValidator("query", calendarQuerySchema),
+  async (c) => {
+    const { familyId } = c.get("user");
+    const { startDate, endDate } = c.req.valid("query");
+    const entries = await getSchoolCalendarService(familyId, startDate, endDate);
+    return c.json({ success: true, data: entries });
+  },
+);
 
 // GET /planning/:id
 planningRoutes.get("/:id", async (c) => {

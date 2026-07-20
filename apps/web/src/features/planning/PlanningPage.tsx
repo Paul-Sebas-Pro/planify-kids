@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import type { ScheduleDetail, ScheduleItemDetail, TaskExchange } from "@planify-kids/types";
+import type { CalendarEntry, ScheduleDetail, ScheduleItemDetail, TaskExchange } from "@planify-kids/types";
 import { SLOT_LABELS } from "@planify-kids/types";
 import { planningApi, exchangesApi } from "@/services/planning.api";
 import { membersApi } from "@/services/api";
@@ -54,6 +54,15 @@ export function PlanningPage() {
     enabled: selectedId !== null,
   });
 
+  const scheduleRange = detailData?.data;
+
+  const { data: calendarData } = useQuery({
+    queryKey: ["planning-calendar", scheduleRange?.startDate, scheduleRange?.endDate],
+    queryFn: () =>
+      planningApi.calendar(scheduleRange!.startDate, scheduleRange!.endDate),
+    enabled: !!scheduleRange,
+  });
+
   const { data: exchangesData } = useQuery({
     queryKey: ["exchanges"],
     queryFn: () => exchangesApi.list(),
@@ -69,6 +78,11 @@ export function PlanningPage() {
   const exchanges: TaskExchange[] = exchangesData?.data ?? [];
   const pendingExchanges = exchanges.filter((e) => e.status === "PENDING");
   const children = (membersData?.data ?? []).filter((m) => m.role === "CHILD");
+
+  // Jours fériés/vacances de la semaine affichée, indexés par date (YYYY-MM-DD)
+  const calendarByDay = new Map<string, CalendarEntry>(
+    (calendarData?.data ?? []).map((e) => [e.date, e]),
+  );
 
   // Set des itemIds avec un échange PENDING (pour afficher le badge)
   const pendingItemIds = new Set(pendingExchanges.map((e) => e.scheduleItemId));
@@ -253,6 +267,7 @@ export function PlanningPage() {
 
               <WeekCalendar
                 detail={detail}
+                calendarByDay={calendarByDay}
                 pendingItemIds={pendingItemIds}
                 exchangeItemId={exchangeItemId}
                 exchangeFromId={exchangeFromId}
@@ -440,19 +455,35 @@ const STATUS_NEXT: Record<string, "PENDING" | "COMPLETED" | "SKIPPED"> = {
   SKIPPED: "PENDING",
 };
 
+// Cap de sécurité (pas de limite métier à 7 jours — un planning généré
+// manuellement peut couvrir une plage plus large ; on évite juste un rendu
+// dégénéré si une plage aberrante est saisie).
+const MAX_CALENDAR_DAYS = 31;
+
 function getDaysInRange(startDate: string, endDate: string): string[] {
   const days: string[] = [];
   const cur = new Date(startDate);
   const end = new Date(endDate);
-  while (cur <= end && days.length < 7) {
+  while (cur <= end && days.length < MAX_CALENDAR_DAYS) {
     days.push(cur.toISOString().slice(0, 10));
     cur.setDate(cur.getDate() + 1);
   }
   return days;
 }
 
+const CALENDAR_BADGE: Record<CalendarEntry["type"], string> = {
+  HOLIDAY: "🎉",
+  VACATION: "🏖️",
+};
+
+const CALENDAR_TINT: Record<CalendarEntry["type"], string> = {
+  HOLIDAY: "bg-amber-50",
+  VACATION: "bg-blue-50",
+};
+
 function WeekCalendar({
   detail,
+  calendarByDay,
   pendingItemIds,
   exchangeItemId,
   exchangeFromId,
@@ -467,6 +498,7 @@ function WeekCalendar({
   onCancelExchange,
 }: {
   detail: ScheduleDetail;
+  calendarByDay: Map<string, CalendarEntry>;
   pendingItemIds: Set<string>;
   exchangeItemId: string | null;
   exchangeFromId: string;
@@ -495,27 +527,48 @@ function WeekCalendar({
   return (
     <div className="overflow-x-auto">
       <div
-        className="grid gap-2 min-w-180"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(150px, 1fr))` }}
       >
         {/* En-têtes jours */}
-        {days.map((d) => (
-          <div key={d} className="text-center pb-1 border-b border-gray-100">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-              {new Date(d).toLocaleDateString("fr-FR", { weekday: "short" })}
-            </p>
-            <p className="text-sm font-bold text-gray-700">
-              {new Date(d).toLocaleDateString("fr-FR", {
-                day: "numeric",
-                month: "short",
-              })}
-            </p>
-          </div>
-        ))}
+        {days.map((d) => {
+          const calendarEntry = calendarByDay.get(d);
+          return (
+            <div
+              key={d}
+              title={calendarEntry?.label ?? undefined}
+              className={`text-center pb-1 border-b border-gray-100 rounded-t-lg ${
+                calendarEntry ? CALENDAR_TINT[calendarEntry.type] : ""
+              }`}
+            >
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                {new Date(d).toLocaleDateString("fr-FR", { weekday: "short" })}
+              </p>
+              <p className="text-sm font-bold text-gray-700">
+                {new Date(d).toLocaleDateString("fr-FR", {
+                  day: "numeric",
+                  month: "short",
+                })}
+              </p>
+              {calendarEntry && (
+                <p className="text-[10px] mt-0.5">
+                  {CALENDAR_BADGE[calendarEntry.type]}
+                </p>
+              )}
+            </div>
+          );
+        })}
 
         {/* Colonnes tâches */}
-        {days.map((d) => (
-          <div key={d} className="space-y-2 pt-1">
+        {days.map((d) => {
+          const calendarEntry = calendarByDay.get(d);
+          return (
+          <div
+            key={d}
+            className={`space-y-2 pt-1 rounded-b-lg ${
+              calendarEntry ? CALENDAR_TINT[calendarEntry.type] : ""
+            }`}
+          >
             {(byDay[d] ?? []).map((item) => (
               <div key={item.id} className="space-y-1">
                 <div
@@ -624,7 +677,8 @@ function WeekCalendar({
               </div>
             ))}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

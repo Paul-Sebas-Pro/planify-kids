@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../models/schedule_item.dart';
 import '../../shared/widgets/api_error_widget.dart';
 import '../auth/auth_provider.dart';
 import 'task_card.dart';
@@ -82,29 +83,37 @@ class TodayScreen extends ConsumerWidget {
                   label: 'À faire (${pending.length})',
                   icon: Icons.radio_button_unchecked,
                 ),
-                ...pending.map((item) => TaskCard(
-                      item: item,
-                      onComplete: () => ref
-                          .read(tasksProvider.notifier)
-                          .markCompleted(item.id),
-                    )),
+                _SlotGroup(
+                  items: pending,
+                  cardBuilder: (item) => TaskCard(
+                    item: item,
+                    onComplete: () =>
+                        ref.read(tasksProvider.notifier).markCompleted(item.id),
+                  ),
+                ),
               ],
               if (done.isNotEmpty) ...[
                 _SectionHeader(
                   label: 'Terminé (${done.length})',
                   icon: Icons.check_circle_outline,
                 ),
-                ...done.map((item) => TaskCard(
-                      item: item,
-                      onUndo: () => _confirmUndo(context, ref, item.id),
-                    )),
+                _SlotGroup(
+                  items: done,
+                  cardBuilder: (item) => TaskCard(
+                    item: item,
+                    onUndo: () => _confirmUndo(context, ref, item.id),
+                  ),
+                ),
               ],
               if (other.isNotEmpty) ...[
                 _SectionHeader(
                   label: 'Autres (${other.length})',
                   icon: Icons.info_outline,
                 ),
-                ...other.map((item) => TaskCard(item: item)),
+                _SlotGroup(
+                  items: other,
+                  cardBuilder: (item) => TaskCard(item: item),
+                ),
               ],
               const SizedBox(height: 80),
             ],
@@ -222,6 +231,64 @@ class _ProgressBanner extends StatelessWidget {
               fontSize: 12,
               color: Colors.white70,
               fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SlotGroup extends StatelessWidget {
+  final List<ScheduleItem> items;
+  final Widget Function(ScheduleItem item) cardBuilder;
+
+  const _SlotGroup({required this.items, required this.cardBuilder});
+
+  @override
+  Widget build(BuildContext context) {
+    final noon = items.where((i) => i.isNoon).toList();
+    final evening = items.where((i) => !i.isNoon).toList();
+
+    return Column(
+      children: [
+        if (noon.isNotEmpty) ...[
+          const _SlotSubHeader(label: 'Midi', icon: Icons.wb_sunny_outlined),
+          ...noon.map(cardBuilder),
+        ],
+        if (evening.isNotEmpty) ...[
+          const _SlotSubHeader(
+            label: 'Soir',
+            icon: Icons.nights_stay_outlined,
+          ),
+          ...evening.map(cardBuilder),
+        ],
+      ],
+    );
+  }
+}
+
+class _SlotSubHeader extends StatelessWidget {
+  final String label;
+  final IconData icon;
+
+  const _SlotSubHeader({required this.label, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 16, 2),
+      child: Row(
+        children: [
+          Icon(icon, size: 13, color: Colors.grey.shade400),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade400,
+              letterSpacing: 0.3,
             ),
           ),
         ],

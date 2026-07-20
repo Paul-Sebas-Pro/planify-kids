@@ -132,24 +132,27 @@ export async function syncCalendarZone(zone: CalendarZone): Promise<void> {
   }
 }
 
+// Zone jamais synchronisée (ex: serverless sans cron actif) — bootstrap.
+// Note : ne rafraîchit pas une zone déjà synchronisée une fois — le cron
+// (planning-cron.ts) s'en charge ; limite connue identique au cron
+// planning existant, qui ne tourne pas non plus sur Vercel serverless.
+async function ensureZoneSynced(zone: CalendarZone): Promise<void> {
+  const hasAnyCache = await prisma.schoolCalendarCache.findFirst({
+    where: { zone },
+    select: { id: true },
+  });
+  if (!hasAnyCache) {
+    await syncCalendarZone(zone);
+  }
+}
+
 /** Dates (YYYY-MM-DD) non-scolaires (fériées ou vacances) pour une zone sur une plage. */
 export async function getOffDays(
   zone: CalendarZone,
   startDate: Date,
   endDate: Date,
 ): Promise<Set<string>> {
-  const hasAnyCache = await prisma.schoolCalendarCache.findFirst({
-    where: { zone },
-    select: { id: true },
-  });
-
-  // Zone jamais synchronisée (ex: serverless sans cron actif) — bootstrap.
-  // Note : ne rafraîchit pas une zone déjà synchronisée une fois — le cron
-  // (planning-cron.ts) s'en charge ; limite connue identique au cron
-  // planning existant, qui ne tourne pas non plus sur Vercel serverless.
-  if (!hasAnyCache) {
-    await syncCalendarZone(zone);
-  }
+  await ensureZoneSynced(zone);
 
   const rows = await prisma.schoolCalendarCache.findMany({
     where: { zone, date: { gte: startDate, lte: endDate } },
@@ -157,6 +160,32 @@ export async function getOffDays(
   });
 
   return new Set(rows.map((r) => r.date.toISOString().slice(0, 10)));
+}
+
+export interface CalendarEntry {
+  date: string;
+  type: "HOLIDAY" | "VACATION";
+  label: string | null;
+}
+
+/** Détail (date, type férié/vacances, libellé) pour une zone sur une plage — affichage. */
+export async function getCalendarEntries(
+  zone: CalendarZone,
+  startDate: Date,
+  endDate: Date,
+): Promise<CalendarEntry[]> {
+  await ensureZoneSynced(zone);
+
+  const rows = await prisma.schoolCalendarCache.findMany({
+    where: { zone, date: { gte: startDate, lte: endDate } },
+    orderBy: { date: "asc" },
+  });
+
+  return rows.map((r) => ({
+    date: r.date.toISOString().slice(0, 10),
+    type: r.type,
+    label: r.label,
+  }));
 }
 
 export type DayType = "SCHOOL_DAY" | "OFF_DAY";

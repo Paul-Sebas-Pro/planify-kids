@@ -5,9 +5,9 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5/6 TERMINÉS ✅ — Sprint 7 : bug rotation planning fixé, les 3 demandes UX/produit du 2026-07-19 faites, créneaux midi/soir (backend + web + mobile) faits et vérifiés en réel, incident credentials Supabase résolu, notifications badge/rappel/oubli faites (à valider en réel une fois l'APK reconstruit)
-- **Last Session**: 2026-07-20 — Notification "badge gagné" (`notifyBadgeEarned` dans `checkAndAwardBadges`), cron rappel tâches du jour 08:00 + cron tâches oubliées 20:00 (`planning-cron.ts`). 266/266 tests, typecheck 0 erreur. APK mobile toujours pas reconstruit (bloqué sur cette machine aarch64).
-- **Next Steps**: **APK mobile à reconstruire et réinstaller sur la tablette** (persistance code famille + badge Midi/Soir + 3 nouvelles notifications ne sont pas encore sur l'appareil réel, Flutter n'a pas d'auto-update — voir section "Installation Android" pour la procédure PC Windows). Reprendre ensuite le reste du backlog Sprint 7 — voir section "📋 Backlog Sprint 7" : streak, i18n, offline PowerSync, écran planning mural. Note : `task_card_test.dart` a 4 échecs pré-existants côté mobile, non liés à cette session, jamais investigués — flag pour une prochaine session si besoin.
+- **Statut**: Sprint 5/6 TERMINÉS ✅ — Sprint 7 : bug rotation planning fixé, les 3 demandes UX/produit du 2026-07-19 faites, créneaux midi/soir (backend + web + mobile) faits et vérifiés en réel, incident credentials Supabase résolu, notifications badge/rappel/oubli faites, 4 améliorations UX/bug (WeekCalendar taille, Midi/Soir mobile, suppression récompenses, visuel jours fériés/vacances) faites — à valider en réel une fois l'APK reconstruit
+- **Last Session**: 2026-07-20 — Fix bug suppression récompenses (soft-delete `isActive`, `RewardClaim.reward` sans cascade cassait le delete dès qu'une récompense avait été réclamée), WeekCalendar web taille cohérente (grille 7 colonnes fixes + fix troncature silencieuse >7 jours), visuel jours fériés/vacances sur le planning web (`GET /planning/calendar`, badge + teinte colonne), séparation visuelle Midi/Soir sur mobile (sous-groupes + bande d'accent colorée sur `TaskCard`). 270/270 tests API, `flutter analyze` 0 issue. APK mobile toujours pas reconstruit (bloqué sur cette machine aarch64).
+- **Next Steps**: **APK mobile à reconstruire et réinstaller sur la tablette** (persistance code famille, badge Midi/Soir, 3 notifications, séparation Midi/Soir UI — rien de tout ça n'est encore sur l'appareil réel, Flutter n'a pas d'auto-update — voir section "Installation Android" pour la procédure PC Windows). Reprendre ensuite le reste du backlog Sprint 7 — voir section "📋 Backlog Sprint 7" : streak, i18n, offline PowerSync, écran planning mural. Note : `task_card_test.dart` a 4 échecs pré-existants côté mobile (points formatés "+10 pts" vs test attend "10 pts", tests PENDING/sans-onComplete oublient de passer le callback, test COMPLETED cherche une icône `Icons.check_circle` qui n'existe pas dans le composant actuel), confirmés non liés à cette session — jamais fixés, à investiguer si besoin.
 
 ---
 
@@ -349,6 +349,52 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 23 - 2026-07-20
+
+**Objectif**: 4 demandes utilisateur — récompenses non supprimables (bug confirmé), WeekCalendar web taille incohérente entre plannings, séparation visuelle Midi/Soir mobile, visuel jours fériés/vacances sur le planning web.
+
+**Concepts introduits**:
+
+- **FK sans `onDelete` = RESTRICT par défaut Postgres** : `RewardClaim.reward` n'avait pas de clause `onDelete` — dès qu'une récompense a été réclamée une seule fois (même une demande refusée, même ancienne), la suppression réelle (`prisma.reward.delete`) casse sur une violation de contrainte FK. Fix : pattern soft-delete déjà en place sur `TaskTemplate.isActive`, répliqué sur `Reward` — "Supprimer" (`DELETE /rewards/:id`) archive (`isActive: false`) au lieu de supprimer réellement ; `GET /rewards` filtre `isActive: true` ; historique des demandes préservé. Bug composé par un `deleteMutation` web sans `onError` — l'échec FK était totalement silencieux côté UI.
+- **Bug de troncature silencieuse (WeekCalendar)** : `getDaysInRange()` (`PlanningPage.tsx`) plafonnait à 7 jours en dur (`days.length < 7`) — un planning généré manuellement sur une plage plus large avait ses items au-delà du 7e jour présents en DB mais jamais rendus, sans aucun signal. Cause racine du "chaque WeekCalendar doit être de la même taille" : les colonnes en `minmax(0, 1fr)` s'étirent différemment selon le nombre réel de jours du planning affiché. Fix : cap relevé à 31 (garde-fou, pas une limite métier) + colonnes en `minmax(150px, 1fr)` (largeur mini fixe, cohérente entre plannings).
+- **Endpoint calendrier scolaire quasi prêt, juste jamais exposé** : `SchoolCalendarCache` + `classifyDays()`/`getOffDays()` (session 21, création planning midi/soir) existaient déjà avec toute la donnée fériés/vacances nécessaire, mais collapsée en `Set<string>` booléen à usage interne uniquement — aucune route API ne l'exposait. Ajout `getCalendarEntries()` (réutilise le bootstrap `ensureZoneSynced` extrait de `getOffDays`) + `GET /planning/calendar?startDate&endDate`, déclarée **avant** `GET /planning/:id` (sinon capturée comme un id — piège routes Hono déjà documenté).
+- **`Border` non-uniforme + `borderRadius` = crash Flutter au paint** : tentative d'accent visuel Midi/Soir via un `Border(left: BorderSide(color: slotColor, width: 4), ...)` combiné à `BorderRadius.circular` sur le même `BoxDecoration` — Flutter rejette cette combinaison au moment du paint (`RenderDecoratedBox` exception), détecté via `flutter test` (crash complet de `today_screen_test.dart`, pas juste un test unitaire visé). Fix : bordure `Border.all` uniforme conservée, accent implémenté comme un vrai enfant (`Container` 4px coloré) dans un `Row` sous `ClipRRect`+`IntrinsicHeight` — plus sûr que de bricoler `BoxDecoration`.
+
+**Modifications** :
+
+```diff
+M apps/api/src/prisma/schema.prisma                       (Reward.isActive)
+M apps/api/src/modules/rewards/rewards.repository.ts        (archiveReward au lieu de deleteReward, filtre isActive)
+M apps/api/src/modules/rewards/rewards.service.ts            (deleteRewardService archive, claim refuse une reward archivée)
+M apps/api/src/modules/rewards/rewards.service.test.ts
+M apps/web/src/features/rewards/RewardsPage.tsx              (onError sur deleteMutation)
+M packages/types/src/rewards.ts                               (Reward.isActive)
+M apps/web/src/features/planning/PlanningPage.tsx             (grille 7 colonnes fixes, cap 31j, badge/teinte jours fériés-vacances)
+M apps/web/src/services/planning.api.ts                       (planningApi.calendar)
+M packages/types/src/planning.ts                              (CalendarEntry)
+M apps/api/src/services/school-calendar.ts                    (ensureZoneSynced extrait, getCalendarEntries)
+M apps/api/src/modules/planning/planning.schema.ts             (calendarQuerySchema)
+M apps/api/src/modules/planning/planning.service.ts             (getSchoolCalendarService)
+M apps/api/src/modules/planning/planning.routes.ts               (GET /planning/calendar)
+M apps/api/src/modules/planning/planning.routes.test.ts
+M apps/mobile/lib/features/tasks/today_screen.dart              (_SlotGroup, _SlotSubHeader — sous-groupes Midi/Soir)
+M apps/mobile/lib/features/tasks/task_card.dart                  (bande d'accent colorée par créneau, retrait du label inline redondant)
+```
+
+**Résultats**:
+
+- 270/270 tests API, typecheck API + web 0 erreur.
+- `flutter analyze` 0 issue. `flutter test` : +12 -4 (les 4 échecs restent les échecs pré-existants `task_card_test.dart`, confirmés non liés — voir Next Steps ci-dessus pour le détail).
+- Aucun de ces changements n'est encore vérifié en réel (tablette bloquée sur rebuild APK, voir Next Steps).
+
+**Prochaine session** :
+
+1. Rebuild + réinstall APK mobile (PC Windows) — valider en réel séparation Midi/Soir + tout le reste en attente depuis Session 21/22.
+2. Backlog Sprint 7 restant : streak, i18n, offline PowerSync, écran planning mural.
+3. Optionnel : investiguer les 4 échecs pré-existants `task_card_test.dart` si du temps est dégagé (détail des causes dans Next Steps).
+
+---
 
 ### Session 22 - 2026-07-20
 

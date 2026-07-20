@@ -53,6 +53,14 @@ export interface ScheduleDetail {
   items: ScheduleItemDetail[];
 }
 
+export type CalendarEntryType = "HOLIDAY" | "VACATION";
+
+export interface CalendarEntry {
+  date: string;
+  type: CalendarEntryType;
+  label: string | null;
+}
+
 export interface GeneratePlanningRequest {
   startDate: string;
   endDate: string;

@@ -243,11 +243,12 @@ model MemberBadge {
 }
 
 model Reward {
-  id         String @id @default(uuid())
+  id         String  @id @default(uuid())
   familyId   String
   name       String
   icon       String
   pointsCost Int
+  isActive   Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

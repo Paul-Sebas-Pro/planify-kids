@@ -10,7 +10,7 @@ vi.mock("./rewards.repository", () => ({
   getRewardById: vi.fn(),
   createReward: vi.fn(),
   updateReward: vi.fn(),
-  deleteReward: vi.fn(),
+  archiveReward: vi.fn(),
   getClaimsByFamily: vi.fn(),
   getClaimById: vi.fn(),
   createClaim: vi.fn(),
@@ -33,7 +33,7 @@ import {
 
 const mockGetRewardById = vi.mocked(repo.getRewardById);
 const mockUpdateReward = vi.mocked(repo.updateReward);
-const mockDeleteReward = vi.mocked(repo.deleteReward);
+const mockArchiveReward = vi.mocked(repo.archiveReward);
 const mockGetClaimById = vi.mocked(repo.getClaimById);
 const mockCreateClaim = vi.mocked(repo.createClaim);
 const mockUpdateClaim = vi.mocked(repo.updateClaim);
@@ -46,6 +46,7 @@ const fakeReward = {
   name: "Cinéma",
   icon: "🎬",
   pointsCost: 100,
+  isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -104,16 +105,16 @@ describe("deleteRewardService", () => {
       deleteRewardService("reward-x", "family-1"),
     ).rejects.toThrow(NotFoundError);
 
-    expect(mockDeleteReward).not.toHaveBeenCalled();
+    expect(mockArchiveReward).not.toHaveBeenCalled();
   });
 
-  it("supprime si la récompense appartient à la famille", async () => {
+  it("archive (isActive=false) si la récompense appartient à la famille", async () => {
     mockGetRewardById.mockResolvedValue(fakeReward as any);
-    mockDeleteReward.mockResolvedValue(fakeReward as any);
+    mockArchiveReward.mockResolvedValue({ ...fakeReward, isActive: false } as any);
 
     await deleteRewardService("reward-1", "family-1");
 
-    expect(mockDeleteReward).toHaveBeenCalledWith("reward-1");
+    expect(mockArchiveReward).toHaveBeenCalledWith("reward-1");
   });
 });
 
@@ -126,6 +127,16 @@ describe("claimRewardService", () => {
     await expect(
       claimRewardService("reward-x", "family-1", input),
     ).rejects.toThrow(NotFoundError);
+  });
+
+  it("lève NotFoundError si récompense archivée", async () => {
+    mockGetRewardById.mockResolvedValue({ ...fakeReward, isActive: false } as any);
+
+    await expect(
+      claimRewardService("reward-1", "family-1", input),
+    ).rejects.toThrow(NotFoundError);
+
+    expect(mockCreateClaim).not.toHaveBeenCalled();
   });
 
   it("lève NotFoundError si membre inexistant", async () => {

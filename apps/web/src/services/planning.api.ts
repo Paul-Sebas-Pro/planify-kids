@@ -6,6 +6,7 @@ import type {
   TaskExchange,
   ProposeExchangeRequest,
   RespondExchangeRequest,
+  CalendarEntry,
 } from "@planify-kids/types";
 
 const BASE = "/api";
@@ -72,6 +73,11 @@ export const planningApi = {
     ),
   delete: (id: string) =>
     request<{ success: boolean }>("DELETE", `/planning/${id}`),
+  calendar: (startDate: string, endDate: string) =>
+    request<{ success: boolean; data: CalendarEntry[] }>(
+      "GET",
+      `/planning/calendar?startDate=${startDate}&endDate=${endDate}`,
+    ),
 };
 
 export const exchangesApi = {

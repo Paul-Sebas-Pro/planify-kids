@@ -74,7 +74,7 @@ final class TasksNotifierProvider
   TasksNotifier create() => TasksNotifier();
 }
 
-String _$tasksNotifierHash() => r'b4cb38ecd90a5df02809cc02723d260bb4ca4e48';
+String _$tasksNotifierHash() => r'1e6d6b0824d7cf2424ee26498f35d888d00657ce';
 
 abstract class _$TasksNotifier extends $AsyncNotifier<List<ScheduleItem>> {
   FutureOr<List<ScheduleItem>> build();

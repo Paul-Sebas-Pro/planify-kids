@@ -92,6 +92,19 @@ class ProfileScreen extends ConsumerWidget {
 
           const SizedBox(height: 8),
 
+          // Planning famille (lecture seule, toutes les tâches de tous les membres)
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.calendar_view_week_outlined),
+              title: const Text('Planning famille'),
+              subtitle: const Text('Toutes les tâches de la semaine'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/planning-wall'),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
           // Notifications
           Card(
             child: ListTile(

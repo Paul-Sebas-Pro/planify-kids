@@ -108,6 +108,39 @@ class ApiClient {
     return items;
   }
 
+  /// Toutes les tâches (tous membres) du planning courant — pour l'écran
+  /// "Planning famille" en lecture seule. Choisit le planning dont la plage
+  /// couvre aujourd'hui ; à défaut le plus récent (l'API trie déjà par
+  /// startDate desc).
+  Future<List<ScheduleItem>> getWeekSchedule() async {
+    final listRes = await _dio.get('/planning');
+    final schedules = _unwrapList(listRes);
+    if (schedules.isEmpty) return [];
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    Map<String, dynamic>? target;
+    for (final s in schedules) {
+      final schedule = s as Map<String, dynamic>;
+      final start = DateTime.parse(schedule['startDate'] as String);
+      final end = DateTime.parse(schedule['endDate'] as String);
+      final startDay = DateTime(start.year, start.month, start.day);
+      final endDay = DateTime(end.year, end.month, end.day);
+      if (!today.isBefore(startDay) && !today.isAfter(endDay)) {
+        target = schedule;
+        break;
+      }
+    }
+    target ??= schedules.first as Map<String, dynamic>;
+
+    final detailRes = await _dio.get('/planning/${target['id']}');
+    final detail = _unwrap(detailRes);
+    return (detail['items'] as List<dynamic>? ?? [])
+        .map((e) => ScheduleItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<ScheduleItem> updateScheduleItemStatus(
       String itemId, String status) async {
     final res = await _dio.patch('/planning/items/$itemId', data: {

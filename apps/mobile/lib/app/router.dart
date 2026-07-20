@@ -8,6 +8,7 @@ import '../features/badges/badges_screen.dart';
 import '../features/exchanges/exchanges_screen.dart';
 import '../features/history/history_screen.dart';
 import '../features/notifications/notifications_screen.dart';
+import '../features/planning_wall/planning_wall_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/rewards/rewards_screen.dart';
 import '../features/tasks/today_screen.dart';
@@ -65,6 +66,10 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/history',
         builder: (_, _) => const HistoryScreen(),
+      ),
+      GoRoute(
+        path: '/planning-wall',
+        builder: (_, _) => const PlanningWallScreen(),
       ),
     ],
   );

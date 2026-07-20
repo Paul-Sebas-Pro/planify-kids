@@ -5,9 +5,9 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5/6 TERMINÉS ✅ — Sprint 7 : bug rotation planning fixé, 3 demandes UX/produit + créneaux midi/soir + notifications badge/rappel/oubli + 4 fix UX (WeekCalendar/rewards/calendrier scolaire/Midi-Soir mobile) faits, **APK mobile reconstruit et vérifié en réel sur PC Windows** (persistance code famille + Midi/Soir OK), 2 bugs post-build corrigés (400 édition membre, modale qui ne se fermait pas), streak fait (backend, seed à lancer)
-- **Last Session**: 2026-07-21 — Fix 400 HTTP sur modif membre (`FamilyPage.tsx` réinjectait `birthDate` en ISO datetime complet dans le form, RHF soumettait la valeur brute cachée malgré le champ affiché vide), fix modale édition membre qui ne se fermait pas (`updateMutation.onSuccess` oubliait `setShowForm(false)`), agrandissement badges Midi/Soir mobile (pill coloré ambre/indigo), **streak/bonus série** : `conditionType: "STREAK"` dans `checkAndAwardBadges()`, 3 badges seedés (En feu 3j/Semaine parfaite 7j/Invincible 30j), `seedBadges()` rendu additif par nom. 272/272 tests API, typecheck 0 erreur, `flutter analyze` 0 issue.
-- **Next Steps**: Lancer `pnpm --filter @planify-kids/api db:seed` **sur la DB prod** (Vercel/Supabase) pour peupler les 3 badges STREAK — déjà fait en local. Puis reprendre le backlog Sprint 7 — voir section "📋 Backlog Sprint 7" : écran planning mural, i18n FR/EN, offline PowerSync. Note : `task_card_test.dart` a 4 échecs pré-existants côté mobile (points formatés "+10 pts" vs test attend "10 pts", tests PENDING/sans-onComplete oublient de passer le callback, test COMPLETED cherche une icône `Icons.check_circle` qui n'existe pas dans le composant actuel), confirmés non liés à cette session — jamais fixés, à investiguer si besoin.
+- **Statut**: Sprint 5/6 TERMINÉS ✅ — Sprint 7 : bug rotation planning fixé, 3 demandes UX/produit + créneaux midi/soir + notifications badge/rappel/oubli + 4 fix UX (WeekCalendar/rewards/calendrier scolaire/Midi-Soir mobile) faits, **APK mobile reconstruit et vérifié en réel sur PC Windows** (persistance code famille + Midi/Soir OK), 2 bugs post-build corrigés (400 édition membre, modale qui ne se fermait pas), streak fait (backend, seed local fait/prod à faire), écran Planning mural fait en partie (voir écart cahier des charges ci-dessous)
+- **Last Session**: 2026-07-21 — Fix 400 HTTP sur modif membre (`FamilyPage.tsx` réinjectait `birthDate` en ISO datetime complet dans le form, RHF soumettait la valeur brute cachée malgré le champ affiché vide), fix modale édition membre qui ne se fermait pas (`updateMutation.onSuccess` oubliait `setShowForm(false)`), agrandissement badges Midi/Soir mobile (pill coloré ambre/indigo), **streak/bonus série** (`conditionType: "STREAK"`, 3 badges seedés, `seedBadges()` additif), **écran Planning mural** (`PlanningWallScreen` mobile, lecture seule, tous membres — mais reste derrière l'auth existante, pas le mode kiosque sans login prévu au cahier des charges). 272/272 tests API, typecheck 0 erreur, `flutter analyze` 0 issue. Session arrêtée avant d'écrire le test widget de l'écran Planning mural.
+- **Next Steps**: (1) Lancer `pnpm --filter @planify-kids/api db:seed` **sur la DB prod** pour peupler les 3 badges STREAK — déjà fait en local. (2) Écran Planning mural : écrire le test widget manquant, décider si le mode "sans login" (kiosque) est nécessaire ou si l'accès via Profil suffit, puis vérifier en réel après rebuild APK. (3) Backlog Sprint 7 restant : i18n FR/EN, offline PowerSync. Note : `task_card_test.dart` a 4 échecs pré-existants côté mobile (points formatés "+10 pts" vs test attend "10 pts", tests PENDING/sans-onComplete oublient de passer le callback, test COMPLETED cherche une icône `Icons.check_circle` qui n'existe pas dans le composant actuel), confirmés non liés à cette session — jamais fixés, à investiguer si besoin.
 
 ---
 
@@ -260,7 +260,7 @@ Audit complet `CAHIER_CHARGES.md` vs code réel effectué — écarts identifié
 - [x] **Règle 80/20 parents/enfants non implémentée** : doublon avec l'entrée déjà cochée dans "Demandes utilisateur (2026-07-19)" plus haut — fait via commit `40304f7`, jamais mise à jour ici lors de l'audit initial.
 - [ ] **i18n absent (multi-langue FR/EN/ES/PT prévu au cahier)** : zéro librairie i18n (`react-i18next`/`easy_localization` etc.), tous les textes UI sont en français en dur. Proposer un chantier minimal FR/EN d'abord (pas les 4 langues d'un coup) — `react-i18next` côté web, `easy_localization`/`flutter_localizations` côté Flutter.
 - [ ] **Offline réel non tenu (PowerSync)** : promesse produit centrale du cahier (§2, §9, règle métier 6) actuellement 100% non respectée — `apps/mobile/lib/database/database.dart` scaffold PowerSync mais n'est interrogé nulle part, tout transite par `ApiClient` (Dio HTTP). Arbitrage à faire : finaliser PowerSync (investissement lourd, instance cloud requise) vs cache local minimal en lecture seule (mode dégradé simple) pour un premier pas.
-- [ ] **Écran "Planning mural" dédié absent** : le cahier des charges prévoit un affichage tableau pensé pour être collé au mur (lecture à distance, vue famille complète), distinct de "Mes tâches" par enfant connecté. Actuellement rien de tel : web = vue admin/grille de gestion (`PlanningPage.tsx`), mobile = vue par enfant après login individuel (`TodayScreen`). Proposer un écran "vue famille" en lecture seule sur tablette, sans login enfant individuel requis.
+- [~] **Écran "Planning mural" dédié absent** : le cahier des charges prévoit un affichage tableau pensé pour être collé au mur (lecture à distance, vue famille complète), distinct de "Mes tâches" par enfant connecté, **sans login enfant individuel requis**. Fait (2026-07-21, partiel) : `PlanningWallScreen` (mobile) — écran lecture seule accessible depuis Profil, groupe les tâches par jour puis Midi/Soir, affiche membre (pastille couleur + nom) + tâche + statut pour **tous** les membres (pas juste l'enfant connecté). Nouveau `ApiClient.getWeekSchedule()` (choisit le planning couvrant aujourd'hui, sinon le plus récent) + 2 providers (`weekPlanningProvider`, `planningWallMembersProvider`). `flutter analyze` 0 issue, `flutter test` +12 -4 (échecs pré-existants inchangés, pas de régression). **Écart connu vs cahier des charges** : reste derrière l'auth existante (accessible seulement après login enfant/parent, via l'onglet Profil) — PAS le mode kiosque "collé au mur, aucun login" envisagé initialement. **Non vérifié en réel** (pas de rebuild APK cette session) ni testé (pas de test widget écrit, session interrompue avant).
 
 **Valeur** : items classés par impact réel constaté (émotionnel enfant, équité familiale, fiabilité produit) plutôt que par simple conformité au cahier des charges.
 
@@ -352,7 +352,7 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 
 ### Session 24 - 2026-07-21
 
-**Objectif**: APK mobile reconstruit et vérifié en réel (PC Windows). 2 bugs post-build (400 édition membre, modale qui ne se ferme pas), amélioration visuelle badges Midi/Soir mobile, streak/bonus série (backlog Sprint 7).
+**Objectif**: APK mobile reconstruit et vérifié en réel (PC Windows). 2 bugs post-build (400 édition membre, modale qui ne se ferme pas), amélioration visuelle badges Midi/Soir mobile, streak/bonus série + écran Planning mural (backlog Sprint 7). Session arrêtée en cours d'écran Planning mural (juste avant le test widget).
 
 **Concepts introduits**:
 
@@ -360,6 +360,7 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 - **Un test e2e peut être un faux positif silencieux** : le premier test écrit pour le bug "modale ne se ferme pas" passait alors que le bug était bel et bien présent — l'assertion ne vérifiait que la disparition du heading "Modifier le membre", qui redevient invisible dès que `editTarget` repasse à `null`, même si la modale reste ouverte (elle change juste de heading vers "Nouveau membre", `showForm` restant `true`). Un test qui passe avant même d'écrire le fix est suspect — vérifié explicitement ici en stashant le fix et en confirmant que le test échoue bien sans lui, avant de le considérer fiable.
 - **`Badge.conditionType` est un `String` libre, pas un enum Prisma** : ajouter `"STREAK"` comme nouvelle valeur ne nécessite aucune migration/`db push`, juste du code + des données seedées.
 - **`seedBadges()` "skip si count>0" bloque tout ajout futur** : ajouter un badge au tableau `badges` de `seed.ts` n'a aucun effet sur une DB déjà seedée (dev local, famille démo prod) avec ce garde-fou — rendu additif par nom pour que ce type d'ajout reste déployable sans wipe complet.
+- **Planning mural — écart découvert vs cahier des charges en cours d'implémentation** : le cahier des charges veut un écran "collé au mur" **sans login enfant individuel**. Construit à la place (plus simple, réutilise l'auth existante) un écran accessible depuis Profil une fois connecté — répond au besoin "vue famille complète en lecture seule" mais pas au besoin "kiosque sans authentification". Décision à prendre en prochaine session : garder tel quel (accès via Profil suffisant ?) ou construire un vrai mode kiosque (accès par code famille seul, sans PIN membre).
 
 **Modifications** :
 
@@ -370,19 +371,26 @@ M apps/mobile/lib/features/tasks/today_screen.dart     (_SlotSubHeader : pill co
 M apps/api/src/services/gamification.ts                (conditionType STREAK, computeStreak/dayKey)
 M apps/api/src/services/gamification.test.ts            (2 tests STREAK : série atteinte / interrompue)
 M apps/api/src/prisma/seed.ts                            (3 badges STREAK, seedBadges() additif par nom)
+M apps/mobile/lib/shared/services/api_client.dart        (getWeekSchedule — planning courant, tous membres)
++ apps/mobile/lib/features/planning_wall/planning_wall_provider.dart
++ apps/mobile/lib/features/planning_wall/planning_wall_screen.dart
+M apps/mobile/lib/app/router.dart                        (route /planning-wall)
+M apps/mobile/lib/features/profile/profile_screen.dart    (entrée "Planning famille")
 ```
 
 **Résultats**:
 
-- 272/272 tests API, typecheck API + web 0 erreur, `flutter analyze` 0 issue, `flutter test` +12 -4 (échecs pré-existants inchangés).
+- 272/272 tests API, typecheck API + web 0 erreur, `flutter analyze` 0 issue, `flutter test` +12 -4 (échecs pré-existants inchangés, pas de régression après ajout Planning mural).
 - 400 édition membre + modale non fermée : vérifiés en réel par l'utilisateur ("l'erreur 400 a disparu" / confirmé après fix modale).
 - APK mobile : reconstruit sur PC Windows, persistance code famille + séparation Midi/Soir confirmées en réel (le doute initial venait d'un checkout pas à jour, pas d'un bug de code).
 - Streak : `db:seed` lancé en local (`.env` racine, pas `apps/api/.env` qui lui n'a que `DATABASE_URL`) — `3 new badge(s) seeded (7 already present)`, confirmé additif. **Reste à lancer sur la DB prod** (Vercel/Supabase).
+- Planning mural : implémenté, `flutter analyze` propre, **pas de test widget écrit** (session arrêtée avant), **pas vérifié en réel** (pas de rebuild APK cette session).
 
 **Prochaine session** :
 
-1. Lancer `pnpm --filter @planify-kids/api db:seed` **sur la DB prod** (déjà fait en local) pour peupler les badges STREAK, puis vérifier en réel qu'un enfant avec plusieurs jours consécutifs de tâches complétées reçoit bien le badge.
-2. Backlog Sprint 7 restant : écran "Planning mural", i18n FR/EN, offline PowerSync (arbitrage nécessaire).
+1. Écran Planning mural : écrire le test widget (pattern `today_screen_test.dart` — overrides `weekPlanningProvider`/`planningWallMembersProvider` via `ProviderScope`), trancher la question kiosque-sans-login, puis vérifier en réel après rebuild APK.
+2. Lancer `pnpm --filter @planify-kids/api db:seed` **sur la DB prod** (déjà fait en local) pour peupler les badges STREAK, puis vérifier en réel qu'un enfant avec plusieurs jours consécutifs de tâches complétées reçoit bien le badge.
+3. Backlog Sprint 7 restant : i18n FR/EN, offline PowerSync (arbitrage nécessaire).
 
 ---
 

@@ -528,7 +528,7 @@ function WeekCalendar({
     <div className="overflow-x-auto">
       <div
         className="grid gap-2"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(150px, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
       >
         {/* En-têtes jours */}
         {days.map((d) => {

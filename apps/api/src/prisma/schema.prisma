@@ -35,6 +35,9 @@ enum NotificationType {
   CLAIM_APPROVED
   CLAIM_REJECTED
   TASKS_ASSIGNED
+  BADGE_EARNED
+  TASKS_REMINDER
+  TASKS_FORGOTTEN
 }
 
 enum ChallengeStatus {

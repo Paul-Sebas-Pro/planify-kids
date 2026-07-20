@@ -1,6 +1,7 @@
 import { prisma } from "../config/database.js";
 import { GamificationLog } from "../config/gamification-log.model.js";
 import { checkChallengesAfterPoints } from "../modules/challenges/challenges.service.js";
+import { notifyBadgeEarned } from "../modules/notifications/notifications.service.js";
 
 export async function awardPointsForTask(
   memberId: string,
@@ -61,7 +62,12 @@ async function checkAndAwardBadges(
     earned.map((e: { badgeId: string }) => e.badgeId),
   );
 
-  type BadgeRow = { id: string; conditionType: string; conditionValue: number };
+  type BadgeRow = {
+    id: string;
+    name: string;
+    conditionType: string;
+    conditionValue: number;
+  };
   const toAward = (badges as BadgeRow[]).filter((badge) => {
     if (earnedIds.has(badge.id)) return false;
     if (badge.conditionType === "POINTS")
@@ -84,6 +90,8 @@ async function checkAndAwardBadges(
         familyId,
         data: { badgeId: badge.id },
       }).catch(() => {});
+
+      await notifyBadgeEarned(memberId, familyId, badge.name);
     }
   }
 }

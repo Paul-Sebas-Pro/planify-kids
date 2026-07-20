@@ -3,7 +3,12 @@ import app from "./app.js";
 import { env } from "./config/env.js";
 import { connectMongo } from "./config/mongo.js";
 import { prisma } from "./config/database.js";
-import { startPlanningCron, startCalendarSyncCron } from "./services/planning-cron.js";
+import {
+  startPlanningCron,
+  startCalendarSyncCron,
+  startTaskReminderCron,
+  startForgottenTaskCron,
+} from "./services/planning-cron.js";
 import { initSentry } from "./config/sentry.js";
 import { initFirebase } from "./config/firebase.js";
 
@@ -20,6 +25,8 @@ async function start() {
   // Jobs récurrents
   startPlanningCron();
   startCalendarSyncCron();
+  startTaskReminderCron();
+  startForgottenTaskCron();
 
   // Démarrage du serveur
   serve({ fetch: app.fetch, port: env.PORT, hostname: "0.0.0.0" }, () => {

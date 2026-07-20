@@ -18,6 +18,14 @@ vi.mock("../config/database", () => ({
   },
 }));
 
+const { mockNotifyBadgeEarned } = vi.hoisted(() => ({
+  mockNotifyBadgeEarned: vi.fn(),
+}));
+
+vi.mock("../modules/notifications/notifications.service", () => ({
+  notifyBadgeEarned: mockNotifyBadgeEarned,
+}));
+
 import { awardPointsForTask } from "./gamification.js";
 
 beforeEach(() => {
@@ -52,7 +60,7 @@ describe("awardPointsForTask", () => {
   it("attribue badge POINTS quand seuil atteint", async () => {
     mockUpdate.mockResolvedValue(fakeMember(100));
     mockFindManyBadges.mockResolvedValue([
-      { id: "badge-pts", conditionType: "POINTS", conditionValue: 100 },
+      { id: "badge-pts", name: "Champion", conditionType: "POINTS", conditionValue: 100 },
     ]);
     mockFindManyMemberBadges.mockResolvedValue([]);
     mockCount.mockResolvedValue(5);
@@ -63,6 +71,7 @@ describe("awardPointsForTask", () => {
       data: [{ memberId: "member-1", badgeId: "badge-pts" }],
       skipDuplicates: true,
     });
+    expect(mockNotifyBadgeEarned).toHaveBeenCalledWith("member-1", "family-1", "Champion");
   });
 
   it("attribue badge TASKS_COMPLETED quand seuil atteint", async () => {

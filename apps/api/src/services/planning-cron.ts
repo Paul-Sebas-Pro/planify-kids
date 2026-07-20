@@ -1,6 +1,10 @@
 import cron from "node-cron";
 import { prisma } from "../config/database.js";
 import { generatePlanningService } from "../modules/planning/planning.service.js";
+import {
+  notifyTasksReminder,
+  notifyTasksForgotten,
+} from "../modules/notifications/notifications.service.js";
 import { syncCalendarZone } from "./school-calendar.js";
 
 function nextWeekRange(): { startDate: string; endDate: string } {
@@ -52,6 +56,66 @@ export function startPlanningCron(): void {
   });
 
   console.log("⏰ Cron planning auto démarré (quotidien 00:01)");
+}
+
+// Bornes du jour courant en heure LOCALE (pas de setHours+toISOString — voir
+// piège timezone documenté : le serveur tourne en Europe/Paris, pas en UTC).
+function todayRange(): { start: Date; end: Date } {
+  const now = new Date();
+  return {
+    start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0),
+    end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999),
+  };
+}
+
+async function notifyPendingTasksForToday(
+  notify: (memberId: string, familyId: string, count: number) => Promise<void>,
+): Promise<number> {
+  const { start, end } = todayRange();
+
+  const items = await prisma.scheduleItem.findMany({
+    where: { status: "PENDING", date: { gte: start, lte: end } },
+    select: { assignedToMemberId: true, schedule: { select: { familyId: true } } },
+  });
+
+  const counts = new Map<string, { familyId: string; count: number }>();
+  for (const item of items) {
+    const entry = counts.get(item.assignedToMemberId);
+    if (entry) entry.count += 1;
+    else counts.set(item.assignedToMemberId, { familyId: item.schedule.familyId, count: 1 });
+  }
+
+  for (const [memberId, { familyId, count }] of counts) {
+    try {
+      await notify(memberId, familyId, count);
+    } catch (err) {
+      console.warn(`[cron] Notif ignorée membre ${memberId}:`, (err as Error).message);
+    }
+  }
+
+  return counts.size;
+}
+
+export function startTaskReminderCron(): void {
+  // Tous les jours à 08:00 — rappel des tâches du jour
+  cron.schedule("0 8 * * *", async () => {
+    console.log("[cron] Rappel tâches du jour…");
+    const notified = await notifyPendingTasksForToday(notifyTasksReminder);
+    console.log(`[cron] Rappel envoyé à ${notified} membre(s).`);
+  });
+
+  console.log("⏰ Cron rappel tâches démarré (quotidien 08:00)");
+}
+
+export function startForgottenTaskCron(): void {
+  // Tous les jours à 20:00 — alerte tâches du jour toujours pas faites
+  cron.schedule("0 20 * * *", async () => {
+    console.log("[cron] Alerte tâches oubliées…");
+    const notified = await notifyPendingTasksForToday(notifyTasksForgotten);
+    console.log(`[cron] Alerte envoyée à ${notified} membre(s).`);
+  });
+
+  console.log("⏰ Cron tâches oubliées démarré (quotidien 20:00)");
 }
 
 export function startCalendarSyncCron(): void {

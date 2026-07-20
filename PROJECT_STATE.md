@@ -5,9 +5,9 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5/6 TERMINÉS ✅ — Sprint 7 : bug rotation planning fixé, les 3 demandes UX/produit du 2026-07-19 faites, créneaux midi/soir (backend + web + mobile) faits et vérifiés en réel, incident credentials Supabase résolu
-- **Last Session**: 2026-07-19 — UI Planning (texte tronqué), règle 80/20 parents/enfants, sélecteur d'icône/emoji tâches+récompenses, persistance du code famille mobile, génération planning midi+soir les jours sans école (backend + badge web + badge mobile), rotation mot de passe Supabase suite à exposition accidentelle en chat + migration `db push` vers prod
-- **Next Steps**: **APK mobile à reconstruire et réinstaller sur la tablette** (persistance code famille + badge Midi/Soir ne sont pas encore sur l'appareil réel, Flutter n'a pas d'auto-update — voir section "Installation Android" pour la procédure PC Windows). Reprendre ensuite le reste du backlog Sprint 7 — voir section "📋 Backlog Sprint 7" : notif badge gagné, streak, i18n, offline PowerSync, écran planning mural. Note : `task_card_test.dart` a 4 échecs pré-existants côté mobile, non liés à cette session, jamais investigués — flag pour une prochaine session si besoin.
+- **Statut**: Sprint 5/6 TERMINÉS ✅ — Sprint 7 : bug rotation planning fixé, les 3 demandes UX/produit du 2026-07-19 faites, créneaux midi/soir (backend + web + mobile) faits et vérifiés en réel, incident credentials Supabase résolu, notifications badge/rappel/oubli faites (à valider en réel une fois l'APK reconstruit)
+- **Last Session**: 2026-07-20 — Notification "badge gagné" (`notifyBadgeEarned` dans `checkAndAwardBadges`), cron rappel tâches du jour 08:00 + cron tâches oubliées 20:00 (`planning-cron.ts`). 266/266 tests, typecheck 0 erreur. APK mobile toujours pas reconstruit (bloqué sur cette machine aarch64).
+- **Next Steps**: **APK mobile à reconstruire et réinstaller sur la tablette** (persistance code famille + badge Midi/Soir + 3 nouvelles notifications ne sont pas encore sur l'appareil réel, Flutter n'a pas d'auto-update — voir section "Installation Android" pour la procédure PC Windows). Reprendre ensuite le reste du backlog Sprint 7 — voir section "📋 Backlog Sprint 7" : streak, i18n, offline PowerSync, écran planning mural. Note : `task_card_test.dart` a 4 échecs pré-existants côté mobile, non liés à cette session, jamais investigués — flag pour une prochaine session si besoin.
 
 ---
 
@@ -253,11 +253,11 @@ Deux fixes supplémentaires nécessaires côté Windows (déjà commités) :
 
 Audit complet `CAHIER_CHARGES.md` vs code réel effectué — écarts identifiés, classés par valeur réelle pour une famille utilisatrice (pas un simple cochage de cases) :
 
-- [ ] **Notification "badge gagné" manquante** : un badge est décerné (`checkAndAwardBadges()`, `apps/api/src/services/gamification.ts`) et loggé en Mongo (`BADGE_EARNED`), mais aucune notification in-app/push n'est créée pour l'enfant — contrairement au flow points/claims qui notifie déjà (`notifyTaskCompleted`, `notifyClaimReviewed`). Fix ciblé : ajouter un appel notification dans `checkAndAwardBadges()`.
+- [x] **Notification "badge gagné" manquante** : un badge est décerné (`checkAndAwardBadges()`, `apps/api/src/services/gamification.ts`) et loggé en Mongo (`BADGE_EARNED`), mais aucune notification in-app/push n'était créée. Fix (2026-07-20) : `notifyBadgeEarned()` (`notifications.service.ts`, même pattern in-app + push FCM que `notifyTasksAssigned`) appelé dans `checkAndAwardBadges()` pour chaque badge nouvellement décerné. Nouvelle valeur enum `NotificationType.BADGE_EARNED`.
 - [ ] **Bonus série (streak) absent de la gamification** : `Badge.conditionType` (schema.prisma) et `checkAndAwardBadges()` ne supportent que `"POINTS"` et `"TASKS_COMPLETED"` — aucun suivi de jours consécutifs. C'est pourtant la mécanique la plus motivante pour un enfant ("3 jours d'affilée !"). Ajouter un `conditionType: "STREAK"` calculé sur les `ScheduleItem` COMPLETED consécutifs par jour.
-- [ ] **Notification "tâche oubliée" absente** : aucun rappel proactif après échéance manquée. Le cron existant (`apps/api/src/services/planning-cron.ts`, génère déjà le planning de la semaine suivante) pourrait être étendu pour scanner les `ScheduleItem` PENDING dont la date est dépassée et notifier parent + enfant.
-- [ ] **Notification "rappel tâche" absente** : pas de rappel le matin pour les tâches du jour. Même mécanisme cron que ci-dessus, à exécuter quotidiennement.
-- [ ] **Règle 80/20 parents/enfants non implémentée** : `apps/api/src/modules/planning/planning.service.ts` (ligne ~38) filtre les membres sur `role === "CHILD"` uniquement — les parents ne reçoivent jamais de tâche, contrairement à la règle métier 5 du cahier des charges. Fix : inclure les membres PARENT dans le pool de `generatePlanningGreedy()` avec un ratio de charge dédié (80% du volume aux enfants, 20% aux parents).
+- [x] **Notification "tâche oubliée" absente** : aucun rappel proactif après échéance manquée. Fix (2026-07-20) : cron `startForgottenTaskCron()` (`planning-cron.ts`, quotidien 20:00) scanne les `ScheduleItem` PENDING du jour et notifie chaque membre via `notifyTasksForgotten()`.
+- [x] **Notification "rappel tâche" absente** : pas de rappel le matin pour les tâches du jour. Fix (2026-07-20) : cron `startTaskReminderCron()` (`planning-cron.ts`, quotidien 08:00), même logique de scan que ci-dessus via `notifyTasksReminder()`. Les deux crons partagent `notifyPendingTasksForToday()` (bornes du jour en heure locale, pas de piège `setHours`+`toISOString` — cf. leçon Session 21).
+- [x] **Règle 80/20 parents/enfants non implémentée** : doublon avec l'entrée déjà cochée dans "Demandes utilisateur (2026-07-19)" plus haut — fait via commit `40304f7`, jamais mise à jour ici lors de l'audit initial.
 - [ ] **i18n absent (multi-langue FR/EN/ES/PT prévu au cahier)** : zéro librairie i18n (`react-i18next`/`easy_localization` etc.), tous les textes UI sont en français en dur. Proposer un chantier minimal FR/EN d'abord (pas les 4 langues d'un coup) — `react-i18next` côté web, `easy_localization`/`flutter_localizations` côté Flutter.
 - [ ] **Offline réel non tenu (PowerSync)** : promesse produit centrale du cahier (§2, §9, règle métier 6) actuellement 100% non respectée — `apps/mobile/lib/database/database.dart` scaffold PowerSync mais n'est interrogé nulle part, tout transite par `ApiClient` (Dio HTTP). Arbitrage à faire : finaliser PowerSync (investissement lourd, instance cloud requise) vs cache local minimal en lecture seule (mode dégradé simple) pour un premier pas.
 - [ ] **Écran "Planning mural" dédié absent** : le cahier des charges prévoit un affichage tableau pensé pour être collé au mur (lecture à distance, vue famille complète), distinct de "Mes tâches" par enfant connecté. Actuellement rien de tel : web = vue admin/grille de gestion (`PlanningPage.tsx`), mobile = vue par enfant après login individuel (`TodayScreen`). Proposer un écran "vue famille" en lecture seule sur tablette, sans login enfant individuel requis.
@@ -349,6 +349,96 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 22 - 2026-07-20
+
+**Objectif**: Sprint 7 — notifications manquantes (badge gagné, rappel matin, tâche oubliée soir). Rebuild APK mobile reporté (bloqué sur cette machine, à faire côté PC Windows).
+
+**Concepts introduits**:
+
+- **Bornes de "jour courant" côté cron** : pour scanner les `ScheduleItem` du jour sans retomber dans le piège timezone documenté Session 21, dérivation directe depuis les composants locaux de `Date` (`getFullYear/getMonth/getDate` → `new Date(y, m, d, h, m, s)`) plutôt que `setHours` + `toISOString()`. Isolé dans `todayRange()` (`planning-cron.ts`).
+- **Mock de chaîne inter-services en test** : `gamification.ts` appelle désormais `notifications.service.ts` (qui appelle lui-même `prisma.notification`/`familyMember.findUnique` non mockés dans `gamification.test.ts`) — pattern déjà documenté (mocker le module intermédiaire) appliqué : `vi.mock("../modules/notifications/notifications.service", ...)` plutôt que de complexifier le mock Prisma existant.
+
+**Modifications** :
+
+```diff
+M apps/api/src/prisma/schema.prisma                    (NotificationType += BADGE_EARNED, TASKS_REMINDER, TASKS_FORGOTTEN)
+M apps/api/src/modules/notifications/notifications.service.ts  (notifyBadgeEarned, notifyTasksReminder, notifyTasksForgotten)
+M apps/api/src/services/gamification.ts                 (appel notifyBadgeEarned dans checkAndAwardBadges)
+M apps/api/src/services/gamification.test.ts             (mock notifications.service, assertion notif badge)
+M apps/api/src/services/planning-cron.ts                 (startTaskReminderCron 08:00, startForgottenTaskCron 20:00, todayRange/notifyPendingTasksForToday partagés)
+M apps/api/src/server.ts                                  (wiring des 2 nouveaux crons)
+```
+
+**Résultats**:
+
+- 266/266 tests API (1 nouveau test badge), typecheck API 0 erreur.
+- `db push` appliqué (3 nouvelles valeurs enum, additif).
+- Pas de test dédié pour `planning-cron.ts` (aucun test cron n'existe sur ce fichier — précédent déjà établi, scheduling non testé unitairement).
+- Rebuild APK (point 1 backlog) **non fait** — bloqué sur cette machine (aarch64, cf. Session pré-Sprint 7), reste à faire côté PC Windows Intel par l'utilisateur.
+
+**Prochaine session** :
+
+1. Confirmer le rebuild + réinstall APK côté PC Windows (persistance code famille + badge Midi/Soir + les 3 nouvelles notifications, tout à valider en réel sur tablette une fois l'APK à jour).
+2. Bonus série/streak (gamification), écran "Planning mural", puis les 2 gros chantiers d'arbitrage (offline PowerSync, i18n FR/EN) — backlog inchangé.
+
+---
+
+### Session 21 - 2026-07-19
+
+**Objectif**: Sprint 7 — bug rotation planning, 3 demandes UX/produit (texte tronqué, règle 80/20, persistance code famille mobile), créneaux midi/soir selon calendrier scolaire France/DOM-TOM, incident credentials Supabase
+
+**Concepts introduits**:
+
+- **Fenêtre d'historique bornée pour un algo de fairness** : `getMemberLoadHistory()` sommait tout l'historique depuis toujours — sur une famille ayant subi un bug d'assignation pendant des semaines, la dette cumulée écrasait le tie-break et faisait basculer 100% des tâches vers le membre défavorisé. Fix : fenêtre glissante 28j. Leçon générale : toute charge cumulée historique doit être bornée dans le temps, pas sommée depuis l'origine.
+- **Recentrage par groupe de poids** : même piège rencontré une 2e fois avec la règle 80/20 (parents à 0 historique vs enfants à 100%) — fix générique : recentrer la charge initiale de chaque groupe de poids sur sa propre moyenne avant comparaison, pour que seul le poids pilote la répartition de la génération courante.
+- **`prisma migrate dev` vs `db push`** : ce projet n'a jamais utilisé `prisma migrate` (pas d'historique de migrations) — `migrate dev` demande un reset destructif de la DB faute de cet historique. Toujours utiliser `db push --accept-data-loss` ici (convention établie, additive tant que le schéma ne fait que rajouter des colonnes/tables).
+- **Docker dev — volumes partiels** : `docker-compose.yml` monte `apps/api/src` et `apps/web/src` en volume mais PAS `packages/types` ni `node_modules` — un changement de schéma Prisma ou de types partagés nécessite un restart (api, régénère Prisma via l'entrypoint) ou un rebuild d'image (web, `packages/types` copié au build seulement).
+- **Piège timezone `setHours` local + `toISOString()` UTC** : le serveur tourne en `Europe/Paris`, pas UTC — `date.setHours(0,0,0,0)` (reset en heure locale) suivi de `.toISOString().slice(0,10)` (lecture UTC) décale le dernier jour d'une plage d'un jour en arrière quand l'offset local est positif. Ne jamais mélanger reset d'heure locale et clé de date UTC.
+- **2 API gouv distinctes pour jours fériés + vacances scolaires** : `calendrier.api.gouv.fr` (jours fériés uniquement) et `data.education.gouv.fr` dataset `fr-en-calendrier-scolaire` (vacances, Zone A/B/C + DOM-TOM) sont deux sources séparées malgré l'intuition d'une seule API "calendrier France" — vérifié par requêtes curl directes avant d'écrire le service (labels de zone exacts confirmés via facet, ex. `"Réunion"` pas `"La Réunion"`).
+- **Rotation de secret ≠ juste régénérer** : après rotation d'un mot de passe DB exposé en chat, il faut aussi mettre à jour TOUTES les variables d'environnement qui l'utilisent (Vercel ici) ET redéployer (Vercel ne relit pas les env vars d'un déploiement déjà buildé) — sinon le service qui l'utilise casse silencieusement.
+
+**Modifications** (résumé — voir section "📋 Backlog Sprint 7" pour le détail complet par item) :
+
+```diff
+M apps/api/src/services/planning-greedy.ts        (rotation tie-break, poids 80/20, dayTypes midi/soir)
+M apps/api/src/modules/planning/planning.repository.ts  (historique borné 28j, getFamilySchoolZone, slot)
+M apps/api/src/modules/planning/planning.service.ts     (80/20, classifyDays, dayTypes)
+M apps/api/src/modules/members/family.settings.routes.ts (PATCH /family schoolZone)
+M apps/api/src/prisma/schema.prisma                (CalendarZone, Slot, Family.schoolZone, ScheduleItem.slot, SchoolCalendarCache)
++ apps/api/src/services/school-calendar.ts          (fetch + cache jours fériés/vacances, lazy-fill)
+M apps/api/src/services/planning-cron.ts            (cron sync calendrier hebdo)
++ apps/web/src/components/shared/IconPicker.tsx      (picker émoji réutilisable)
+M apps/web/src/features/tasks/TasksPage.tsx          (icône tâche)
+M apps/web/src/features/rewards/RewardsPage.tsx      (icône récompense)
+M apps/web/src/features/planning/PlanningPage.tsx    (texte tronqué + badge Midi/Soir)
+M apps/web/src/features/settings/SettingsPage.tsx    (sélecteur zone scolaire)
+M packages/types/src/family.ts, planning.ts          (CalendarZone, Slot)
+M apps/mobile/lib/shared/services/secure_storage.dart (familyCode, clearSession)
+M apps/mobile/lib/features/auth/auth_provider.dart   (persistance code famille)
+M apps/mobile/lib/features/auth/login_screen.dart    (préchargement code famille)
+M apps/mobile/lib/models/schedule_item.dart           (champ slot)
+M apps/mobile/lib/features/tasks/task_card.dart       (badge Midi/Soir)
+```
+
+**Résultats**:
+
+- Bug rotation planning + fenêtre historique : 256/256 tests, vérifié en réel (répartition mixte confirmée visuellement, plus de biais déterministe).
+- Règle 80/20 : 6 tests `planning-greedy.test.ts`, vérifié en réel (~24% parent sur 28 tâches).
+- Sélecteur d'icône tâches/récompenses : root cause du "icône manquante en prod" trouvée (aucun champ icône dans le formulaire web), fixé.
+- Persistance code famille mobile : 10/10 tests widget, **pas encore sur la tablette réelle** (APK à reconstruire).
+- Créneaux midi/soir : 266/266 tests API (16 nouveaux), vérifié en réel bout-en-bout (génération + cache DB réel peuplé — 22 jours fériés, 531 jours de vacances — + badges visibles web et mobile).
+- Incident credentials Supabase : mot de passe DB exposé accidentellement en chat à 2 reprises (une fois collé par l'utilisateur, une fois via auto-read du `.env` par l'IDE) → rotation effectuée côté Supabase + Vercel (env var + redeploy), `JWT_SECRET` également exposé, à rotation recommandée. `.env` racine confirmé jamais commité (gitignore respecté).
+- Typecheck API + Web : 0 erreur tout du long. `flutter analyze` : 0 issue.
+
+**Prochaine session** (validé avec l'utilisateur) :
+
+1. Reconstruire + réinstaller l'APK mobile (persistance code famille + badge Midi/Soir pas encore testables en réel).
+2. Notification "badge gagné" manquante (`checkAndAwardBadges()` → ajouter l'appel notification, petit fix ciblé).
+3. Notifications "tâche oubliée" (soir) + "rappel tâche du jour" (matin) — extension du cron `planning-cron.ts` existant, un seul chantier pour les deux.
+4. Ensuite, par ordre de valeur : bonus série/streak (gamification), écran "Planning mural" (nouvel écran mobile lecture seule), puis les 2 gros chantiers nécessitant arbitrage (offline PowerSync, i18n FR/EN).
+
+---
 
 ### Session 20 - 2026-07-04
 

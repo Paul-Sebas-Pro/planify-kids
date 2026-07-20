@@ -253,13 +253,18 @@ class _SlotGroup extends StatelessWidget {
     return Column(
       children: [
         if (noon.isNotEmpty) ...[
-          const _SlotSubHeader(label: 'Midi', icon: Icons.wb_sunny_outlined),
+          const _SlotSubHeader(
+            label: 'Midi',
+            icon: Icons.wb_sunny_outlined,
+            color: Color(0xFFFFA726),
+          ),
           ...noon.map(cardBuilder),
         ],
         if (evening.isNotEmpty) ...[
           const _SlotSubHeader(
             label: 'Soir',
             icon: Icons.nights_stay_outlined,
+            color: Color(0xFF5C6BC0),
           ),
           ...evening.map(cardBuilder),
         ],
@@ -271,27 +276,40 @@ class _SlotGroup extends StatelessWidget {
 class _SlotSubHeader extends StatelessWidget {
   final String label;
   final IconData icon;
+  final Color color;
 
-  const _SlotSubHeader({required this.label, required this.icon});
+  const _SlotSubHeader({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 16, 2),
-      child: Row(
-        children: [
-          Icon(icon, size: 13, color: Colors.grey.shade400),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade400,
-              letterSpacing: 0.3,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: color,
+                letterSpacing: 0.2,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

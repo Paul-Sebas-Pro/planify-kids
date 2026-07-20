@@ -63,6 +63,7 @@ export function FamilyPage() {
     }) => membersApi.update(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["members"] });
+      setShowForm(false);
       setEditTarget(null);
       reset();
     },

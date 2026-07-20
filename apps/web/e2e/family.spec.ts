@@ -63,7 +63,14 @@ test.describe("Famille — édition membre", () => {
     await expect(page.locator('input[type="date"]')).toHaveValue("2015-06-01");
 
     await page.getByRole("button", { name: /^Enregistrer$/ }).click();
+
+    // La modale doit disparaître entièrement — pas juste changer de heading.
+    // Un bug déjà rencontré ici : editTarget repassait à null sans que
+    // showForm ne repasse à false, donc la modale restait ouverte mais son
+    // heading changeait silencieusement de "Modifier le membre" à "Nouveau
+    // membre" (un check restreint au seul heading "Modifier" passait à tort).
     await expect(page.getByRole("heading", { name: /modifier le membre/i })).not.toBeVisible();
+    await expect(page.getByRole("heading", { name: /nouveau membre/i })).not.toBeVisible();
 
     expect(patchBody).toMatchObject({ birthDate: "2015-06-01" });
   });

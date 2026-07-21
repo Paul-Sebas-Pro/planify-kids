@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/schedule_item.dart';
+import '../../shared/l10n/l10n_extensions.dart';
+import '../../shared/providers/locale_provider.dart';
 import '../../shared/widgets/api_error_widget.dart';
 import '../auth/auth_provider.dart';
 import 'task_card.dart';
@@ -16,14 +18,16 @@ class TodayScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tasksAsync = ref.watch(tasksProvider);
     final user = ref.watch(authProvider).value;
-    final today = DateFormat('EEEE d MMMM', 'fr_FR').format(DateTime.now());
+    final locale = ref.watch(appLocaleProvider);
+    final today = DateFormat('EEEE d MMMM', dateLocaleFor(locale))
+        .format(DateTime.now());
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Aujourd\'hui'),
+            Text(context.l10n.todayTitle),
             Text(
               today,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -39,7 +43,7 @@ class TodayScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Déconnexion',
+            tooltip: context.l10n.todayLogoutTooltip,
             onPressed: () => ref.read(authProvider.notifier).logout(),
           ),
         ],
@@ -52,13 +56,13 @@ class TodayScreen extends ConsumerWidget {
         ),
         data: (items) {
           if (items.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('🎉', style: TextStyle(fontSize: 64)),
-                  SizedBox(height: 12),
-                  Text('Aucune tâche aujourd\'hui !'),
+                  const Text('🎉', style: TextStyle(fontSize: 64)),
+                  const SizedBox(height: 12),
+                  Text(context.l10n.todayEmptyState),
                 ],
               ),
             );
@@ -80,7 +84,7 @@ class TodayScreen extends ConsumerWidget {
               ),
               if (pending.isNotEmpty) ...[
                 _SectionHeader(
-                  label: 'À faire (${pending.length})',
+                  label: context.l10n.todaySectionPending(pending.length),
                   icon: Icons.radio_button_unchecked,
                 ),
                 _SlotGroup(
@@ -94,7 +98,7 @@ class TodayScreen extends ConsumerWidget {
               ],
               if (done.isNotEmpty) ...[
                 _SectionHeader(
-                  label: 'Terminé (${done.length})',
+                  label: context.l10n.todaySectionDone(done.length),
                   icon: Icons.check_circle_outline,
                 ),
                 _SlotGroup(
@@ -107,7 +111,7 @@ class TodayScreen extends ConsumerWidget {
               ],
               if (other.isNotEmpty) ...[
                 _SectionHeader(
-                  label: 'Autres (${other.length})',
+                  label: context.l10n.todaySectionOther(other.length),
                   icon: Icons.info_outline,
                 ),
                 _SlotGroup(
@@ -132,18 +136,16 @@ Future<void> _confirmUndo(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Annuler cette tâche ?'),
-      content: const Text(
-        'La tâche repassera en "À faire" et les points gagnés seront retirés.',
-      ),
+      title: Text(context.l10n.todayUndoTitle),
+      content: Text(context.l10n.todayUndoContent),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Annuler'),
+          child: Text(context.l10n.todayUndoCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(ctx).pop(true),
-          child: const Text('Confirmer'),
+          child: Text(context.l10n.todayUndoConfirm),
         ),
       ],
     ),
@@ -191,7 +193,9 @@ class _ProgressBanner extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isAllDone ? 'Bravo $name ! 🎉' : 'Salut $name !',
+                isAllDone
+                    ? context.l10n.todayGreetingDone(name)
+                    : context.l10n.todayGreeting(name),
                 style: GoogleFonts.fredoka(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
@@ -226,7 +230,12 @@ class _ProgressBanner extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '$completed / $total tâche${total > 1 ? 's' : ''} terminée${completed > 1 ? 's' : ''}',
+            context.l10n.todayProgressSummary(
+              completed,
+              total,
+              total > 1 ? 's' : '',
+              completed > 1 ? 's' : '',
+            ),
             style: const TextStyle(
               fontSize: 12,
               color: Colors.white70,
@@ -253,18 +262,18 @@ class _SlotGroup extends StatelessWidget {
     return Column(
       children: [
         if (noon.isNotEmpty) ...[
-          const _SlotSubHeader(
-            label: 'Midi',
+          _SlotSubHeader(
+            label: context.l10n.todaySlotNoon,
             icon: Icons.wb_sunny_outlined,
-            color: Color(0xFFFFA726),
+            color: const Color(0xFFFFA726),
           ),
           ...noon.map(cardBuilder),
         ],
         if (evening.isNotEmpty) ...[
-          const _SlotSubHeader(
-            label: 'Soir',
+          _SlotSubHeader(
+            label: context.l10n.todaySlotEvening,
             icon: Icons.nights_stay_outlined,
-            color: Color(0xFF5C6BC0),
+            color: const Color(0xFF5C6BC0),
           ),
           ...evening.map(cardBuilder),
         ],

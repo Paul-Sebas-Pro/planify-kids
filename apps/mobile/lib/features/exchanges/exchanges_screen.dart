@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../models/exchange.dart';
 import '../../models/family_member.dart';
 import '../../models/schedule_item.dart';
+import '../../shared/l10n/l10n_extensions.dart';
+import '../../shared/providers/locale_provider.dart';
 import '../../shared/widgets/api_error_widget.dart';
 import '../auth/auth_provider.dart';
 import '../tasks/tasks_provider.dart';
@@ -20,7 +22,7 @@ class ExchangesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Échanges'),
+        title: Text(context.l10n.exchangesTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -37,7 +39,7 @@ class ExchangesScreen extends ConsumerWidget {
                     _ProposeExchangeDialog(fromMemberId: currentUser.id),
               ),
               icon: const Icon(Icons.swap_horiz),
-              label: const Text('Proposer'),
+              label: Text(context.l10n.exchangesPropose),
             ),
       body: exchangesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -47,13 +49,13 @@ class ExchangesScreen extends ConsumerWidget {
         ),
         data: (exchanges) {
           if (exchanges.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('🔄', style: TextStyle(fontSize: 64)),
-                  SizedBox(height: 8),
-                  Text('Aucun échange en cours'),
+                  const Text('🔄', style: TextStyle(fontSize: 64)),
+                  const SizedBox(height: 8),
+                  Text(context.l10n.exchangesEmpty),
                 ],
               ),
             );
@@ -74,7 +76,7 @@ class ExchangesScreen extends ConsumerWidget {
           return ListView(
             children: [
               if (incoming.isNotEmpty) ...[
-                _SectionTitle('Demandes reçues (${incoming.length})'),
+                _SectionTitle(context.l10n.exchangesIncoming(incoming.length)),
                 ...incoming.map((e) => _ExchangeCard(
                       exchange: e,
                       isIncoming: true,
@@ -87,11 +89,11 @@ class ExchangesScreen extends ConsumerWidget {
                     )),
               ],
               if (outgoing.isNotEmpty) ...[
-                _SectionTitle('Demandes envoyées (${outgoing.length})'),
+                _SectionTitle(context.l10n.exchangesOutgoing(outgoing.length)),
                 ...outgoing.map((e) => _ExchangeCard(exchange: e)),
               ],
               if (history.isNotEmpty) ...[
-                _SectionTitle('Historique'),
+                _SectionTitle(context.l10n.exchangesHistory),
                 ...history.map((e) => _ExchangeCard(exchange: e)),
               ],
               const SizedBox(height: 80),
@@ -138,8 +140,9 @@ class _ExchangeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final item = exchange.scheduleItem;
+    final locale = ProviderScope.containerOf(context).read(appLocaleProvider);
     final dateStr = item != null
-        ? DateFormat('EEE d MMM', 'fr_FR').format(item.date)
+        ? DateFormat('EEE d MMM', dateLocaleFor(locale)).format(item.date)
         : '';
 
     Color statusColor;
@@ -147,13 +150,13 @@ class _ExchangeCard extends StatelessWidget {
     switch (exchange.status) {
       case 'ACCEPTED':
         statusColor = Colors.green;
-        statusLabel = 'Accepté';
+        statusLabel = context.l10n.exchangesStatusAccepted;
       case 'REFUSED':
         statusColor = theme.colorScheme.error;
-        statusLabel = 'Refusé';
+        statusLabel = context.l10n.exchangesStatusRefused;
       default:
         statusColor = Colors.orange;
-        statusLabel = 'En attente';
+        statusLabel = context.l10n.exchangesStatusPending;
     }
 
     return Card(
@@ -173,7 +176,7 @@ class _ExchangeCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item?.taskName ?? 'Tâche',
+                        item?.taskName ?? context.l10n.exchangesDefaultTaskName,
                         style: theme.textTheme.titleSmall,
                       ),
                       if (dateStr.isNotEmpty)
@@ -208,14 +211,14 @@ class _ExchangeCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: onRefuse,
-                      child: const Text('Refuser'),
+                      child: Text(context.l10n.exchangesRefuse),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: FilledButton(
                       onPressed: onAccept,
-                      child: const Text('Accepter'),
+                      child: Text(context.l10n.exchangesAccept),
                     ),
                   ),
                 ],
@@ -259,7 +262,7 @@ class _ProposeExchangeDialogState
       if (!mounted) return;
       Navigator.of(context).pop();
     } catch (_) {
-      setState(() => _error = 'Impossible de proposer cet échange.');
+      setState(() => _error = context.l10n.exchangesSubmitError);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -271,7 +274,7 @@ class _ProposeExchangeDialogState
     final membersAsync = ref.watch(familyMembersProvider);
 
     return AlertDialog(
-      title: const Text('Proposer un échange'),
+      title: Text(context.l10n.exchangesProposeDialogTitle),
       content: SizedBox(
         width: 320,
         child: Column(
@@ -279,19 +282,18 @@ class _ProposeExchangeDialogState
           children: [
             tasksAsync.when(
               loading: () => const CircularProgressIndicator(),
-              error: (_, _) => const Text('Erreur de chargement des tâches'),
+              error: (_, _) => Text(context.l10n.exchangesLoadTasksError),
               data: (items) {
                 final pending = items
                     .where((i) =>
                         i.isPending && i.assignedToMemberId == widget.fromMemberId)
                     .toList();
                 if (pending.isEmpty) {
-                  return const Text(
-                      'Aucune tâche à échanger aujourd\'hui.');
+                  return Text(context.l10n.exchangesNoTaskToday);
                 }
                 return DropdownButtonFormField<ScheduleItem>(
                   initialValue: _selectedItem,
-                  decoration: const InputDecoration(labelText: 'Ma tâche'),
+                  decoration: InputDecoration(labelText: context.l10n.exchangesMyTaskLabel),
                   items: pending
                       .map((i) => DropdownMenuItem(
                             value: i,
@@ -305,18 +307,18 @@ class _ProposeExchangeDialogState
             const SizedBox(height: 16),
             membersAsync.when(
               loading: () => const CircularProgressIndicator(),
-              error: (_, _) => const Text('Erreur de chargement des membres'),
+              error: (_, _) => Text(context.l10n.exchangesLoadMembersError),
               data: (members) {
                 final siblings = members
                     .where((m) =>
                         m.role == 'CHILD' && m.id != widget.fromMemberId)
                     .toList();
                 if (siblings.isEmpty) {
-                  return const Text('Aucun autre enfant dans la famille.');
+                  return Text(context.l10n.exchangesNoSiblings);
                 }
                 return DropdownButtonFormField<FamilyMember>(
                   initialValue: _selectedMember,
-                  decoration: const InputDecoration(labelText: 'Échanger avec'),
+                  decoration: InputDecoration(labelText: context.l10n.exchangesExchangeWithLabel),
                   items: siblings
                       .map((m) => DropdownMenuItem(
                             value: m,
@@ -338,7 +340,7 @@ class _ProposeExchangeDialogState
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Annuler'),
+          child: Text(context.l10n.exchangesCancel),
         ),
         FilledButton(
           onPressed: (_selectedItem == null ||
@@ -352,7 +354,7 @@ class _ProposeExchangeDialogState
                   width: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Proposer'),
+              : Text(context.l10n.exchangesPropose),
         ),
       ],
     );

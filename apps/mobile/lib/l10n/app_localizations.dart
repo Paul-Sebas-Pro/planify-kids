@@ -307,6 +307,227 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'English'**
   String get profileLanguageEn;
+
+  /// No description provided for @todayTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aujourd\'hui'**
+  String get todayTitle;
+
+  /// No description provided for @todayLogoutTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déconnexion'**
+  String get todayLogoutTooltip;
+
+  /// No description provided for @todayEmptyState.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune tâche aujourd\'hui !'**
+  String get todayEmptyState;
+
+  /// No description provided for @todayGreetingDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bravo {name} ! 🎉'**
+  String todayGreetingDone(Object name);
+
+  /// No description provided for @todayGreeting.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salut {name} !'**
+  String todayGreeting(Object name);
+
+  /// No description provided for @todayProgressSummary.
+  ///
+  /// In fr, this message translates to:
+  /// **'{completed} / {total} tâche{tacheS} terminée{termineeS}'**
+  String todayProgressSummary(
+    Object completed,
+    Object tacheS,
+    Object termineeS,
+    Object total,
+  );
+
+  /// No description provided for @todaySectionPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'À faire ({count})'**
+  String todaySectionPending(Object count);
+
+  /// No description provided for @todaySectionDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminé ({count})'**
+  String todaySectionDone(Object count);
+
+  /// No description provided for @todaySectionOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autres ({count})'**
+  String todaySectionOther(Object count);
+
+  /// No description provided for @todayUndoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler cette tâche ?'**
+  String get todayUndoTitle;
+
+  /// No description provided for @todayUndoContent.
+  ///
+  /// In fr, this message translates to:
+  /// **'La tâche repassera en \"À faire\" et les points gagnés seront retirés.'**
+  String get todayUndoContent;
+
+  /// No description provided for @todayUndoCancel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get todayUndoCancel;
+
+  /// No description provided for @todayUndoConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmer'**
+  String get todayUndoConfirm;
+
+  /// No description provided for @todaySlotNoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Midi'**
+  String get todaySlotNoon;
+
+  /// No description provided for @todaySlotEvening.
+  ///
+  /// In fr, this message translates to:
+  /// **'Soir'**
+  String get todaySlotEvening;
+
+  /// No description provided for @exchangesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échanges'**
+  String get exchangesTitle;
+
+  /// No description provided for @exchangesPropose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Proposer'**
+  String get exchangesPropose;
+
+  /// No description provided for @exchangesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun échange en cours'**
+  String get exchangesEmpty;
+
+  /// No description provided for @exchangesIncoming.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demandes reçues ({count})'**
+  String exchangesIncoming(Object count);
+
+  /// No description provided for @exchangesOutgoing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demandes envoyées ({count})'**
+  String exchangesOutgoing(Object count);
+
+  /// No description provided for @exchangesHistory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Historique'**
+  String get exchangesHistory;
+
+  /// No description provided for @exchangesStatusAccepted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accepté'**
+  String get exchangesStatusAccepted;
+
+  /// No description provided for @exchangesStatusRefused.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refusé'**
+  String get exchangesStatusRefused;
+
+  /// No description provided for @exchangesStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get exchangesStatusPending;
+
+  /// No description provided for @exchangesRefuse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refuser'**
+  String get exchangesRefuse;
+
+  /// No description provided for @exchangesAccept.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accepter'**
+  String get exchangesAccept;
+
+  /// No description provided for @exchangesDefaultTaskName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tâche'**
+  String get exchangesDefaultTaskName;
+
+  /// No description provided for @exchangesProposeDialogTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Proposer un échange'**
+  String get exchangesProposeDialogTitle;
+
+  /// No description provided for @exchangesLoadTasksError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur de chargement des tâches'**
+  String get exchangesLoadTasksError;
+
+  /// No description provided for @exchangesNoTaskToday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune tâche à échanger aujourd\'hui.'**
+  String get exchangesNoTaskToday;
+
+  /// No description provided for @exchangesMyTaskLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ma tâche'**
+  String get exchangesMyTaskLabel;
+
+  /// No description provided for @exchangesLoadMembersError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur de chargement des membres'**
+  String get exchangesLoadMembersError;
+
+  /// No description provided for @exchangesNoSiblings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun autre enfant dans la famille.'**
+  String get exchangesNoSiblings;
+
+  /// No description provided for @exchangesExchangeWithLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échanger avec'**
+  String get exchangesExchangeWithLabel;
+
+  /// No description provided for @exchangesCancel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get exchangesCancel;
+
+  /// No description provided for @exchangesSubmitError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de proposer cet échange.'**
+  String get exchangesSubmitError;
 }
 
 class _AppLocalizationsDelegate

@@ -119,4 +119,134 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileLanguageEn => 'English';
+
+  @override
+  String get todayTitle => 'Aujourd\'hui';
+
+  @override
+  String get todayLogoutTooltip => 'Déconnexion';
+
+  @override
+  String get todayEmptyState => 'Aucune tâche aujourd\'hui !';
+
+  @override
+  String todayGreetingDone(Object name) {
+    return 'Bravo $name ! 🎉';
+  }
+
+  @override
+  String todayGreeting(Object name) {
+    return 'Salut $name !';
+  }
+
+  @override
+  String todayProgressSummary(
+    Object completed,
+    Object tacheS,
+    Object termineeS,
+    Object total,
+  ) {
+    return '$completed / $total tâche$tacheS terminée$termineeS';
+  }
+
+  @override
+  String todaySectionPending(Object count) {
+    return 'À faire ($count)';
+  }
+
+  @override
+  String todaySectionDone(Object count) {
+    return 'Terminé ($count)';
+  }
+
+  @override
+  String todaySectionOther(Object count) {
+    return 'Autres ($count)';
+  }
+
+  @override
+  String get todayUndoTitle => 'Annuler cette tâche ?';
+
+  @override
+  String get todayUndoContent =>
+      'La tâche repassera en \"À faire\" et les points gagnés seront retirés.';
+
+  @override
+  String get todayUndoCancel => 'Annuler';
+
+  @override
+  String get todayUndoConfirm => 'Confirmer';
+
+  @override
+  String get todaySlotNoon => 'Midi';
+
+  @override
+  String get todaySlotEvening => 'Soir';
+
+  @override
+  String get exchangesTitle => 'Échanges';
+
+  @override
+  String get exchangesPropose => 'Proposer';
+
+  @override
+  String get exchangesEmpty => 'Aucun échange en cours';
+
+  @override
+  String exchangesIncoming(Object count) {
+    return 'Demandes reçues ($count)';
+  }
+
+  @override
+  String exchangesOutgoing(Object count) {
+    return 'Demandes envoyées ($count)';
+  }
+
+  @override
+  String get exchangesHistory => 'Historique';
+
+  @override
+  String get exchangesStatusAccepted => 'Accepté';
+
+  @override
+  String get exchangesStatusRefused => 'Refusé';
+
+  @override
+  String get exchangesStatusPending => 'En attente';
+
+  @override
+  String get exchangesRefuse => 'Refuser';
+
+  @override
+  String get exchangesAccept => 'Accepter';
+
+  @override
+  String get exchangesDefaultTaskName => 'Tâche';
+
+  @override
+  String get exchangesProposeDialogTitle => 'Proposer un échange';
+
+  @override
+  String get exchangesLoadTasksError => 'Erreur de chargement des tâches';
+
+  @override
+  String get exchangesNoTaskToday => 'Aucune tâche à échanger aujourd\'hui.';
+
+  @override
+  String get exchangesMyTaskLabel => 'Ma tâche';
+
+  @override
+  String get exchangesLoadMembersError => 'Erreur de chargement des membres';
+
+  @override
+  String get exchangesNoSiblings => 'Aucun autre enfant dans la famille.';
+
+  @override
+  String get exchangesExchangeWithLabel => 'Échanger avec';
+
+  @override
+  String get exchangesCancel => 'Annuler';
+
+  @override
+  String get exchangesSubmitError => 'Impossible de proposer cet échange.';
 }

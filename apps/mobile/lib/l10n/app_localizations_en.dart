@@ -119,4 +119,134 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLanguageEn => 'English';
+
+  @override
+  String get todayTitle => 'Today';
+
+  @override
+  String get todayLogoutTooltip => 'Log out';
+
+  @override
+  String get todayEmptyState => 'No tasks today!';
+
+  @override
+  String todayGreetingDone(Object name) {
+    return 'Well done $name! 🎉';
+  }
+
+  @override
+  String todayGreeting(Object name) {
+    return 'Hi $name!';
+  }
+
+  @override
+  String todayProgressSummary(
+    Object completed,
+    Object tacheS,
+    Object termineeS,
+    Object total,
+  ) {
+    return '$completed / $total task$tacheS completed';
+  }
+
+  @override
+  String todaySectionPending(Object count) {
+    return 'To do ($count)';
+  }
+
+  @override
+  String todaySectionDone(Object count) {
+    return 'Done ($count)';
+  }
+
+  @override
+  String todaySectionOther(Object count) {
+    return 'Other ($count)';
+  }
+
+  @override
+  String get todayUndoTitle => 'Cancel this task?';
+
+  @override
+  String get todayUndoContent =>
+      'The task will go back to \"To do\" and earned points will be removed.';
+
+  @override
+  String get todayUndoCancel => 'Cancel';
+
+  @override
+  String get todayUndoConfirm => 'Confirm';
+
+  @override
+  String get todaySlotNoon => 'Noon';
+
+  @override
+  String get todaySlotEvening => 'Evening';
+
+  @override
+  String get exchangesTitle => 'Swaps';
+
+  @override
+  String get exchangesPropose => 'Propose';
+
+  @override
+  String get exchangesEmpty => 'No swaps in progress';
+
+  @override
+  String exchangesIncoming(Object count) {
+    return 'Requests received ($count)';
+  }
+
+  @override
+  String exchangesOutgoing(Object count) {
+    return 'Requests sent ($count)';
+  }
+
+  @override
+  String get exchangesHistory => 'History';
+
+  @override
+  String get exchangesStatusAccepted => 'Accepted';
+
+  @override
+  String get exchangesStatusRefused => 'Declined';
+
+  @override
+  String get exchangesStatusPending => 'Pending';
+
+  @override
+  String get exchangesRefuse => 'Decline';
+
+  @override
+  String get exchangesAccept => 'Accept';
+
+  @override
+  String get exchangesDefaultTaskName => 'Task';
+
+  @override
+  String get exchangesProposeDialogTitle => 'Propose a swap';
+
+  @override
+  String get exchangesLoadTasksError => 'Error loading tasks';
+
+  @override
+  String get exchangesNoTaskToday => 'No task to swap today.';
+
+  @override
+  String get exchangesMyTaskLabel => 'My task';
+
+  @override
+  String get exchangesLoadMembersError => 'Error loading members';
+
+  @override
+  String get exchangesNoSiblings => 'No other child in the family.';
+
+  @override
+  String get exchangesExchangeWithLabel => 'Swap with';
+
+  @override
+  String get exchangesCancel => 'Cancel';
+
+  @override
+  String get exchangesSubmitError => 'Unable to propose this swap.';
 }

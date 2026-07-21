@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/timeline_event.dart';
+import '../../shared/l10n/l10n_extensions.dart';
 import '../auth/auth_provider.dart';
 import 'history_provider.dart';
 
@@ -17,11 +18,11 @@ class HistoryScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mon historique')),
+      appBar: AppBar(title: Text(context.l10n.historyTitle)),
       body: timelineAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
-          child: Text('Impossible de charger : $e',
+          child: Text(context.l10n.historyLoadError(e),
               style: const TextStyle(color: Colors.red)),
         ),
         data: (events) {
@@ -32,11 +33,11 @@ class HistoryScreen extends ConsumerWidget {
                 children: [
                   const Text('📭', style: TextStyle(fontSize: 48)),
                   const SizedBox(height: 12),
-                  Text('Aucun accomplissement encore',
+                  Text(context.l10n.historyEmptyTitle,
                       style: theme.textTheme.titleMedium),
                   const SizedBox(height: 4),
                   Text(
-                    'Tes tâches, badges et récompenses\napparaîtront ici.',
+                    context.l10n.historyEmptyDescription,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: Colors.grey.shade500),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../shared/l10n/l10n_extensions.dart';
+import '../../shared/providers/locale_provider.dart';
 import '../../shared/widgets/api_error_widget.dart';
 import 'badges_provider.dart';
 
@@ -12,9 +14,10 @@ class BadgesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final badgesAsync = ref.watch(memberBadgesProvider);
     final theme = Theme.of(context);
+    final locale = ref.watch(appLocaleProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mes badges')),
+      appBar: AppBar(title: Text(context.l10n.badgesTitle)),
       body: badgesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ApiErrorWidget(
@@ -23,13 +26,13 @@ class BadgesScreen extends ConsumerWidget {
         ),
         data: (badges) {
           if (badges.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('🏅', style: TextStyle(fontSize: 64)),
-                  SizedBox(height: 8),
-                  Text('Accomplis des tâches pour gagner des badges !'),
+                  const Text('🏅', style: TextStyle(fontSize: 64)),
+                  const SizedBox(height: 8),
+                  Text(context.l10n.badgesEmpty),
                 ],
               ),
             );
@@ -66,7 +69,7 @@ class BadgesScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        DateFormat('dd/MM', 'fr_FR').format(mb.earnedAt),
+                        DateFormat('dd/MM', dateLocaleFor(locale)).format(mb.earnedAt),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

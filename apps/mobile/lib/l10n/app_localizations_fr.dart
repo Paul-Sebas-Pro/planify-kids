@@ -315,4 +315,34 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get planningWallEvening => 'Soir';
+
+  @override
+  String get historyTitle => 'Mon historique';
+
+  @override
+  String historyLoadError(Object error) {
+    return 'Impossible de charger : $error';
+  }
+
+  @override
+  String get historyEmptyTitle => 'Aucun accomplissement encore';
+
+  @override
+  String get historyEmptyDescription =>
+      'Tes tâches, badges et récompenses\napparaîtront ici.';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsMarkAllRead => 'Tout lire';
+
+  @override
+  String get notificationsEmpty => 'Aucune notification';
+
+  @override
+  String get badgesTitle => 'Mes badges';
+
+  @override
+  String get badgesEmpty => 'Accomplis des tâches pour gagner des badges !';
 }

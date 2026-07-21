@@ -92,5 +92,14 @@
   "planningWallTitle": "Planning famille",
   "planningWallEmpty": "Aucun planning généré pour le moment.",
   "planningWallNoon": "Midi",
-  "planningWallEvening": "Soir"
+  "planningWallEvening": "Soir",
+  "historyTitle": "Mon historique",
+  "historyLoadError": "Impossible de charger : {error}",
+  "historyEmptyTitle": "Aucun accomplissement encore",
+  "historyEmptyDescription": "Tes tâches, badges et récompenses\napparaîtront ici.",
+  "notificationsTitle": "Notifications",
+  "notificationsMarkAllRead": "Tout lire",
+  "notificationsEmpty": "Aucune notification",
+  "badgesTitle": "Mes badges",
+  "badgesEmpty": "Accomplis des tâches pour gagner des badges !"
 }

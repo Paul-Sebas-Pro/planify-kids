@@ -92,5 +92,14 @@
   "planningWallTitle": "Family schedule",
   "planningWallEmpty": "No schedule generated yet.",
   "planningWallNoon": "Noon",
-  "planningWallEvening": "Evening"
+  "planningWallEvening": "Evening",
+  "historyTitle": "My history",
+  "historyLoadError": "Unable to load: {error}",
+  "historyEmptyTitle": "No achievements yet",
+  "historyEmptyDescription": "Your tasks, badges and rewards\nwill appear here.",
+  "notificationsTitle": "Notifications",
+  "notificationsMarkAllRead": "Mark all read",
+  "notificationsEmpty": "No notifications",
+  "badgesTitle": "My badges",
+  "badgesEmpty": "Complete tasks to earn badges!"
 }

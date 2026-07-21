@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../shared/l10n/l10n_extensions.dart';
+import '../../shared/providers/locale_provider.dart';
 import '../../shared/providers/providers.dart';
 import '../../shared/widgets/api_error_widget.dart';
 import 'notifications_provider.dart';
@@ -13,17 +15,18 @@ class NotificationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notifAsync = ref.watch(notificationsProvider);
     final theme = Theme.of(context);
+    final locale = ref.watch(appLocaleProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(context.l10n.notificationsTitle),
         actions: [
           TextButton(
             onPressed: () async {
               await ref.read(apiClientProvider).markAllNotificationsRead();
               ref.invalidate(notificationsProvider);
             },
-            child: const Text('Tout lire'),
+            child: Text(context.l10n.notificationsMarkAllRead),
           ),
         ],
       ),
@@ -35,13 +38,13 @@ class NotificationsScreen extends ConsumerWidget {
         ),
         data: (notifs) {
           if (notifs.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('🔔', style: TextStyle(fontSize: 64)),
-                  SizedBox(height: 8),
-                  Text('Aucune notification'),
+                  const Text('🔔', style: TextStyle(fontSize: 64)),
+                  const SizedBox(height: 8),
+                  Text(context.l10n.notificationsEmpty),
                 ],
               ),
             );
@@ -76,7 +79,7 @@ class NotificationsScreen extends ConsumerWidget {
                   ),
                 ),
                 subtitle: Text(
-                  DateFormat('d MMM · HH:mm', 'fr_FR').format(n.createdAt),
+                  DateFormat('d MMM · HH:mm', dateLocaleFor(locale)).format(n.createdAt),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),

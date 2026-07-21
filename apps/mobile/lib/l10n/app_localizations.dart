@@ -660,6 +660,60 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Soir'**
   String get planningWallEvening;
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon historique'**
+  String get historyTitle;
+
+  /// No description provided for @historyLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger : {error}'**
+  String historyLoadError(Object error);
+
+  /// No description provided for @historyEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun accomplissement encore'**
+  String get historyEmptyTitle;
+
+  /// No description provided for @historyEmptyDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tes tâches, badges et récompenses\napparaîtront ici.'**
+  String get historyEmptyDescription;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsMarkAllRead.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout lire'**
+  String get notificationsMarkAllRead;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune notification'**
+  String get notificationsEmpty;
+
+  /// No description provided for @badgesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes badges'**
+  String get badgesTitle;
+
+  /// No description provided for @badgesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accomplis des tâches pour gagner des badges !'**
+  String get badgesEmpty;
 }
 
 class _AppLocalizationsDelegate

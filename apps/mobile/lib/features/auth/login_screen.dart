@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../shared/l10n/l10n_extensions.dart';
 import '../../shared/providers/providers.dart';
 import 'auth_provider.dart';
 
@@ -39,7 +40,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Planify Kids 🌟',
+                context.l10n.loginTitle,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
@@ -49,9 +50,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               const SizedBox(height: 32),
               TabBar(
                 controller: _tabs,
-                tabs: const [
-                  Tab(text: 'Parent', icon: Icon(Icons.shield_outlined)),
-                  Tab(text: 'Enfant', icon: Icon(Icons.child_care)),
+                tabs: [
+                  Tab(text: context.l10n.loginTabParent, icon: const Icon(Icons.shield_outlined)),
+                  Tab(text: context.l10n.loginTabChild, icon: const Icon(Icons.child_care)),
                 ],
               ),
               const SizedBox(height: 24),
@@ -109,8 +110,8 @@ class _ParentLoginFormState extends ConsumerState<_ParentLoginForm> {
           err.type == DioExceptionType.connectionError;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(isNetwork
-            ? 'Serveur inaccessible. Vérifie que l\'API est démarrée.'
-            : 'Email ou mot de passe incorrect.'),
+            ? context.l10n.loginNetworkError
+            : context.l10n.loginInvalidCredentials),
         backgroundColor: Theme.of(context).colorScheme.error,
       ));
     }
@@ -126,18 +127,18 @@ class _ParentLoginFormState extends ConsumerState<_ParentLoginForm> {
           TextFormField(
             controller: _emailCtrl,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              prefixIcon: Icon(Icons.email_outlined),
+            decoration: InputDecoration(
+              labelText: context.l10n.loginEmailLabel,
+              prefixIcon: const Icon(Icons.email_outlined),
             ),
-            validator: (v) => (v == null || v.isEmpty) ? 'Champ requis' : null,
+            validator: (v) => (v == null || v.isEmpty) ? context.l10n.loginFieldRequired : null,
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _passwordCtrl,
             obscureText: _obscure,
             decoration: InputDecoration(
-              labelText: 'Mot de passe',
+              labelText: context.l10n.loginPasswordLabel,
               prefixIcon: const Icon(Icons.lock_outlined),
               suffixIcon: IconButton(
                 icon:
@@ -145,7 +146,7 @@ class _ParentLoginFormState extends ConsumerState<_ParentLoginForm> {
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
-            validator: (v) => (v == null || v.isEmpty) ? 'Champ requis' : null,
+            validator: (v) => (v == null || v.isEmpty) ? context.l10n.loginFieldRequired : null,
           ),
           const SizedBox(height: 24),
           FilledButton(
@@ -156,7 +157,7 @@ class _ParentLoginFormState extends ConsumerState<_ParentLoginForm> {
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Se connecter'),
+                : Text(context.l10n.loginSubmit),
           ),
         ],
       ),
@@ -206,7 +207,7 @@ class _ChildLoginFormState extends ConsumerState<_ChildLoginForm> {
   Future<void> _loadChildren() async {
     final code = _codeCtrl.text.trim().toUpperCase();
     if (code.length != 6) {
-      setState(() => _codeError = 'Code de 6 caractères requis');
+      setState(() => _codeError = context.l10n.loginCodeRequired);
       return;
     }
     setState(() {
@@ -222,8 +223,9 @@ class _ChildLoginFormState extends ConsumerState<_ChildLoginForm> {
     } on DioException catch (e) {
       final is404 = e.response?.statusCode == 400 ||
           e.response?.statusCode == 401;
-      setState(() =>
-          _codeError = is404 ? 'Code famille invalide' : 'Erreur réseau');
+      setState(() => _codeError = is404
+          ? context.l10n.loginInvalidFamilyCode
+          : context.l10n.loginNetworkErrorGeneric);
     } finally {
       setState(() => _loadingCode = false);
     }
@@ -241,7 +243,7 @@ class _ChildLoginFormState extends ConsumerState<_ChildLoginForm> {
     final authState = ref.read(authProvider);
     if (authState.hasError) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('PIN incorrect.'),
+        content: Text(context.l10n.loginPinIncorrect),
         backgroundColor: Theme.of(context).colorScheme.error,
       ));
     }
@@ -261,7 +263,7 @@ class _ChildLoginFormState extends ConsumerState<_ChildLoginForm> {
                 maxLength: 6,
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
-                  labelText: 'Code famille',
+                  labelText: context.l10n.loginFamilyCodeLabel,
                   prefixIcon: const Icon(Icons.home_outlined),
                   errorText: _codeError,
                   counterText: '',
@@ -307,9 +309,9 @@ class _ChildLoginFormState extends ConsumerState<_ChildLoginForm> {
             maxLength: 4,
             obscureText: true,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'PIN (4 chiffres)',
-              prefixIcon: Icon(Icons.pin_outlined),
+            decoration: InputDecoration(
+              labelText: context.l10n.loginPinLabel,
+              prefixIcon: const Icon(Icons.pin_outlined),
               counterText: '',
             ),
             onChanged: (_) => setState(() {}),
@@ -327,7 +329,7 @@ class _ChildLoginFormState extends ConsumerState<_ChildLoginForm> {
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Se connecter'),
+                : Text(context.l10n.loginSubmit),
           ),
         ],
       ],

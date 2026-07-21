@@ -4,6 +4,7 @@ class SecureStorageService {
   static const _tokenKey = 'jwt_token';
   static const _userKey = 'current_user_json';
   static const _familyCodeKey = 'family_code';
+  static const _localeKey = 'locale';
 
   Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
@@ -29,6 +30,14 @@ class SecureStorageService {
 
   Future<void> saveFamilyCode(String code) async {
     await (await _prefs).setString(_familyCodeKey, code);
+  }
+
+  Future<String?> getLocale() async {
+    return (await _prefs).getString(_localeKey);
+  }
+
+  Future<void> saveLocale(String code) async {
+    await (await _prefs).setString(_localeKey, code);
   }
 
   /// Retire la session (token + utilisateur) en gardant le code famille

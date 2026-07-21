@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../shared/l10n/l10n_extensions.dart';
+import '../../shared/providers/locale_provider.dart';
 import '../auth/auth_provider.dart';
 import '../notifications/notifications_provider.dart';
 import 'profile_provider.dart';
@@ -23,13 +25,13 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mon profil'),
+        title: Text(context.l10n.profileTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () =>
                 ref.read(authProvider.notifier).logout(),
-            tooltip: 'Déconnexion',
+            tooltip: context.l10n.profileLogoutTooltip,
           ),
         ],
       ),
@@ -64,7 +66,7 @@ class ProfileScreen extends ConsumerWidget {
                       const Text('⭐', style: TextStyle(fontSize: 20)),
                       const SizedBox(width: 4),
                       Text(
-                        '${user?.points ?? 0} points',
+                        context.l10n.profilePoints(user?.points ?? 0),
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.bold,
@@ -83,8 +85,8 @@ class ProfileScreen extends ConsumerWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.history),
-              title: const Text('Mon historique'),
-              subtitle: const Text('Tâches, badges, récompenses'),
+              title: Text(context.l10n.profileHistoryTitle),
+              subtitle: Text(context.l10n.profileHistorySubtitle),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/history'),
             ),
@@ -96,8 +98,8 @@ class ProfileScreen extends ConsumerWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.calendar_view_week_outlined),
-              title: const Text('Planning famille'),
-              subtitle: const Text('Toutes les tâches de la semaine'),
+              title: Text(context.l10n.profilePlanningTitle),
+              subtitle: Text(context.l10n.profilePlanningSubtitle),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/planning-wall'),
             ),
@@ -114,11 +116,12 @@ class ProfileScreen extends ConsumerWidget {
                       child: const Icon(Icons.notifications_outlined),
                     )
                   : const Icon(Icons.notifications_outlined),
-              title: const Text('Notifications'),
+              title: Text(context.l10n.profileNotificationsTitle),
               subtitle: Text(
                 unreadCount > 0
-                    ? '$unreadCount non lue${unreadCount > 1 ? 's' : ''}'
-                    : 'Tout est lu',
+                    ? context.l10n.profileNotificationsUnread(
+                        unreadCount, unreadCount > 1 ? 's' : '')
+                    : context.l10n.profileNotificationsAllRead,
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/notifications'),
@@ -127,13 +130,37 @@ class ProfileScreen extends ConsumerWidget {
 
           const SizedBox(height: 16),
 
+          // Langue
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.language_outlined),
+              title: Text(context.l10n.profileLanguageTitle),
+              trailing: DropdownButton<String>(
+                value: ref.watch(appLocaleProvider).languageCode,
+                underline: const SizedBox.shrink(),
+                items: [
+                  DropdownMenuItem(
+                      value: 'fr', child: Text(context.l10n.profileLanguageFr)),
+                  DropdownMenuItem(
+                      value: 'en', child: Text(context.l10n.profileLanguageEn)),
+                ],
+                onChanged: (code) {
+                  if (code == null) return;
+                  ref.read(appLocaleProvider.notifier).setLocale(Locale(code));
+                },
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
           // Classement famille
-          Text('Classement famille', style: theme.textTheme.titleMedium),
+          Text(context.l10n.profileRankingTitle, style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           statsAsync.when(
             loading: () =>
                 const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('Impossible de charger : $e'),
+            error: (e, _) => Text(context.l10n.profileLoadError(e)),
             data: (stats) {
               final children = stats['children'] as List<dynamic>? ?? [];
               return Column(

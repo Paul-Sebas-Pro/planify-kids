@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/notifications/notifications_provider.dart';
+import '../shared/l10n/l10n_extensions.dart';
 
 class ShellScreen extends ConsumerWidget {
   final Widget child;
@@ -54,30 +55,30 @@ class ShellScreen extends ConsumerWidget {
           }
         },
         destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today),
-            label: 'Aujourd\'hui',
+          NavigationDestination(
+            icon: const Icon(Icons.today_outlined),
+            selectedIcon: const Icon(Icons.today),
+            label: context.l10n.shellNavToday,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.card_giftcard_outlined),
-            selectedIcon: Icon(Icons.card_giftcard),
-            label: 'Récompenses',
+          NavigationDestination(
+            icon: const Icon(Icons.card_giftcard_outlined),
+            selectedIcon: const Icon(Icons.card_giftcard),
+            label: context.l10n.shellNavRewards,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.swap_horiz_outlined),
-            selectedIcon: Icon(Icons.swap_horiz),
-            label: 'Échanges',
+          NavigationDestination(
+            icon: const Icon(Icons.swap_horiz_outlined),
+            selectedIcon: const Icon(Icons.swap_horiz),
+            label: context.l10n.shellNavExchanges,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.emoji_events_outlined),
-            selectedIcon: Icon(Icons.emoji_events),
-            label: 'Badges',
+          NavigationDestination(
+            icon: const Icon(Icons.emoji_events_outlined),
+            selectedIcon: const Icon(Icons.emoji_events),
+            label: context.l10n.shellNavBadges,
           ),
           NavigationDestination(
             icon: profileIcon(false),
             selectedIcon: profileIcon(true),
-            label: 'Profil',
+            label: context.l10n.shellNavProfile,
           ),
         ],
       ),

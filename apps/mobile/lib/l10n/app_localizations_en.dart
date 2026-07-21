@@ -279,4 +279,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get apiErrorRetry => 'Retry';
+
+  @override
+  String get rewardsTitle => 'Rewards';
+
+  @override
+  String get rewardsEmpty => 'No rewards available yet.';
+
+  @override
+  String get rewardsAvailable => 'Available';
+
+  @override
+  String get rewardsMyRequests => 'My requests';
+
+  @override
+  String get rewardsPending => 'Pending';
+
+  @override
+  String get rewardsClaim => 'Claim';
+
+  @override
+  String get rewardsApproved => 'Approved ✓';
+
+  @override
+  String get rewardsRejected => 'Rejected';
+
+  @override
+  String get planningWallTitle => 'Family schedule';
+
+  @override
+  String get planningWallEmpty => 'No schedule generated yet.';
+
+  @override
+  String get planningWallNoon => 'Noon';
+
+  @override
+  String get planningWallEvening => 'Evening';
 }

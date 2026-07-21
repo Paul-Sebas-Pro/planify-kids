@@ -80,5 +80,17 @@
   "apiErrorReconnect": "Sign in again",
   "apiErrorNetwork": "Server unreachable. Check your connection.",
   "apiErrorGeneric": "An error occurred.",
-  "apiErrorRetry": "Retry"
+  "apiErrorRetry": "Retry",
+  "rewardsTitle": "Rewards",
+  "rewardsEmpty": "No rewards available yet.",
+  "rewardsAvailable": "Available",
+  "rewardsMyRequests": "My requests",
+  "rewardsPending": "Pending",
+  "rewardsClaim": "Claim",
+  "rewardsApproved": "Approved ✓",
+  "rewardsRejected": "Rejected",
+  "planningWallTitle": "Family schedule",
+  "planningWallEmpty": "No schedule generated yet.",
+  "planningWallNoon": "Noon",
+  "planningWallEvening": "Evening"
 }

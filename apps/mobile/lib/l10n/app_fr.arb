@@ -80,5 +80,17 @@
   "apiErrorReconnect": "Se reconnecter",
   "apiErrorNetwork": "Serveur inaccessible. Vérifie ta connexion.",
   "apiErrorGeneric": "Une erreur est survenue.",
-  "apiErrorRetry": "Réessayer"
+  "apiErrorRetry": "Réessayer",
+  "rewardsTitle": "Récompenses",
+  "rewardsEmpty": "Aucune récompense disponible pour l'instant.",
+  "rewardsAvailable": "Disponibles",
+  "rewardsMyRequests": "Mes demandes",
+  "rewardsPending": "En attente",
+  "rewardsClaim": "Demander",
+  "rewardsApproved": "Approuvée ✓",
+  "rewardsRejected": "Refusée",
+  "planningWallTitle": "Planning famille",
+  "planningWallEmpty": "Aucun planning généré pour le moment.",
+  "planningWallNoon": "Midi",
+  "planningWallEvening": "Soir"
 }

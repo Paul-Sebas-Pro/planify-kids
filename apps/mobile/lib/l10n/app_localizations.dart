@@ -588,6 +588,78 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Réessayer'**
   String get apiErrorRetry;
+
+  /// No description provided for @rewardsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récompenses'**
+  String get rewardsTitle;
+
+  /// No description provided for @rewardsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune récompense disponible pour l\'instant.'**
+  String get rewardsEmpty;
+
+  /// No description provided for @rewardsAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Disponibles'**
+  String get rewardsAvailable;
+
+  /// No description provided for @rewardsMyRequests.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes demandes'**
+  String get rewardsMyRequests;
+
+  /// No description provided for @rewardsPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get rewardsPending;
+
+  /// No description provided for @rewardsClaim.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demander'**
+  String get rewardsClaim;
+
+  /// No description provided for @rewardsApproved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Approuvée ✓'**
+  String get rewardsApproved;
+
+  /// No description provided for @rewardsRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refusée'**
+  String get rewardsRejected;
+
+  /// No description provided for @planningWallTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Planning famille'**
+  String get planningWallTitle;
+
+  /// No description provided for @planningWallEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun planning généré pour le moment.'**
+  String get planningWallEmpty;
+
+  /// No description provided for @planningWallNoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Midi'**
+  String get planningWallNoon;
+
+  /// No description provided for @planningWallEvening.
+  ///
+  /// In fr, this message translates to:
+  /// **'Soir'**
+  String get planningWallEvening;
 }
 
 class _AppLocalizationsDelegate

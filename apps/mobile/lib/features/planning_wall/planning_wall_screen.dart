@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../../models/family_member.dart';
 import '../../models/schedule_item.dart';
+import '../../shared/l10n/l10n_extensions.dart';
+import '../../shared/providers/locale_provider.dart';
 import '../../shared/widgets/api_error_widget.dart';
 import 'planning_wall_provider.dart';
 
@@ -24,7 +26,7 @@ class PlanningWallScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Planning famille'),
+        title: Text(context.l10n.planningWallTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -43,13 +45,13 @@ class PlanningWallScreen extends ConsumerWidget {
         ),
         data: (items) {
           if (items.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('📅', style: TextStyle(fontSize: 64)),
-                  SizedBox(height: 12),
-                  Text('Aucun planning généré pour le moment.'),
+                  const Text('📅', style: TextStyle(fontSize: 64)),
+                  const SizedBox(height: 12),
+                  Text(context.l10n.planningWallEmpty),
                 ],
               ),
             );
@@ -91,7 +93,8 @@ class _DaySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final noon = items.where((i) => i.isNoon).toList();
     final evening = items.where((i) => !i.isNoon).toList();
-    final label = DateFormat('EEEE d MMMM', 'fr_FR').format(date);
+    final locale = ProviderScope.containerOf(context).read(appLocaleProvider);
+    final label = DateFormat('EEEE d MMMM', dateLocaleFor(locale)).format(date);
 
     return Card(
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 6),
@@ -106,12 +109,12 @@ class _DaySection extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             if (noon.isNotEmpty) ...[
-              _SlotLabel(label: 'Midi', icon: Icons.wb_sunny_outlined, color: _noonColor),
+              _SlotLabel(label: context.l10n.planningWallNoon, icon: Icons.wb_sunny_outlined, color: _noonColor),
               ...noon.map((i) => _MemberTaskRow(item: i, member: membersById[i.assignedToMemberId])),
             ],
             if (evening.isNotEmpty) ...[
               if (noon.isNotEmpty) const SizedBox(height: 6),
-              _SlotLabel(label: 'Soir', icon: Icons.nights_stay_outlined, color: _eveningColor),
+              _SlotLabel(label: context.l10n.planningWallEvening, icon: Icons.nights_stay_outlined, color: _eveningColor),
               ...evening.map((i) => _MemberTaskRow(item: i, member: membersById[i.assignedToMemberId])),
             ],
           ],

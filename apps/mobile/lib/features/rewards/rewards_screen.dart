@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/reward.dart';
+import '../../shared/l10n/l10n_extensions.dart';
 import '../../shared/widgets/api_error_widget.dart';
 import '../auth/auth_provider.dart';
 import 'rewards_provider.dart';
@@ -18,7 +19,7 @@ class RewardsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Récompenses'),
+        title: Text(context.l10n.rewardsTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -37,13 +38,13 @@ class RewardsScreen extends ConsumerWidget {
         ),
         data: (rewards) {
           if (rewards.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('🎁', style: TextStyle(fontSize: 64)),
-                  SizedBox(height: 8),
-                  Text('Aucune récompense disponible pour l\'instant.'),
+                  const Text('🎁', style: TextStyle(fontSize: 64)),
+                  const SizedBox(height: 8),
+                  Text(context.l10n.rewardsEmpty),
                 ],
               ),
             );
@@ -53,7 +54,7 @@ class RewardsScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                'Disponibles',
+                context.l10n.rewardsAvailable,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -82,7 +83,7 @@ class RewardsScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Mes demandes',
+                        context.l10n.rewardsMyRequests,
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -141,13 +142,13 @@ class _RewardCard extends StatelessWidget {
         ),
         trailing: hasPending
             ? Chip(
-                label: const Text('En attente'),
+                label: Text(context.l10n.rewardsPending),
                 backgroundColor: Colors.orange.withValues(alpha: 0.15),
                 labelStyle: const TextStyle(color: Colors.orange, fontSize: 11),
               )
             : FilledButton(
                 onPressed: canAfford ? onClaim : null,
-                child: const Text('Demander'),
+                child: Text(context.l10n.rewardsClaim),
               ),
       ),
     );
@@ -163,9 +164,9 @@ class _ClaimTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     final (statusColor, statusLabel) = switch (claim.status) {
-      'APPROVED' => (Colors.green, 'Approuvée ✓'),
-      'REJECTED' => (theme.colorScheme.error, 'Refusée'),
-      _ => (Colors.orange, 'En attente'),
+      'APPROVED' => (Colors.green, context.l10n.rewardsApproved),
+      'REJECTED' => (theme.colorScheme.error, context.l10n.rewardsRejected),
+      _ => (Colors.orange, context.l10n.rewardsPending),
     };
 
     return Card(

@@ -1,22 +1,25 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import type { FamilyChallenge, CreateChallengeDto } from "@planify-kids/types";
 import { challengesApi } from "@/services/challenges.api";
+import { formatDate } from "@/lib/formatDate";
 
-function statusLabel(status: FamilyChallenge["status"]) {
-  if (status === "COMPLETED") return { text: "Terminé ✅", cls: "bg-emerald-100 text-emerald-700" };
-  if (status === "FAILED") return { text: "Échoué ❌", cls: "bg-red-100 text-red-700" };
-  return { text: "En cours", cls: "bg-blue-100 text-blue-700" };
+function statusKey(status: FamilyChallenge["status"]) {
+  if (status === "COMPLETED") return { key: "challengesPage.statusCompleted", cls: "bg-emerald-100 text-emerald-700" };
+  if (status === "FAILED") return { key: "challengesPage.statusFailed", cls: "bg-red-100 text-red-700" };
+  return { key: "challengesPage.statusActive", cls: "bg-blue-100 text-blue-700" };
 }
 
 function ProgressBar({ current, target }: { current: number; target: number }) {
+  const { t } = useTranslation();
   const pct = Math.min(100, Math.round((current / target) * 100));
   return (
     <div className="mt-3">
       <div className="flex justify-between text-xs text-gray-500 mb-1">
-        <span>{current} pts gagnés</span>
-        <span>objectif {target} pts</span>
+        <span>{t("challengesPage.pointsEarned", { count: current })}</span>
+        <span>{t("challengesPage.targetPoints", { count: target })}</span>
       </div>
       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
@@ -24,7 +27,7 @@ function ProgressBar({ current, target }: { current: number; target: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="text-xs text-gray-400 mt-1">{pct}% atteint</p>
+      <p className="text-xs text-gray-400 mt-1">{t("challengesPage.percentReached", { percent: pct })}</p>
     </div>
   );
 }
@@ -36,9 +39,10 @@ function ChallengeCard({
   challenge: FamilyChallenge;
   onFail: (id: string) => void;
 }) {
-  const { text, cls } = statusLabel(challenge.status);
-  const start = new Date(challenge.startDate).toLocaleDateString("fr-FR");
-  const end = new Date(challenge.endDate).toLocaleDateString("fr-FR");
+  const { t } = useTranslation();
+  const { key, cls } = statusKey(challenge.status);
+  const start = formatDate(new Date(challenge.startDate));
+  const end = formatDate(new Date(challenge.endDate));
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -49,14 +53,14 @@ function ChallengeCard({
               {challenge.title}
             </h3>
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cls}`}>
-              {text}
+              {t(key)}
             </span>
           </div>
           {challenge.description && (
             <p className="text-sm text-gray-500 mt-1">{challenge.description}</p>
           )}
           <p className="text-xs text-gray-400 mt-1">
-            {start} → {end} · bonus {challenge.bonusPoints} pts
+            {start} → {end} · {t("challengesPage.bonusSummary", { count: challenge.bonusPoints })}
           </p>
         </div>
         {challenge.status === "ACTIVE" && (
@@ -64,7 +68,7 @@ function ChallengeCard({
             onClick={() => onFail(challenge.id)}
             className="text-xs text-red-400 hover:text-red-600 transition-colors shrink-0"
           >
-            Abandonner
+            {t("challengesPage.abandon")}
           </button>
         )}
       </div>
@@ -74,6 +78,7 @@ function ChallengeCard({
 }
 
 export function ChallengesPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
 
@@ -107,17 +112,17 @@ export function ChallengesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-title text-2xl font-bold text-gray-800">
-            Challenges famille
+            {t("challengesPage.title")}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Objectifs collectifs avec bonus automatique
+            {t("challengesPage.subtitle")}
           </p>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-emerald-600 transition-colors"
         >
-          + Nouveau
+          {t("challengesPage.new")}
         </button>
       </div>
 
@@ -126,20 +131,20 @@ export function ChallengesPage() {
           onSubmit={handleSubmit((data) => createMutation.mutate(data))}
           className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4"
         >
-          <h2 className="font-title font-semibold text-gray-700">Nouveau challenge</h2>
+          <h2 className="font-title font-semibold text-gray-700">{t("challengesPage.newChallengeTitle")}</h2>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Titre</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t("challengesPage.titleLabel")}</label>
             <input
               {...register("title", { required: true })}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              placeholder="100 pts cette semaine !"
+              placeholder={t("challengesPage.titlePlaceholder")}
             />
-            {errors.title && <p className="text-xs text-red-500 mt-1">Champ requis</p>}
+            {errors.title && <p className="text-xs text-red-500 mt-1">{t("challengesPage.titleRequired")}</p>}
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Description (optionnelle)</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t("challengesPage.descriptionLabel")}</label>
             <input
               {...register("description")}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
@@ -148,7 +153,7 @@ export function ChallengesPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Objectif (pts)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t("challengesPage.targetLabel")}</label>
               <input
                 type="number"
                 {...register("targetPoints", { required: true, valueAsNumber: true, min: 1 })}
@@ -157,7 +162,7 @@ export function ChallengesPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Bonus (pts)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t("challengesPage.bonusLabel")}</label>
               <input
                 type="number"
                 {...register("bonusPoints", { required: true, valueAsNumber: true, min: 1 })}
@@ -169,7 +174,7 @@ export function ChallengesPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Début</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t("challengesPage.startLabel")}</label>
               <input
                 type="date"
                 {...register("startDate", { required: true })}
@@ -177,7 +182,7 @@ export function ChallengesPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Fin</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t("challengesPage.endLabel")}</label>
               <input
                 type="date"
                 {...register("endDate", { required: true })}
@@ -198,14 +203,14 @@ export function ChallengesPage() {
               disabled={createMutation.isPending}
               className="flex-1 bg-emerald-500 text-white text-sm font-semibold py-2 rounded-xl hover:bg-emerald-600 disabled:opacity-60 transition-colors"
             >
-              {createMutation.isPending ? "Création..." : "Créer le challenge"}
+              {createMutation.isPending ? t("challengesPage.creating") : t("challengesPage.createChallenge")}
             </button>
             <button
               type="button"
               onClick={() => { setShowForm(false); reset(); }}
               className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
             >
-              Annuler
+              {t("common.cancel")}
             </button>
           </div>
         </form>
@@ -226,14 +231,14 @@ export function ChallengesPage() {
       {!isLoading && active.length === 0 && !showForm && (
         <div className="text-center py-16">
           <p className="text-4xl mb-3">🏆</p>
-          <p className="font-title text-lg font-semibold text-gray-700">Aucun challenge actif</p>
-          <p className="text-sm text-gray-500 mt-1">Créez un objectif collectif pour motiver la famille !</p>
+          <p className="font-title text-lg font-semibold text-gray-700">{t("challengesPage.emptyTitle")}</p>
+          <p className="text-sm text-gray-500 mt-1">{t("challengesPage.emptyDescription")}</p>
         </div>
       )}
 
       {active.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">En cours</h2>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("challengesPage.active")}</h2>
           {active.map((c) => (
             <ChallengeCard key={c.id} challenge={c} onFail={(id) => failMutation.mutate(id)} />
           ))}
@@ -242,7 +247,7 @@ export function ChallengesPage() {
 
       {past.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Historique</h2>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("challengesPage.history")}</h2>
           {past.map((c) => (
             <ChallengeCard key={c.id} challenge={c} onFail={() => {}} />
           ))}

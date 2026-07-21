@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { notificationsApi } from "@/services/notifications.api";
 import type { Notification } from "@planify-kids/types";
+import { formatDateTime } from "@/lib/formatDate";
 
 export function NotificationBell() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
@@ -45,7 +48,7 @@ export function NotificationBell() {
       <button
         onClick={() => setOpen((v) => !v)}
         className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors"
-        aria-label="Notifications"
+        aria-label={t("notificationBell.title")}
       >
         <svg
           className="w-5 h-5 text-gray-600"
@@ -70,13 +73,13 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-100 rounded-2xl shadow-lg z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <span className="font-semibold text-sm text-gray-700">Notifications</span>
+            <span className="font-semibold text-sm text-gray-700">{t("notificationBell.title")}</span>
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllRead.mutate()}
                 className="text-xs text-primary hover:underline"
               >
-                Tout marquer lu
+                {t("notificationBell.markAllRead")}
               </button>
             )}
           </div>
@@ -84,7 +87,7 @@ export function NotificationBell() {
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-8">
-                Aucune notification
+                {t("notificationBell.empty")}
               </p>
             ) : (
               notifications.map((n) => (
@@ -97,7 +100,7 @@ export function NotificationBell() {
                 >
                   <p className="text-sm text-gray-800 leading-snug">{n.message}</p>
                   <p className="text-[11px] text-gray-400 mt-1">
-                    {new Date(n.createdAt).toLocaleString("fr-FR", {
+                    {formatDateTime(new Date(n.createdAt), {
                       day: "numeric",
                       month: "short",
                       hour: "2-digit",

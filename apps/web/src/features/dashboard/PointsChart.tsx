@@ -1,5 +1,7 @@
+import { useTranslation } from "react-i18next";
 import type { GamificationEvent } from "@planify-kids/types";
 import type { ChildStats } from "@planify-kids/types";
+import { formatDate } from "@/lib/formatDate";
 
 interface Props {
   events: GamificationEvent[];
@@ -7,7 +9,7 @@ interface Props {
 }
 
 function getDayLabel(date: Date) {
-  return date.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
+  return formatDate(date, { weekday: "short", day: "numeric" });
 }
 
 function isoDay(d: Date) {
@@ -15,6 +17,7 @@ function isoDay(d: Date) {
 }
 
 export function PointsChart({ events, children }: Props) {
+  const { t } = useTranslation();
   const W = 560;
   const H = 160;
   const PAD = { top: 10, right: 16, bottom: 28, left: 32 };
@@ -73,12 +76,12 @@ export function PointsChart({ events, children }: Props) {
   return (
     <div className="bg-white rounded-card shadow-sm p-5">
       <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-        Points gagnés — 7 derniers jours
+        {t("dashboardPage.chartTitle")}
       </h3>
 
       {!hasData ? (
         <p className="text-sm text-gray-400 text-center py-6">
-          Aucune donnée encore — les points apparaîtront ici après les premières tâches.
+          {t("dashboardPage.chartEmpty")}
         </p>
       ) : (
         <>

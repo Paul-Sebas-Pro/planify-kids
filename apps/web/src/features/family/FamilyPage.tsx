@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { FamilyMember, Role } from "@planify-kids/types";
 import { membersApi } from "@/services/api";
 import { useAuthStore } from "@/store/auth.store";
@@ -28,6 +29,7 @@ const COLORS = [
 const AVATARS = ["🦊", "🐼", "🦁", "🐸", "🐧", "🦄", "🐻", "🐯"];
 
 export function FamilyPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { member: currentMember } = useAuthStore();
   const [editTarget, setEditTarget] = useState<FamilyMember | null>(null);
@@ -137,12 +139,12 @@ export function FamilyPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl font-title font-bold text-gray-800">Famille</h2>
+        <h2 className="text-2xl font-title font-bold text-gray-800">{t("familyPage.title")}</h2>
         <button
           onClick={openCreate}
           className="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-(--radius-button) hover:bg-primary/90 transition-colors"
         >
-          Ajouter un membre
+          {t("familyPage.addMember")}
         </button>
       </div>
 
@@ -157,9 +159,9 @@ export function FamilyPage() {
       ) : members.length === 0 ? (
         <EmptyState
           icon="👨‍👩‍👧"
-          title="Aucun membre"
-          description="Ajoutez les membres de votre famille pour leur assigner des tâches."
-          action={{ label: "Ajouter un membre", onClick: openCreate }}
+          title={t("familyPage.emptyTitle")}
+          description={t("familyPage.emptyDescription")}
+          action={{ label: t("familyPage.addMember"), onClick: openCreate }}
         />
       ) : (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -181,7 +183,7 @@ export function FamilyPage() {
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{m.name}</p>
                 <p className="text-xs text-gray-400">
-                  {m.role === "PARENT" ? "Parent" : "Enfant"} &middot;{" "}
+                  {m.role === "PARENT" ? t("familyPage.parent") : t("familyPage.child")} &middot;{" "}
                   {m.points} pts
                 </p>
               </div>
@@ -190,7 +192,7 @@ export function FamilyPage() {
                   onClick={() => openEdit(m)}
                   className="text-xs text-secondary hover:underline"
                 >
-                  Modifier
+                  {t("common.edit")}
                 </button>
                 {m.role === "CHILD" && (
                   <>
@@ -198,13 +200,13 @@ export function FamilyPage() {
                       onClick={() => setPinTarget(m)}
                       className="text-xs text-gray-400 hover:underline"
                     >
-                      PIN
+                      {t("familyPage.pin")}
                     </button>
                     <button
                       onClick={() => setTimelineTarget(m)}
                       className="text-xs text-blue-400 hover:underline"
                     >
-                      Historique
+                      {t("familyPage.history")}
                     </button>
                   </>
                 )}
@@ -213,7 +215,7 @@ export function FamilyPage() {
                     onClick={() => deleteMutation.mutate(m.id)}
                     className="text-xs text-danger hover:underline"
                   >
-                    Supprimer
+                    {t("common.delete")}
                   </button>
                 )}
               </div>
@@ -226,13 +228,13 @@ export function FamilyPage() {
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-card p-6 w-full max-w-sm shadow-xl">
             <h3 className="font-title font-bold text-lg mb-4">
-              {editTarget ? "Modifier le membre" : "Nouveau membre"}
+              {editTarget ? t("familyPage.editMemberTitle") : t("familyPage.newMemberTitle")}
             </h3>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Nom
+                  {t("familyPage.nameLabel")}
                 </label>
                 <input
                   type="text"
@@ -243,20 +245,20 @@ export function FamilyPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Rôle
+                  {t("familyPage.roleLabel")}
                 </label>
                 <select
                   {...register("role")}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 >
-                  <option value="CHILD">Enfant</option>
-                  <option value="PARENT">Parent</option>
+                  <option value="CHILD">{t("familyPage.child")}</option>
+                  <option value="PARENT">{t("familyPage.parent")}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Avatar
+                  {t("familyPage.avatarLabel")}
                 </label>
                 <div className="flex gap-2 flex-wrap">
                   {AVATARS.map((emoji) => (
@@ -285,7 +287,7 @@ export function FamilyPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Couleur
+                  {t("familyPage.colorLabel")}
                 </label>
                 <div className="flex gap-2">
                   {COLORS.map((c) => (
@@ -306,7 +308,7 @@ export function FamilyPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Date de naissance
+                  {t("familyPage.birthDateLabel")}
                 </label>
                 <input
                   type="date"
@@ -323,14 +325,14 @@ export function FamilyPage() {
                   onClick={closeForm}
                   className="flex-1 border border-gray-200 text-sm font-semibold py-2 rounded-(--radius-button) hover:bg-gray-50 transition-colors"
                 >
-                  Annuler
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
                   className="flex-1 bg-primary text-white text-sm font-semibold py-2 rounded-(--radius-button) hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
-                  {isSaving ? "Enregistrement..." : "Enregistrer"}
+                  {isSaving ? t("common.saving") : t("common.save")}
                 </button>
               </div>
             </form>
@@ -367,6 +369,7 @@ function PinModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -380,7 +383,7 @@ function PinModal({
     e.preventDefault();
     setError(null);
     if (!/^\d{4}$/.test(pin)) {
-      setError("Le PIN doit être exactement 4 chiffres");
+      setError(t("familyPage.pinInvalid"));
       return;
     }
     mutation.mutate(pin);
@@ -389,13 +392,13 @@ function PinModal({
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="bg-white rounded-card p-6 w-full max-w-xs shadow-xl">
-        <h3 className="font-title font-bold text-lg mb-1">Modifier le PIN</h3>
+        <h3 className="font-title font-bold text-lg mb-1">{t("familyPage.editPinTitle")}</h3>
         <p className="text-sm text-gray-400 mb-4">{member.name}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Nouveau PIN (4 chiffres)
+              {t("familyPage.newPinLabel")}
             </label>
             <input
               type="password"
@@ -416,14 +419,14 @@ function PinModal({
               onClick={onClose}
               className="flex-1 border border-gray-200 text-sm font-semibold py-2 rounded-(--radius-button) hover:bg-gray-50 transition-colors"
             >
-              Annuler
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               disabled={mutation.isPending}
               className="flex-1 bg-primary text-white text-sm font-semibold py-2 rounded-(--radius-button) hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {mutation.isPending ? "Enregistrement..." : "Enregistrer"}
+              {mutation.isPending ? t("common.saving") : t("common.save")}
             </button>
           </div>
         </form>

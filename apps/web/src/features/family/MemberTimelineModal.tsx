@@ -1,19 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import type { FamilyMember, TimelineEvent } from "@planify-kids/types";
 import { membersApi } from "@/services/api";
+import { formatDate } from "@/lib/formatDate";
 
 const EVENT_CONFIG: Record<
   TimelineEvent["type"],
-  { icon: string; label: string; pointsColor: string }
+  { icon: string; labelKey: string; pointsColor: string }
 > = {
-  TASK_COMPLETED: { icon: "✅", label: "Tâche terminée", pointsColor: "text-emerald-600" },
-  BADGE_EARNED: { icon: "🏅", label: "Badge obtenu", pointsColor: "text-purple-600" },
-  REWARD_CLAIMED: { icon: "🎁", label: "Récompense", pointsColor: "text-red-500" },
+  TASK_COMPLETED: { icon: "✅", labelKey: "memberTimeline.eventTaskCompleted", pointsColor: "text-emerald-600" },
+  BADGE_EARNED: { icon: "🏅", labelKey: "memberTimeline.eventBadgeEarned", pointsColor: "text-purple-600" },
+  REWARD_CLAIMED: { icon: "🎁", labelKey: "memberTimeline.eventRewardClaimed", pointsColor: "text-red-500" },
 };
 
 function EventRow({ event }: { event: TimelineEvent }) {
+  const { t } = useTranslation();
   const cfg = EVENT_CONFIG[event.type];
-  const date = new Date(event.date).toLocaleDateString("fr-FR", {
+  const date = formatDate(new Date(event.date), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -26,7 +29,7 @@ function EventRow({ event }: { event: TimelineEvent }) {
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-          {cfg.label}
+          {t(cfg.labelKey)}
         </p>
         <p className="text-sm font-semibold text-gray-800 mt-0.5 truncate">
           {event.title}
@@ -54,6 +57,7 @@ export function MemberTimelineModal({
   member: FamilyMember;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["timeline", member.id],
     queryFn: () => membersApi.timeline(member.id).then((r) => r.data),
@@ -67,7 +71,7 @@ export function MemberTimelineModal({
             {member.avatar && <span className="text-2xl">{member.avatar}</span>}
             <div>
               <h2 className="font-title font-bold text-gray-800">{member.name}</h2>
-              <p className="text-xs text-gray-400">Historique des accomplissements</p>
+              <p className="text-xs text-gray-400">{t("memberTimeline.subtitle")}</p>
             </div>
           </div>
           <button
@@ -97,8 +101,8 @@ export function MemberTimelineModal({
           {!isLoading && (!data || data.length === 0) && (
             <div className="text-center py-12">
               <p className="text-3xl mb-2">📭</p>
-              <p className="text-sm font-semibold text-gray-600">Aucun accomplissement encore</p>
-              <p className="text-xs text-gray-400 mt-1">Les tâches terminées, badges et récompenses apparaîtront ici.</p>
+              <p className="text-sm font-semibold text-gray-600">{t("memberTimeline.emptyTitle")}</p>
+              <p className="text-xs text-gray-400 mt-1">{t("memberTimeline.emptyDescription")}</p>
             </div>
           )}
 
@@ -113,7 +117,7 @@ export function MemberTimelineModal({
 
         <div className="px-5 pb-4 pt-3 border-t border-gray-50 shrink-0">
           <p className="text-xs text-gray-400 text-center">
-            {data ? `${data.length} événement${data.length > 1 ? "s" : ""}` : ""}
+            {data ? t("memberTimeline.eventCount", { count: data.length }) : ""}
           </p>
         </div>
       </div>

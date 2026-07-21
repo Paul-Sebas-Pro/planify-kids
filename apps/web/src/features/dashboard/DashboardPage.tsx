@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store/auth.store";
 import { familyApi, tasksApi } from "@/services/api";
 import { logsApi } from "@/services/logs.api";
@@ -6,6 +7,7 @@ import { PointsChart } from "./PointsChart";
 import type { ChildStats } from "@planify-kids/types";
 
 export function DashboardPage() {
+  const { t } = useTranslation();
   const { family } = useAuthStore();
 
   const { data: statsData, isLoading: statsLoading } = useQuery({
@@ -29,20 +31,20 @@ export function DashboardPage() {
   return (
     <div>
       <h2 className="text-2xl font-title font-bold text-gray-800 mb-1">
-        Tableau de bord
+        {t("dashboardPage.title")}
       </h2>
       {family && (
-        <p className="text-sm text-gray-400 mb-8">Famille {family.name}</p>
+        <p className="text-sm text-gray-400 mb-8">{t("dashboardPage.familyName", { name: family.name })}</p>
       )}
 
       <div className="grid grid-cols-3 gap-4 mb-10">
-        <StatCard label="Tâches actives" value={tasks.length} />
+        <StatCard label={t("dashboardPage.activeTasks")} value={tasks.length} />
         <StatCard
-          label="Points famille"
+          label={t("dashboardPage.familyPoints")}
           value={stats?.summary.totalPoints ?? 0}
         />
         <StatCard
-          label="Badges gagnés"
+          label={t("dashboardPage.badgesEarned")}
           value={stats?.summary.totalBadges ?? 0}
         />
       </div>
@@ -50,7 +52,7 @@ export function DashboardPage() {
       {!statsLoading && stats && stats.children.length > 0 && (
         <section>
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Classement
+            {t("dashboardPage.ranking")}
           </h3>
           <div className="space-y-3">
             {stats.children.map((child, index) => (
@@ -62,7 +64,7 @@ export function DashboardPage() {
 
       {!statsLoading && stats?.children.length === 0 && (
         <p className="text-sm text-gray-400">
-          Ajoutez des enfants pour voir le classement.
+          {t("dashboardPage.noChildrenHint")}
         </p>
       )}
 
@@ -76,6 +78,7 @@ export function DashboardPage() {
 }
 
 function ChildRankCard({ child, rank }: { child: ChildStats; rank: number }) {
+  const { t } = useTranslation();
   const RANK_STYLE: Record<number, string> = {
     1: "text-yellow-500",
     2: "text-gray-400",
@@ -105,9 +108,7 @@ function ChildRankCard({ child, rank }: { child: ChildStats; rank: number }) {
           {child.name}
         </p>
         <p className="text-xs text-gray-400 mt-0.5">
-          {child._count.assignments} tâche
-          {child._count.assignments !== 1 ? "s" : ""} complétée
-          {child._count.assignments !== 1 ? "s" : ""}
+          {t("dashboardPage.tasksCompleted", { count: child._count.assignments })}
         </p>
         {child.badges.length > 0 && (
           <div className="flex items-center gap-1 mt-1.5">

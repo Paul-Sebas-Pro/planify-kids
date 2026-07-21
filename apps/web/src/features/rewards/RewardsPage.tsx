@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import type { Reward, RewardClaim } from "@planify-kids/types";
 import { rewardsApi } from "@/services/rewards.api";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -18,10 +19,10 @@ const REWARD_ICONS = [
   "🍕", "🧸", "🎨", "🚲", "🏊", "🎢",
 ];
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "En attente",
-  APPROVED: "Approuvée",
-  REJECTED: "Refusée",
+const STATUS_KEYS: Record<string, string> = {
+  PENDING: "rewardsPage.statusPending",
+  APPROVED: "rewardsPage.statusApproved",
+  REJECTED: "rewardsPage.statusRejected",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -31,6 +32,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function RewardsPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Reward | null>(null);
@@ -136,13 +138,13 @@ export function RewardsPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-title font-bold text-gray-800">
-          Récompenses
+          {t("rewardsPage.title")}
         </h2>
         <button
           onClick={openCreate}
           className="bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-4 py-2 rounded-button transition-colors"
         >
-          Nouvelle récompense
+          {t("rewardsPage.newReward")}
         </button>
       </div>
 
@@ -155,22 +157,22 @@ export function RewardsPage() {
       {showForm && (
         <div className="bg-white rounded-card shadow-sm p-6">
           <h3 className="font-title text-lg font-bold text-gray-900 mb-4">
-            {editing ? "Modifier la récompense" : "Nouvelle récompense"}
+            {editing ? t("rewardsPage.editRewardTitle") : t("rewardsPage.newRewardTitle")}
           </h3>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Nom
+                {t("rewardsPage.nameLabel")}
               </label>
               <input
                 {...register("name", { required: true })}
-                placeholder="ex. Sortie cinéma"
+                placeholder={t("rewardsPage.namePlaceholder")}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Icône
+                {t("rewardsPage.iconLabel")}
               </label>
               <IconPicker
                 value={selectedIcon}
@@ -180,7 +182,7 @@ export function RewardsPage() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Coût (points)
+                {t("rewardsPage.costLabel")}
               </label>
               <input
                 type="number"
@@ -195,7 +197,7 @@ export function RewardsPage() {
                 disabled={createMutation.isPending || updateMutation.isPending}
                 className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white px-4 py-2 rounded-button text-sm font-semibold transition-colors"
               >
-                {editing ? "Enregistrer" : "Créer"}
+                {editing ? t("common.save") : t("rewardsPage.create")}
               </button>
               <button
                 type="button"
@@ -206,7 +208,7 @@ export function RewardsPage() {
                 }}
                 className="border border-gray-200 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-button text-sm transition-colors"
               >
-                Annuler
+                {t("common.cancel")}
               </button>
             </div>
           </form>
@@ -234,13 +236,13 @@ export function RewardsPage() {
                   onClick={() => openEdit(reward)}
                   className="text-xs text-secondary hover:underline"
                 >
-                  Modifier
+                  {t("common.edit")}
                 </button>
                 <button
                   onClick={() => deleteMutation.mutate(reward.id)}
                   className="text-xs text-danger hover:underline"
                 >
-                  Supprimer
+                  {t("common.delete")}
                 </button>
               </div>
             </div>
@@ -250,9 +252,9 @@ export function RewardsPage() {
           <div className="col-span-full">
             <EmptyState
               icon="🎁"
-              title="Aucune récompense"
-              description="Créez des récompenses que les enfants pourront réclamer avec leurs points."
-              action={{ label: "Créer une récompense", onClick: openCreate }}
+              title={t("rewardsPage.emptyTitle")}
+              description={t("rewardsPage.emptyDescription")}
+              action={{ label: t("rewardsPage.emptyAction"), onClick: openCreate }}
             />
           </div>
         )}
@@ -261,10 +263,10 @@ export function RewardsPage() {
       {claims.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Demandes
+            {t("rewardsPage.claimsTitle")}
             {pendingClaims.length > 0 && (
               <span className="ml-2 bg-accent/10 text-accent text-xs font-medium px-2 py-0.5 rounded-full">
-                {pendingClaims.length} en attente
+                {t("rewardsPage.pendingCount", { count: pendingClaims.length })}
               </span>
             )}
           </h3>
@@ -289,7 +291,7 @@ export function RewardsPage() {
                   <span
                     className={`text-xs font-medium px-2 py-1 rounded-full ${STATUS_COLORS[claim.status] ?? ""}`}
                   >
-                    {STATUS_LABELS[claim.status] ?? claim.status}
+                    {STATUS_KEYS[claim.status] ? t(STATUS_KEYS[claim.status]) : claim.status}
                   </span>
                   {claim.status === "PENDING" && (
                     <div className="flex gap-2">
@@ -302,7 +304,7 @@ export function RewardsPage() {
                         }
                         className="bg-primary hover:bg-primary/90 text-white text-xs px-3 py-1.5 rounded-lg transition-colors"
                       >
-                        Approuver
+                        {t("rewardsPage.approve")}
                       </button>
                       <button
                         onClick={() =>
@@ -313,7 +315,7 @@ export function RewardsPage() {
                         }
                         className="bg-danger/10 hover:bg-danger/20 text-danger text-xs px-3 py-1.5 rounded-lg transition-colors"
                       >
-                        Refuser
+                        {t("rewardsPage.reject")}
                       </button>
                     </div>
                   )}

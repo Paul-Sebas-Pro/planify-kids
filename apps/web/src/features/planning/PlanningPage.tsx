@@ -1,28 +1,30 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { CalendarEntry, ScheduleDetail, ScheduleItemDetail, TaskExchange } from "@planify-kids/types";
 import { SLOT_LABELS } from "@planify-kids/types";
 import { planningApi, exchangesApi } from "@/services/planning.api";
 import { membersApi } from "@/services/api";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SkeletonList } from "@/components/shared/Skeleton";
+import { formatDate } from "@/lib/formatDate";
 
 interface GenerateFormValues {
   startDate: string;
   endDate: string;
 }
 
-const STATUS_LABELS = {
-  PENDING: "En attente",
-  COMPLETED: "Fait",
-  SKIPPED: "Ignoré",
+const STATUS_KEYS = {
+  PENDING: "common.pending",
+  COMPLETED: "common.completed",
+  SKIPPED: "common.skipped",
 } as const;
 
-const EXCHANGE_STATUS_LABELS: Record<string, string> = {
-  PENDING: "En attente",
-  ACCEPTED: "Accepté",
-  REFUSED: "Refusé",
+const EXCHANGE_STATUS_KEYS: Record<string, string> = {
+  PENDING: "common.pending",
+  ACCEPTED: "common.accepted",
+  REFUSED: "common.refused",
 };
 
 const EXCHANGE_STATUS_COLORS: Record<string, string> = {
@@ -33,6 +35,7 @@ const EXCHANGE_STATUS_COLORS: Record<string, string> = {
 
 
 export function PlanningPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showGenerate, setShowGenerate] = useState(false);
@@ -188,7 +191,7 @@ export function PlanningPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-2xl font-title font-bold text-gray-800">
-          Planning
+          {t("planningPage.title")}
         </h2>
         <button
           onClick={() => {
@@ -197,7 +200,7 @@ export function PlanningPage() {
           }}
           className="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-(--radius-button) hover:bg-primary/90 transition-colors"
         >
-          Générer un planning
+          {t("planningPage.generate")}
         </button>
       </div>
 
@@ -205,15 +208,15 @@ export function PlanningPage() {
         {/* Liste des plannings */}
         <aside className="w-56 shrink-0">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-            Plannings
+            {t("planningPage.schedulesLabel")}
           </p>
           {isLoading ? (
             <SkeletonList count={3} />
           ) : schedules.length === 0 ? (
             <EmptyState
               icon="📅"
-              title="Aucun planning"
-              description="Générez un planning pour commencer."
+              title={t("planningPage.emptyTitle")}
+              description={t("planningPage.emptyDescription")}
             />
           ) : (
             <ul className="space-y-2">
@@ -228,10 +231,10 @@ export function PlanningPage() {
                     }`}
                   >
                     <p className="font-medium truncate">
-                      {formatDate(s.startDate)}
+                      {formatScheduleDate(s.startDate)}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {formatDate(s.endDate)} &middot; {s._count.items} tâches
+                      {formatScheduleDate(s.endDate)} &middot; {t("planningPage.tasksCount", { count: s._count.items })}
                     </p>
                   </button>
                 </li>
@@ -244,7 +247,7 @@ export function PlanningPage() {
         <div className="flex-1 min-w-0 space-y-6">
           {!selectedId && (
             <p className="text-sm text-gray-400 mt-4">
-              Sélectionnez un planning ou générez-en un nouveau.
+              {t("planningPage.selectPrompt")}
             </p>
           )}
 
@@ -252,16 +255,16 @@ export function PlanningPage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm text-gray-500">
-                  {formatDate(detail.startDate)} au {formatDate(detail.endDate)}
+                  {formatScheduleDate(detail.startDate)} au {formatScheduleDate(detail.endDate)}
                   <span className="ml-2 text-gray-400">
-                    ({detail.items.length} tâches)
+                    ({t("planningPage.tasksCount", { count: detail.items.length })})
                   </span>
                 </p>
                 <button
                   onClick={() => deleteMutation.mutate(detail.id)}
                   className="text-xs text-danger hover:underline"
                 >
-                  Supprimer
+                  {t("common.delete")}
                 </button>
               </div>
 
@@ -290,10 +293,10 @@ export function PlanningPage() {
           {exchanges.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Échanges
+                {t("planningPage.exchangesTitle")}
                 {pendingExchanges.length > 0 && (
                   <span className="ml-2 bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-0.5 rounded-full">
-                    {pendingExchanges.length} en attente
+                    {t("planningPage.pendingCount", { count: pendingExchanges.length })}
                   </span>
                 )}
               </h3>
@@ -320,14 +323,17 @@ export function PlanningPage() {
                         <p className="text-xs text-gray-400 mt-0.5">
                           {fromMember?.name ?? ex.fromMemberId} &rarr;{" "}
                           {toMember?.name ?? ex.toMemberId} &middot;{" "}
-                          {formatDate(ex.scheduleItem.date)}
+                          {formatScheduleDate(ex.scheduleItem.date)}
                         </p>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <span
                           className={`text-xs font-medium px-2 py-1 rounded-full ${EXCHANGE_STATUS_COLORS[ex.status] ?? ""}`}
                         >
-                          {EXCHANGE_STATUS_LABELS[ex.status] ?? ex.status}
+                          {(() => {
+                            const key = EXCHANGE_STATUS_KEYS[ex.status];
+                            return key ? t(key) : ex.status;
+                          })()}
                         </span>
                         {ex.status === "PENDING" && (
                           <div className="flex gap-2">
@@ -340,7 +346,7 @@ export function PlanningPage() {
                               }
                               className="text-xs bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg transition-colors"
                             >
-                              Accepter
+                              {t("planningPage.accept")}
                             </button>
                             <button
                               onClick={() =>
@@ -351,7 +357,7 @@ export function PlanningPage() {
                               }
                               className="text-xs bg-danger/10 hover:bg-danger/20 text-danger px-3 py-1.5 rounded-lg transition-colors"
                             >
-                              Refuser
+                              {t("planningPage.refuse")}
                             </button>
                           </div>
                         )}
@@ -370,7 +376,7 @@ export function PlanningPage() {
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-card p-6 w-full max-w-sm shadow-xl">
             <h3 className="font-title font-bold text-lg mb-4">
-              Générer un planning
+              {t("planningPage.generate")}
             </h3>
 
             <form onSubmit={handleSubmit(onGenerate)} className="space-y-4">
@@ -379,11 +385,11 @@ export function PlanningPage() {
                 onClick={fillCurrentWeek}
                 className="w-full text-xs text-primary border border-primary/30 rounded-xl py-1.5 hover:bg-primary/5 transition-colors"
               >
-                📅 Semaine courante
+                📅 {t("planningPage.currentWeek")}
               </button>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Date de début
+                  {t("planningPage.startDateLabel")}
                 </label>
                 <input
                   type="date"
@@ -393,7 +399,7 @@ export function PlanningPage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Date de fin
+                  {t("planningPage.endDateLabel")}
                 </label>
                 <input
                   type="date"
@@ -410,14 +416,14 @@ export function PlanningPage() {
                   onClick={() => setShowGenerate(false)}
                   className="flex-1 border border-gray-200 text-sm font-semibold py-2 rounded-(--radius-button) hover:bg-gray-50 transition-colors"
                 >
-                  Annuler
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={generateMutation.isPending}
                   className="flex-1 bg-primary text-white text-sm font-semibold py-2 rounded-(--radius-button) hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
-                  {generateMutation.isPending ? "Génération..." : "Générer"}
+                  {generateMutation.isPending ? t("planningPage.generating") : t("planningPage.generateSubmit")}
                 </button>
               </div>
             </form>
@@ -428,11 +434,8 @@ export function PlanningPage() {
   );
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "short",
-  });
+function formatScheduleDate(iso: string): string {
+  return formatDate(new Date(iso), { day: "numeric", month: "short" });
 }
 
 // ── WeekCalendar ─────────────────────────────────────────────────────────────
@@ -512,6 +515,7 @@ function WeekCalendar({
   onSubmitExchange: () => void;
   onCancelExchange: () => void;
 }) {
+  const { t } = useTranslation();
   const days = getDaysInRange(detail.startDate, detail.endDate);
   const cols = days.length;
 
@@ -542,13 +546,10 @@ function WeekCalendar({
               }`}
             >
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                {new Date(d).toLocaleDateString("fr-FR", { weekday: "short" })}
+                {formatDate(new Date(d), { weekday: "short" })}
               </p>
               <p className="text-sm font-bold text-gray-700">
-                {new Date(d).toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "short",
-                })}
+                {formatDate(new Date(d), { day: "numeric", month: "short" })}
               </p>
               {calendarEntry && (
                 <p className="text-[10px] mt-0.5">
@@ -610,15 +611,16 @@ function WeekCalendar({
                       }
                       className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold transition-opacity hover:opacity-70 disabled:opacity-40 ${STATUS_CHIP[item.status] ?? ""}`}
                     >
-                      {STATUS_LABELS[item.status as keyof typeof STATUS_LABELS] ??
-                        item.status}
+                      {STATUS_KEYS[item.status as keyof typeof STATUS_KEYS]
+                        ? t(STATUS_KEYS[item.status as keyof typeof STATUS_KEYS])
+                        : item.status}
                     </button>
                   </div>
 
                   {/* Badge échange en cours */}
                   {pendingItemIds.has(item.id) && (
                     <p className="mt-1 text-[10px] text-yellow-600 font-medium">
-                      ↔ Échange en cours
+                      ↔ {t("planningPage.exchangeInProgress")}
                     </p>
                   )}
 
@@ -632,7 +634,7 @@ function WeekCalendar({
                         }
                         className="mt-1 text-[10px] text-secondary hover:text-secondary/80"
                       >
-                        Échanger →
+                        {t("planningPage.exchangeCta")}
                       </button>
                     )}
                 </div>
@@ -641,14 +643,14 @@ function WeekCalendar({
                 {exchangeItemId === item.id && (
                   <div className="bg-secondary/5 border border-secondary/20 rounded-xl p-2 space-y-1.5">
                     <p className="text-[10px] text-secondary font-semibold">
-                      Échanger avec
+                      {t("planningPage.exchangeWith")}
                     </p>
                     <select
                       value={exchangeToId}
                       onChange={(e) => onSetExchangeTo(e.target.value)}
                       className="w-full text-xs border border-secondary/30 rounded-lg px-2 py-1 bg-white focus:outline-none"
                     >
-                      <option value="">Choisir…</option>
+                      <option value="">{t("planningPage.choose")}</option>
                       {childMembers
                         .filter((c) => c.id !== exchangeFromId)
                         .map((c) => (
@@ -663,7 +665,7 @@ function WeekCalendar({
                         disabled={!exchangeToId || isProposing}
                         className="flex-1 text-[10px] bg-secondary hover:bg-secondary/90 disabled:opacity-50 text-white py-1 rounded-lg transition-colors"
                       >
-                        Proposer
+                        {t("planningPage.propose")}
                       </button>
                       <button
                         onClick={onCancelExchange}

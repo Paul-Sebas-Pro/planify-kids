@@ -1,19 +1,29 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CALENDAR_ZONE_LABELS, type CalendarZone } from "@planify-kids/types";
 import { familyApi } from "@/services/api";
 import { useAuthStore } from "@/store/auth.store";
+import { usePreferencesStore, type Language } from "@/store/preferences.store";
+import i18n from "@/i18n/config";
 
 interface FamilyFormValues {
   name: string;
 }
 
 export function SettingsPage() {
+  const { t } = useTranslation();
   const { family, setFamily } = useAuthStore();
+  const { language, setLanguage } = usePreferencesStore();
   const qc = useQueryClient();
   const [saved, setSaved] = useState(false);
   const [zoneSaved, setZoneSaved] = useState(false);
+
+  function handleSetLanguage(lang: Language) {
+    setLanguage(lang);
+    i18n.changeLanguage(lang);
+  }
 
   const { data: familyQuery } = useQuery({
     queryKey: ["family"],
@@ -47,16 +57,16 @@ export function SettingsPage() {
   return (
     <div>
       <h2 className="text-2xl font-title font-bold text-gray-800 mb-8">
-        Paramètres
+        {t("settings.title")}
       </h2>
 
       <div className="max-w-sm space-y-6">
         <div className="bg-white rounded-card shadow-sm p-6">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Code famille
+            {t("settings.familyCode.title")}
           </h3>
           <p className="text-xs text-gray-500 mb-2">
-            À saisir sur la tablette pour la connexion enfant.
+            {t("settings.familyCode.hint")}
           </p>
           <p className="text-2xl font-title font-bold tracking-widest text-primary">
             {familyCode ?? "—"}
@@ -65,7 +75,7 @@ export function SettingsPage() {
 
         <div className="bg-white rounded-card shadow-sm p-6">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Famille
+            {t("settings.family.title")}
           </h3>
 
           <form
@@ -74,7 +84,7 @@ export function SettingsPage() {
           >
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Nom de la famille
+                {t("settings.family.nameLabel")}
               </label>
               <input
                 type="text"
@@ -95,22 +105,20 @@ export function SettingsPage() {
               className="w-full bg-primary text-white text-sm font-semibold py-2 rounded-(--radius-button) hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               {mutation.isPending
-                ? "Enregistrement..."
+                ? t("settings.family.saving")
                 : saved
-                  ? "Enregistré ✓"
-                  : "Enregistrer"}
+                  ? t("settings.family.saved")
+                  : t("settings.family.save")}
             </button>
           </form>
         </div>
 
         <div className="bg-white rounded-card shadow-sm p-6">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Zone scolaire
+            {t("settings.schoolZone.title")}
           </h3>
           <p className="text-xs text-gray-500 mb-4">
-            Détermine les jours fériés et vacances scolaires pris en compte
-            pour la génération du planning (créneaux midi + soir les jours
-            sans école).
+            {t("settings.schoolZone.hint")}
           </p>
 
           <select
@@ -123,7 +131,7 @@ export function SettingsPage() {
             disabled={zoneMutation.isPending}
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
           >
-            <option value="">Non renseignée</option>
+            <option value="">{t("settings.schoolZone.none")}</option>
             {Object.entries(CALENDAR_ZONE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -137,8 +145,40 @@ export function SettingsPage() {
             </p>
           )}
           {zoneSaved && (
-            <p className="text-primary text-xs mt-2">Enregistré ✓</p>
+            <p className="text-primary text-xs mt-2">
+              {t("settings.family.saved")}
+            </p>
           )}
+        </div>
+
+        <div className="bg-white rounded-card shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+            {t("settings.language.title")}
+          </h3>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleSetLanguage("fr")}
+              className={`flex-1 text-sm font-semibold py-2 rounded-(--radius-button) transition-colors ${
+                language === "fr"
+                  ? "bg-primary text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {t("settings.language.fr")}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetLanguage("en")}
+              className={`flex-1 text-sm font-semibold py-2 rounded-(--radius-button) transition-colors ${
+                language === "en"
+                  ? "bg-primary text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {t("settings.language.en")}
+            </button>
+          </div>
         </div>
       </div>
     </div>

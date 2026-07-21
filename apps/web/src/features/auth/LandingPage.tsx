@@ -1,27 +1,25 @@
 import { Link, Navigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store/auth.store";
 
-const features = [
+const featureKeys = [
   {
     icon: "📅",
     bg: "bg-primary/10",
-    title: "Planning visuel",
-    description:
-      "Créez le planning de la semaine en quelques clics. Assignez chaque tâche à un enfant avec durée et points à gagner.",
+    titleKey: "feature1Title",
+    descriptionKey: "feature1Description",
   },
   {
     icon: "🏆",
     bg: "bg-accent/10",
-    title: "Gamification",
-    description:
-      "Points, badges et récompenses personnalisées transforment les tâches du quotidien en défis excitants pour les enfants.",
+    titleKey: "feature2Title",
+    descriptionKey: "feature2Description",
   },
   {
     icon: "📊",
     bg: "bg-secondary/10",
-    title: "Rapport hebdomadaire",
-    description:
-      "Suivez les progrès de chaque enfant semaine par semaine : tâches complétées, points gagnés, badges débloqués.",
+    titleKey: "feature3Title",
+    descriptionKey: "feature3Description",
   },
 ];
 
@@ -31,21 +29,22 @@ const previewChildren = [
   { name: "Tom", color: "#9C27B0", pts: "195" },
 ];
 
-const previewTasks = [
-  { emoji: "🛏", label: "Faire son lit", done: true },
-  { emoji: "🍽", label: "Débarrasser la table", done: true },
-  { emoji: "📚", label: "Réviser les maths", done: false, late: false },
-  { emoji: "🗑", label: "Sortir la poubelle", done: false, late: true },
+const previewTaskKeys = [
+  { emoji: "🛏", labelKey: "previewTask1", done: true },
+  { emoji: "🍽", labelKey: "previewTask2", done: true },
+  { emoji: "📚", labelKey: "previewTask3", done: false, late: false },
+  { emoji: "🗑", labelKey: "previewTask4", done: false, late: true },
 ];
 
 export function LandingPage() {
+  const { t } = useTranslation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Navbar */}
-      <nav className="bg-white shadow-sm px-12 h-[72px] flex items-center justify-between sticky top-0 z-10">
+      <nav className="bg-white shadow-sm px-12 h-18 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-primary inline-block" />
           <span className="font-title text-2xl font-bold text-gray-900">
@@ -57,13 +56,13 @@ export function LandingPage() {
             href="#features"
             className="font-body text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
           >
-            Fonctionnalités
+            {t("auth.landing.navFeatures")}
           </a>
           <a
             href="#cta"
             className="font-body text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
           >
-            Comment ça marche
+            {t("auth.landing.navHowItWorks")}
           </a>
         </div>
         <div className="flex items-center gap-4">
@@ -71,64 +70,62 @@ export function LandingPage() {
             to="/login"
             className="font-body text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
           >
-            Se connecter
+            {t("auth.landing.navLogin")}
           </Link>
           <Link
             to="/register"
             className="font-body text-sm font-bold bg-primary text-white px-5 py-2.5 rounded-button hover:bg-primary/90 transition-colors"
           >
-            Créer un compte
+            {t("auth.landing.navCreateAccount")}
           </Link>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="flex items-center gap-16 px-[120px] py-20 w-full max-w-[1440px] mx-auto">
+      <section className="flex items-center gap-16 px-30 py-20 w-full max-w-360 mx-auto">
         <div className="flex-1 flex flex-col gap-7 min-w-0">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 w-fit">
             <span className="font-body text-sm font-bold text-primary">
-              ✨ 2 000+ familles organisées
+              {t("auth.landing.heroBadge")}
             </span>
           </div>
           <h1 className="font-title text-6xl font-bold text-gray-900 leading-[1.1]">
-            Planifiez.
+            {t("auth.landing.heroTitle1")}
             <br />
-            Motivez.
+            {t("auth.landing.heroTitle2")}
             <br />
-            Récompensez.
+            {t("auth.landing.heroTitle3")}
           </h1>
           <p className="font-body text-lg text-gray-500 leading-relaxed max-w-lg">
-            L'agenda familial gamifié qui transforme les corvées quotidiennes en
-            aventures pour vos enfants.
+            {t("auth.landing.heroSubtitle")}
           </p>
           <div className="flex items-center gap-4 flex-wrap">
             <Link
               to="/register"
               className="font-body text-base font-bold bg-primary text-white px-7 py-3.5 rounded-button shadow-lg shadow-primary/25 hover:bg-primary/90 transition-colors"
             >
-              Créer un compte gratuit
+              {t("auth.landing.ctaPrimary")}
             </Link>
             <Link
               to="/login"
               className="font-body text-base font-semibold text-primary border-2 border-primary px-7 py-3.5 rounded-button hover:bg-primary/5 transition-colors"
             >
-              Se connecter →
+              {t("auth.landing.ctaSecondary")}
             </Link>
           </div>
           <p className="font-body text-sm text-gray-400">
-            ✓ Gratuit pour démarrer &nbsp;·&nbsp; ✓ Sans carte bancaire
-            &nbsp;·&nbsp; ✓ 2 min pour commencer
+            {t("auth.landing.trustLine")}
           </p>
         </div>
 
         {/* App preview */}
-        <div className="w-[460px] bg-white rounded-[24px] shadow-2xl p-5 flex flex-col gap-3 shrink-0">
+        <div className="w-115 bg-white rounded-3xl shadow-2xl p-5 flex flex-col gap-3 shrink-0">
           <div className="flex items-center justify-between">
             <span className="font-title text-xl font-bold text-gray-900">
-              Planning
+              {t("auth.landing.previewPlanning")}
             </span>
             <span className="font-body text-xs font-semibold text-gray-500 bg-background px-3 py-1 rounded-xl">
-              23 – 29 juin
+              {t("auth.landing.previewDateRange")}
             </span>
           </div>
           <div className="flex gap-4">
@@ -149,28 +146,28 @@ export function LandingPage() {
           </div>
           <div className="h-px bg-gray-100" />
           <div className="flex flex-col gap-2">
-            {previewTasks.map((t) => (
+            {previewTaskKeys.map((task) => (
               <div
-                key={t.label}
+                key={task.labelKey}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl ${
-                  t.done
+                  task.done
                     ? "bg-primary/10"
-                    : t.late
+                    : task.late
                       ? "bg-danger/10"
                       : "bg-white border border-gray-100"
                 }`}
               >
                 <div
                   className={`w-4 h-4 rounded shrink-0 ${
-                    t.done
+                    task.done
                       ? "bg-primary"
-                      : t.late
+                      : task.late
                         ? "bg-danger"
                         : "bg-gray-200"
                   }`}
                 />
                 <span className="font-body text-sm text-gray-800">
-                  {t.emoji} {t.label}
+                  {task.emoji} {t(`auth.landing.${task.labelKey}`)}
                 </span>
               </div>
             ))}
@@ -179,21 +176,20 @@ export function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="features" className="bg-white py-[72px]">
-        <div className="max-w-[1200px] mx-auto px-8 flex flex-col gap-12">
+      <section id="features" className="bg-white py-18">
+        <div className="max-w-300 mx-auto px-8 flex flex-col gap-12">
           <div className="text-center flex flex-col gap-3">
             <h2 className="font-title text-4xl font-bold text-gray-900">
-              Pourquoi les familles adorent Planify Kids ?
+              {t("auth.landing.featuresTitle")}
             </h2>
             <p className="font-body text-base text-gray-500">
-              Un outil pensé pour motiver les enfants et simplifier la vie des
-              parents.
+              {t("auth.landing.featuresSubtitle")}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {features.map((f) => (
+            {featureKeys.map((f) => (
               <div
-                key={f.title}
+                key={f.titleKey}
                 className="bg-white border border-gray-100 rounded-card p-7 flex flex-col gap-5 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div
@@ -202,10 +198,10 @@ export function LandingPage() {
                   {f.icon}
                 </div>
                 <h3 className="font-title text-xl font-semibold text-gray-900">
-                  {f.title}
+                  {t(`auth.landing.${f.titleKey}`)}
                 </h3>
                 <p className="font-body text-sm text-gray-500 leading-relaxed">
-                  {f.description}
+                  {t(`auth.landing.${f.descriptionKey}`)}
                 </p>
               </div>
             ))}
@@ -215,19 +211,18 @@ export function LandingPage() {
 
       {/* CTA */}
       <section id="cta" className="bg-primary py-20">
-        <div className="max-w-[1200px] mx-auto px-8 text-center flex flex-col items-center gap-7">
+        <div className="max-w-300 mx-auto px-8 text-center flex flex-col items-center gap-7">
           <h2 className="font-title text-5xl font-bold text-white">
-            Prêt à transformer les corvées en aventures ?
+            {t("auth.landing.ctaTitle")}
           </h2>
           <p className="font-body text-lg text-white/70">
-            Rejoignez 2 000+ familles. Gratuit pour commencer, sans carte
-            bancaire.
+            {t("auth.landing.ctaSubtitle")}
           </p>
           <Link
             to="/register"
             className="font-body text-lg font-bold bg-white text-primary px-10 py-4 rounded-button shadow-lg hover:shadow-xl transition-shadow"
           >
-            Commencer gratuitement
+            {t("auth.landing.ctaButton")}
           </Link>
         </div>
       </section>

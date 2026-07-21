@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { TaskTemplate, Frequency } from "@planify-kids/types";
 import { tasksApi } from "@/services/api";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -24,18 +25,19 @@ const TASK_ICONS = [
   "🌱", "🧽", "🚮", "🧼", "🍳", "👕",
 ];
 
-const DIFFICULTY_LABELS: Record<number, string> = {
-  1: "Facile",
-  2: "Moyen",
-  3: "Difficile",
+const DIFFICULTY_KEYS: Record<number, string> = {
+  1: "common.difficulty.easy",
+  2: "common.difficulty.medium",
+  3: "common.difficulty.hard",
 };
-const FREQUENCY_LABELS: Record<Frequency, string> = {
-  daily: "Quotidienne",
-  weekly: "Hebdomadaire",
-  monthly: "Mensuelle",
+const FREQUENCY_KEYS: Record<Frequency, string> = {
+  daily: "common.frequency.daily",
+  weekly: "common.frequency.weekly",
+  monthly: "common.frequency.monthly",
 };
 
 export function TasksPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [showAll, setShowAll] = useState(false);
   const [editTarget, setEditTarget] = useState<TaskTemplate | null>(null);
@@ -102,19 +104,19 @@ export function TasksPage() {
     setShowForm(true);
   }
 
-  function openEdit(t: TaskTemplate) {
+  function openEdit(task: TaskTemplate) {
     reset({
-      name: t.name,
-      description: t.description ?? "",
-      icon: t.icon || TASK_ICONS[0],
-      difficulty: t.difficulty,
-      duration: t.duration,
-      points: t.points,
-      frequency: t.frequency,
-      isMandatory: t.isMandatory,
-      isActive: t.isActive,
+      name: task.name,
+      description: task.description ?? "",
+      icon: task.icon || TASK_ICONS[0],
+      difficulty: task.difficulty,
+      duration: task.duration,
+      points: task.points,
+      frequency: task.frequency,
+      isMandatory: task.isMandatory,
+      isActive: task.isActive,
     });
-    setEditTarget(t);
+    setEditTarget(task);
     setApiError(null);
     setShowForm(true);
   }
@@ -150,12 +152,12 @@ export function TasksPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-title font-bold text-gray-800">Tâches</h2>
+        <h2 className="text-2xl font-title font-bold text-gray-800">{t("tasksPage.title")}</h2>
         <button
           onClick={openCreate}
           className="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-(--radius-button) hover:bg-primary/90 transition-colors"
         >
-          Nouvelle tâche
+          {t("tasksPage.newTask")}
         </button>
       </div>
 
@@ -166,7 +168,7 @@ export function TasksPage() {
           onChange={(e) => setShowAll(e.target.checked)}
           className="accent-primary"
         />
-        Afficher les tâches inactives
+        {t("tasksPage.showInactive")}
       </label>
 
       {apiError && (
@@ -180,57 +182,60 @@ export function TasksPage() {
       ) : tasks.length === 0 ? (
         <EmptyState
           icon="✅"
-          title="Aucune tâche pour l'instant"
-          description="Créez vos premières tâches pour pouvoir générer un planning."
-          action={{ label: "Créer une tâche", onClick: openCreate }}
+          title={t("tasksPage.emptyTitle")}
+          description={t("tasksPage.emptyDescription")}
+          action={{ label: t("tasksPage.emptyAction"), onClick: openCreate }}
         />
       ) : (
         <div className="grid gap-3">
-          {tasks.map((t) => (
+          {tasks.map((task) => (
             <div
-              key={t.id}
+              key={task.id}
               className={`bg-white rounded-card p-4 shadow-sm flex items-start gap-4 ${
-                !t.isActive ? "opacity-50" : ""
+                !task.isActive ? "opacity-50" : ""
               }`}
             >
-              <span className="text-2xl shrink-0">{t.icon || "🧹"}</span>
+              <span className="text-2xl shrink-0">{task.icon || "🧹"}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <p className="font-semibold text-sm">{t.name}</p>
-                  {t.isMandatory && (
+                  <p className="font-semibold text-sm">{task.name}</p>
+                  {task.isMandatory && (
                     <span className="text-xs bg-accent/10 text-accent font-medium px-2 py-0.5 rounded-full">
-                      Obligatoire
+                      {t("common.mandatory")}
                     </span>
                   )}
-                  {!t.isActive && (
+                  {!task.isActive && (
                     <span className="text-xs bg-gray-100 text-gray-400 font-medium px-2 py-0.5 rounded-full">
-                      Inactive
+                      {t("common.inactive")}
                     </span>
                   )}
                 </div>
-                {t.description && (
+                {task.description && (
                   <p className="text-xs text-gray-400 mb-2 truncate">
-                    {t.description}
+                    {task.description}
                   </p>
                 )}
                 <p className="text-xs text-gray-400">
-                  {DIFFICULTY_LABELS[t.difficulty] ?? t.difficulty} &middot;{" "}
-                  {t.duration} min &middot; {t.points} pts &middot;{" "}
-                  {FREQUENCY_LABELS[t.frequency]}
+                  {(() => {
+                    const difficultyKey = DIFFICULTY_KEYS[task.difficulty];
+                    return difficultyKey ? t(difficultyKey) : task.difficulty;
+                  })()} &middot;{" "}
+                  {task.duration} min &middot; {task.points} pts &middot;{" "}
+                  {t(FREQUENCY_KEYS[task.frequency])}
                 </p>
               </div>
               <div className="flex gap-2 shrink-0">
                 <button
-                  onClick={() => openEdit(t)}
+                  onClick={() => openEdit(task)}
                   className="text-xs text-secondary hover:underline"
                 >
-                  Modifier
+                  {t("common.edit")}
                 </button>
                 <button
-                  onClick={() => deleteMutation.mutate(t.id)}
+                  onClick={() => deleteMutation.mutate(task.id)}
                   className="text-xs text-danger hover:underline"
                 >
-                  Supprimer
+                  {t("common.delete")}
                 </button>
               </div>
             </div>
@@ -242,13 +247,13 @@ export function TasksPage() {
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-card p-6 w-full max-w-sm shadow-xl max-h-[90vh] overflow-y-auto">
             <h3 className="font-title font-bold text-lg mb-4">
-              {editTarget ? "Modifier la tâche" : "Nouvelle tâche"}
+              {editTarget ? t("tasksPage.editTaskTitle") : t("tasksPage.newTaskTitle")}
             </h3>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Nom
+                  {t("tasksPage.nameLabel")}
                 </label>
                 <input
                   type="text"
@@ -259,7 +264,7 @@ export function TasksPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Description
+                  {t("tasksPage.descriptionLabel")}
                 </label>
                 <textarea
                   {...register("description")}
@@ -270,7 +275,7 @@ export function TasksPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Icône
+                  {t("tasksPage.iconLabel")}
                 </label>
                 <IconPicker
                   value={selectedIcon}
@@ -282,29 +287,29 @@ export function TasksPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Difficulté
+                    {t("tasksPage.difficultyLabel")}
                   </label>
                   <select
                     {...register("difficulty")}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
-                    <option value={1}>Facile</option>
-                    <option value={2}>Moyen</option>
-                    <option value={3}>Difficile</option>
+                    <option value={1}>{t("common.difficulty.easy")}</option>
+                    <option value={2}>{t("common.difficulty.medium")}</option>
+                    <option value={3}>{t("common.difficulty.hard")}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Fréquence
+                    {t("tasksPage.frequencyLabel")}
                   </label>
                   <select
                     {...register("frequency")}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
-                    <option value="daily">Quotidienne</option>
-                    <option value="weekly">Hebdomadaire</option>
-                    <option value="monthly">Mensuelle</option>
+                    <option value="daily">{t("common.frequency.daily")}</option>
+                    <option value="weekly">{t("common.frequency.weekly")}</option>
+                    <option value="monthly">{t("common.frequency.monthly")}</option>
                   </select>
                 </div>
               </div>
@@ -312,7 +317,7 @@ export function TasksPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Durée (min)
+                    {t("tasksPage.durationLabel")}
                   </label>
                   <input
                     type="number"
@@ -325,7 +330,7 @@ export function TasksPage() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Points
+                    {t("tasksPage.pointsLabel")}
                   </label>
                   <input
                     type="number"
@@ -344,7 +349,7 @@ export function TasksPage() {
                     {...register("isMandatory")}
                     className="accent-primary"
                   />
-                  Obligatoire
+                  {t("common.mandatory")}
                 </label>
 
                 {editTarget && (
@@ -354,7 +359,7 @@ export function TasksPage() {
                       {...register("isActive")}
                       className="accent-primary"
                     />
-                    Active
+                    {t("common.active")}
                   </label>
                 )}
               </div>
@@ -367,14 +372,14 @@ export function TasksPage() {
                   onClick={closeForm}
                   className="flex-1 border border-gray-200 text-sm font-semibold py-2 rounded-(--radius-button) hover:bg-gray-50 transition-colors"
                 >
-                  Annuler
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
                   className="flex-1 bg-primary text-white text-sm font-semibold py-2 rounded-(--radius-button) hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
-                  {isSaving ? "Enregistrement..." : "Enregistrer"}
+                  {isSaving ? t("common.saving") : t("common.save")}
                 </button>
               </div>
             </form>

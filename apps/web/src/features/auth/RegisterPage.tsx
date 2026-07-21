@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import { authApi } from "@/services/api";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -11,13 +12,14 @@ interface FormValues {
   password: string;
 }
 
-const steps = [
-  "Créez votre compte famille",
-  "Ajoutez vos enfants",
-  "Lancez le planning ✓",
+const stepKeys = [
+  "auth.register.steps.1",
+  "auth.register.steps.2",
+  "auth.register.steps.3",
 ];
 
 export function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -44,7 +46,7 @@ export function RegisterPage() {
       navigate("/dashboard");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Erreur lors de la création du compte",
+        err instanceof Error ? err.message : t("auth.register.genericError"),
       );
     }
   }
@@ -52,7 +54,7 @@ export function RegisterPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left pane */}
-      <div className="w-[600px] bg-primary flex flex-col justify-between px-14 py-16 shrink-0">
+      <div className="w-150 bg-primary flex flex-col justify-between px-14 py-16 shrink-0">
         <div className="flex flex-col gap-8">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-white inline-block" />
@@ -64,29 +66,28 @@ export function RegisterPage() {
             </Link>
           </div>
           <h2 className="font-title text-[42px] font-bold text-white leading-[1.1]">
-            Votre famille.
+            {t("auth.register.pitchTitle1")}
             <br />
-            Vos règles.
+            {t("auth.register.pitchTitle2")}
             <br />
-            Votre rythme.
+            {t("auth.register.pitchTitle3")}
           </h2>
           <p className="font-body text-base text-white/80 leading-relaxed">
-            Créez votre espace famille en 2 minutes. Ajoutez vos enfants,
-            personnalisez les tâches et lancez la première semaine.
+            {t("auth.register.pitchDescription")}
           </p>
           <div className="bg-white/10 rounded-2xl p-5 flex flex-col gap-4">
             <span className="font-body text-xs font-bold text-white/60 uppercase tracking-wider">
-              Comment ça marche
+              {t("auth.register.howItWorks")}
             </span>
-            {steps.map((step, i) => (
-              <div key={step} className="flex items-center gap-3">
+            {stepKeys.map((stepKey, i) => (
+              <div key={stepKey} className="flex items-center gap-3">
                 <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                   <span className="font-score text-sm font-bold text-white">
                     {i + 1}
                   </span>
                 </div>
                 <span className="font-body text-sm font-semibold text-white">
-                  {step}
+                  {t(stepKey)}
                 </span>
               </div>
             ))}
@@ -96,16 +97,18 @@ export function RegisterPage() {
         <div className="flex gap-8">
           {(
             [
-              ["Gratuit", "Pour démarrer"],
-              ["5 min", "Config. initiale"],
-              ["Illimité", "Tâches & enfants"],
+              ["stat1Value", "stat1Label"],
+              ["stat2Value", "stat2Label"],
+              ["stat3Value", "stat3Label"],
             ] as const
-          ).map(([val, label]) => (
-            <div key={label} className="flex flex-col gap-0.5">
+          ).map(([valKey, labelKey]) => (
+            <div key={labelKey} className="flex flex-col gap-0.5">
               <span className="font-score text-2xl font-extrabold text-white">
-                {val}
+                {t(`auth.register.${valKey}`)}
               </span>
-              <span className="font-body text-xs text-white/60">{label}</span>
+              <span className="font-body text-xs text-white/60">
+                {t(`auth.register.${labelKey}`)}
+              </span>
             </div>
           ))}
         </div>
@@ -113,13 +116,13 @@ export function RegisterPage() {
 
       {/* Right pane */}
       <div className="flex-1 bg-white flex items-center justify-center px-16 py-12">
-        <div className="w-full max-w-[440px] bg-white rounded-[20px] shadow-2xl p-10 flex flex-col gap-7">
+        <div className="w-full max-w-110 bg-white rounded-card shadow-2xl p-10 flex flex-col gap-7">
           <div className="flex flex-col gap-2">
             <h1 className="font-title text-3xl font-bold text-gray-900">
-              Créer votre famille
+              {t("auth.register.title")}
             </h1>
             <p className="font-body text-sm text-gray-500 leading-relaxed">
-              Quelques infos pour démarrer. Vous pourrez tout modifier ensuite.
+              {t("auth.register.subtitle")}
             </p>
           </div>
 
@@ -129,13 +132,15 @@ export function RegisterPage() {
           >
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5">
-                Nom de votre famille
+                {t("auth.register.familyNameLabel")}
               </label>
               <input
                 type="text"
-                placeholder="ex : Famille Dupont"
-                {...register("familyName", { required: "Nom de famille requis" })}
-                className="w-full bg-background border border-gray-200 rounded-xl px-4 h-[46px] text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-gray-400"
+                placeholder={t("auth.register.familyNamePlaceholder")}
+                {...register("familyName", {
+                  required: t("auth.register.familyNameRequired"),
+                })}
+                className="w-full bg-background border border-gray-200 rounded-xl px-4 h-11.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-gray-400"
               />
               {errors.familyName && (
                 <p className="text-danger text-xs mt-1">
@@ -146,13 +151,15 @@ export function RegisterPage() {
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5">
-                Votre prénom
+                {t("auth.register.parentNameLabel")}
               </label>
               <input
                 type="text"
-                placeholder="ex : Marie"
-                {...register("parentName", { required: "Prénom requis" })}
-                className="w-full bg-background border border-gray-200 rounded-xl px-4 h-[46px] text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-gray-400"
+                placeholder={t("auth.register.parentNamePlaceholder")}
+                {...register("parentName", {
+                  required: t("auth.register.parentNameRequired"),
+                })}
+                className="w-full bg-background border border-gray-200 rounded-xl px-4 h-11.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-gray-400"
               />
               {errors.parentName && (
                 <p className="text-danger text-xs mt-1">
@@ -163,14 +170,16 @@ export function RegisterPage() {
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5">
-                Adresse e-mail
+                {t("auth.register.emailLabel")}
               </label>
               <input
                 type="email"
                 autoComplete="email"
-                placeholder="parent@exemple.com"
-                {...register("email", { required: "Email requis" })}
-                className="w-full bg-background border border-gray-200 rounded-xl px-4 h-[46px] text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-gray-400"
+                placeholder={t("auth.register.emailPlaceholder")}
+                {...register("email", {
+                  required: t("auth.register.emailRequired"),
+                })}
+                className="w-full bg-background border border-gray-200 rounded-xl px-4 h-11.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-gray-400"
               />
               {errors.email && (
                 <p className="text-danger text-xs mt-1">
@@ -181,17 +190,20 @@ export function RegisterPage() {
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5">
-                Mot de passe
+                {t("auth.register.passwordLabel")}
               </label>
               <input
                 type="password"
                 autoComplete="new-password"
-                placeholder="8 caractères minimum"
+                placeholder={t("auth.register.passwordPlaceholder")}
                 {...register("password", {
-                  required: "Mot de passe requis",
-                  minLength: { value: 8, message: "8 caractères minimum" },
+                  required: t("auth.register.passwordRequired"),
+                  minLength: {
+                    value: 8,
+                    message: t("auth.register.passwordMinLength"),
+                  },
                 })}
-                className="w-full bg-background border border-gray-200 rounded-xl px-4 h-[46px] text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-gray-400"
+                className="w-full bg-background border border-gray-200 rounded-xl px-4 h-11.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-gray-400"
               />
               {errors.password && (
                 <p className="text-danger text-xs mt-1">
@@ -209,19 +221,21 @@ export function RegisterPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-[52px] bg-primary text-white font-body text-base font-bold rounded-button hover:bg-primary/90 transition-colors disabled:opacity-50 shadow-lg shadow-primary/20 mt-2"
+              className="w-full h-13 bg-primary text-white font-body text-base font-bold rounded-button hover:bg-primary/90 transition-colors disabled:opacity-50 shadow-lg shadow-primary/20 mt-2"
             >
-              {isSubmitting ? "Création..." : "Créer mon compte"}
+              {isSubmitting
+                ? t("auth.register.submitting")
+                : t("auth.register.submit")}
             </button>
           </form>
 
           <p className="text-center font-body text-sm text-gray-500">
-            Déjà un compte ?{" "}
+            {t("auth.register.hasAccount")}{" "}
             <Link
               to="/login"
               className="text-primary font-bold hover:underline"
             >
-              Se connecter
+              {t("auth.register.login")}
             </Link>
           </p>
         </div>

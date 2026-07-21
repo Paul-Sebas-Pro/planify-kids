@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/react";
 import { Providers } from "./app/providers";
 import { AppRoutes } from "./app/routes";
 import { initSentry } from "./config/sentry";
+import "./i18n/config";
 import "./styles/globals.css";
 
 initSentry();

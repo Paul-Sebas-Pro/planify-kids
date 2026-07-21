@@ -1,22 +1,24 @@
 import { useState } from "react";
 import { flushSync } from "react-dom";
 import { NavLink, Outlet, useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store/auth.store";
 import { NotificationBell } from "./NotificationBell";
 import { useServerEvents } from "@/hooks/useServerEvents";
 
 const navItems = [
-  { to: "/dashboard", label: "Tableau de bord", icon: "📊" },
-  { to: "/family", label: "Famille", icon: "👨‍👩‍👧" },
-  { to: "/tasks", label: "Tâches", icon: "✅" },
-  { to: "/planning", label: "Planning", icon: "📅" },
-  { to: "/rewards", label: "Récompenses", icon: "🏆" },
-  { to: "/report", label: "Rapport", icon: "📈" },
-  { to: "/challenges", label: "Challenges", icon: "🏆" },
-  { to: "/settings", label: "Paramètres", icon: "⚙️" },
+  { to: "/dashboard", labelKey: "nav.dashboard", icon: "📊" },
+  { to: "/family", labelKey: "nav.family", icon: "👨‍👩‍👧" },
+  { to: "/tasks", labelKey: "nav.tasks", icon: "✅" },
+  { to: "/planning", labelKey: "nav.planning", icon: "📅" },
+  { to: "/rewards", labelKey: "nav.rewards", icon: "🏆" },
+  { to: "/report", labelKey: "nav.report", icon: "📈" },
+  { to: "/challenges", labelKey: "nav.challenges", icon: "🏆" },
+  { to: "/settings", labelKey: "nav.settings", icon: "⚙️" },
 ];
 
 export function AppLayout() {
+  const { t } = useTranslation();
   const { family, member, logout } = useAuthStore();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -51,7 +53,7 @@ export function AppLayout() {
             }
           >
             <span className="text-base leading-none">{item.icon}</span>
-            {item.label}
+            {t(item.labelKey)}
           </NavLink>
         ))}
       </nav>
@@ -64,7 +66,7 @@ export function AppLayout() {
           onClick={handleLogout}
           className="text-xs text-white/40 hover:text-white transition-colors"
         >
-          Déconnexion
+          {t("nav.logout")}
         </button>
       </div>
     </aside>
@@ -93,7 +95,7 @@ export function AppLayout() {
           <button
             className="md:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
             onClick={() => setSidebarOpen(true)}
-            aria-label="Ouvrir le menu"
+            aria-label={t("nav.openMenu")}
           >
             <svg
               className="w-5 h-5"

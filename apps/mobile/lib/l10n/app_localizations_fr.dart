@@ -249,4 +249,34 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get exchangesSubmitError => 'Impossible de proposer cet échange.';
+
+  @override
+  String get taskCardDone => 'Fait ✓';
+
+  @override
+  String get taskCardSkipped => 'Passée';
+
+  @override
+  String get taskCardLate => 'En retard';
+
+  @override
+  String get taskCardDoneButton => 'Fait !';
+
+  @override
+  String get apiErrorSessionExpiredTitle => 'Session expirée';
+
+  @override
+  String get apiErrorSessionExpiredHint => 'Reconnecte-toi pour continuer.';
+
+  @override
+  String get apiErrorReconnect => 'Se reconnecter';
+
+  @override
+  String get apiErrorNetwork => 'Serveur inaccessible. Vérifie ta connexion.';
+
+  @override
+  String get apiErrorGeneric => 'Une erreur est survenue.';
+
+  @override
+  String get apiErrorRetry => 'Réessayer';
 }

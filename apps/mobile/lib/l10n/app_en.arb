@@ -70,5 +70,15 @@
   "exchangesNoSiblings": "No other child in the family.",
   "exchangesExchangeWithLabel": "Swap with",
   "exchangesCancel": "Cancel",
-  "exchangesSubmitError": "Unable to propose this swap."
+  "exchangesSubmitError": "Unable to propose this swap.",
+  "taskCardDone": "Done ✓",
+  "taskCardSkipped": "Skipped",
+  "taskCardLate": "Late",
+  "taskCardDoneButton": "Done!",
+  "apiErrorSessionExpiredTitle": "Session expired",
+  "apiErrorSessionExpiredHint": "Sign in again to continue.",
+  "apiErrorReconnect": "Sign in again",
+  "apiErrorNetwork": "Server unreachable. Check your connection.",
+  "apiErrorGeneric": "An error occurred.",
+  "apiErrorRetry": "Retry"
 }

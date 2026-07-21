@@ -249,4 +249,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exchangesSubmitError => 'Unable to propose this swap.';
+
+  @override
+  String get taskCardDone => 'Done ✓';
+
+  @override
+  String get taskCardSkipped => 'Skipped';
+
+  @override
+  String get taskCardLate => 'Late';
+
+  @override
+  String get taskCardDoneButton => 'Done!';
+
+  @override
+  String get apiErrorSessionExpiredTitle => 'Session expired';
+
+  @override
+  String get apiErrorSessionExpiredHint => 'Sign in again to continue.';
+
+  @override
+  String get apiErrorReconnect => 'Sign in again';
+
+  @override
+  String get apiErrorNetwork => 'Server unreachable. Check your connection.';
+
+  @override
+  String get apiErrorGeneric => 'An error occurred.';
+
+  @override
+  String get apiErrorRetry => 'Retry';
 }

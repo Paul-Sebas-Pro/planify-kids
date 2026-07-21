@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/schedule_item.dart';
+import '../../shared/l10n/l10n_extensions.dart';
 
 class TaskCard extends StatelessWidget {
   final ScheduleItem item;
@@ -28,25 +29,31 @@ class TaskCard extends StatelessWidget {
           const Color(0xFF4CAF50),
           onUndo != null
               ? _StatusChip(
-                  label: 'Fait ✓',
+                  label: context.l10n.taskCardDone,
                   color: const Color(0xFF4CAF50),
                   onTap: onUndo,
                 )
-              : _StatusChip(label: 'Fait ✓', color: const Color(0xFF4CAF50)),
+              : _StatusChip(
+                  label: context.l10n.taskCardDone,
+                  color: const Color(0xFF4CAF50)),
         ),
       'SKIPPED' => (
           const Color(0xFFFFF8F0),
           const Color(0xFFFFDDB3),
           const Color(0xFFFF9800),
           Colors.grey.shade400,
-          _StatusChip(label: 'Passée', color: const Color(0xFFFF9800)),
+          _StatusChip(
+              label: context.l10n.taskCardSkipped,
+              color: const Color(0xFFFF9800)),
         ),
       'LATE' => (
           const Color(0xFFFFF0F0),
           const Color(0xFFFFCCCC),
           const Color(0xFFF44336),
           Colors.grey.shade400,
-          _StatusChip(label: 'En retard', color: const Color(0xFFF44336)),
+          _StatusChip(
+              label: context.l10n.taskCardLate,
+              color: const Color(0xFFF44336)),
         ),
       _ => (
           Colors.white,
@@ -202,7 +209,7 @@ class _DoneButton extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         backgroundColor: const Color(0xFF4CAF50),
       ),
-      child: const Text('Fait !', style: TextStyle(fontSize: 13)),
+      child: Text(context.l10n.taskCardDoneButton, style: const TextStyle(fontSize: 13)),
     );
   }
 }

@@ -528,6 +528,66 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de proposer cet échange.'**
   String get exchangesSubmitError;
+
+  /// No description provided for @taskCardDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fait ✓'**
+  String get taskCardDone;
+
+  /// No description provided for @taskCardSkipped.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passée'**
+  String get taskCardSkipped;
+
+  /// No description provided for @taskCardLate.
+  ///
+  /// In fr, this message translates to:
+  /// **'En retard'**
+  String get taskCardLate;
+
+  /// No description provided for @taskCardDoneButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fait !'**
+  String get taskCardDoneButton;
+
+  /// No description provided for @apiErrorSessionExpiredTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Session expirée'**
+  String get apiErrorSessionExpiredTitle;
+
+  /// No description provided for @apiErrorSessionExpiredHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reconnecte-toi pour continuer.'**
+  String get apiErrorSessionExpiredHint;
+
+  /// No description provided for @apiErrorReconnect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se reconnecter'**
+  String get apiErrorReconnect;
+
+  /// No description provided for @apiErrorNetwork.
+  ///
+  /// In fr, this message translates to:
+  /// **'Serveur inaccessible. Vérifie ta connexion.'**
+  String get apiErrorNetwork;
+
+  /// No description provided for @apiErrorGeneric.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur est survenue.'**
+  String get apiErrorGeneric;
+
+  /// No description provided for @apiErrorRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get apiErrorRetry;
 }
 
 class _AppLocalizationsDelegate

@@ -70,5 +70,15 @@
   "exchangesNoSiblings": "Aucun autre enfant dans la famille.",
   "exchangesExchangeWithLabel": "Échanger avec",
   "exchangesCancel": "Annuler",
-  "exchangesSubmitError": "Impossible de proposer cet échange."
+  "exchangesSubmitError": "Impossible de proposer cet échange.",
+  "taskCardDone": "Fait ✓",
+  "taskCardSkipped": "Passée",
+  "taskCardLate": "En retard",
+  "taskCardDoneButton": "Fait !",
+  "apiErrorSessionExpiredTitle": "Session expirée",
+  "apiErrorSessionExpiredHint": "Reconnecte-toi pour continuer.",
+  "apiErrorReconnect": "Se reconnecter",
+  "apiErrorNetwork": "Serveur inaccessible. Vérifie ta connexion.",
+  "apiErrorGeneric": "Une erreur est survenue.",
+  "apiErrorRetry": "Réessayer"
 }

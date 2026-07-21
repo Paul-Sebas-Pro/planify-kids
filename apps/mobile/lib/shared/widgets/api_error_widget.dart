@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/auth_provider.dart';
+import '../l10n/l10n_extensions.dart';
 
 class ApiErrorWidget extends ConsumerWidget {
   final Object error;
@@ -33,12 +34,12 @@ class ApiErrorWidget extends ConsumerWidget {
                   size: 56, color: theme.colorScheme.error),
               const SizedBox(height: 12),
               Text(
-                'Session expirée',
+                context.l10n.apiErrorSessionExpiredTitle,
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 4),
               Text(
-                'Reconnecte-toi pour continuer.',
+                context.l10n.apiErrorSessionExpiredHint,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -46,7 +47,7 @@ class ApiErrorWidget extends ConsumerWidget {
               const SizedBox(height: 20),
               FilledButton.icon(
                 icon: const Icon(Icons.login),
-                label: const Text('Se reconnecter'),
+                label: Text(context.l10n.apiErrorReconnect),
                 onPressed: () =>
                     ref.read(authProvider.notifier).logout(),
               ),
@@ -57,8 +58,8 @@ class ApiErrorWidget extends ConsumerWidget {
     }
 
     final message = _isNetworkError
-        ? 'Serveur inaccessible. Vérifie ta connexion.'
-        : 'Une erreur est survenue.';
+        ? context.l10n.apiErrorNetwork
+        : context.l10n.apiErrorGeneric;
 
     if (!_isNetworkError) {
       debugPrint('ApiErrorWidget: $error');
@@ -78,7 +79,7 @@ class ApiErrorWidget extends ConsumerWidget {
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 icon: const Icon(Icons.refresh),
-                label: const Text('Réessayer'),
+                label: Text(context.l10n.apiErrorRetry),
                 onPressed: onRetry,
               ),
             ],

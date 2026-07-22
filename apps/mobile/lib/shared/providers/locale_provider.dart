@@ -1,4 +1,5 @@
-import 'package:flutter/widgets.dart';
+import 'dart:ui';
+
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -7,9 +8,15 @@ import 'providers.dart';
 part 'locale_provider.g.dart';
 
 const _dateLocaleByLanguageCode = {'fr': 'fr_FR', 'en': 'en_US'};
+const _supportedLanguageCodes = {'fr', 'en'};
 
 String dateLocaleFor(Locale locale) =>
     _dateLocaleByLanguageCode[locale.languageCode] ?? 'fr_FR';
+
+Locale _detectDeviceLocale() {
+  final code = PlatformDispatcher.instance.locale.languageCode;
+  return Locale(_supportedLanguageCodes.contains(code) ? code : 'fr');
+}
 
 @Riverpod(keepAlive: true)
 class AppLocale extends _$AppLocale {
@@ -22,8 +29,9 @@ class AppLocale extends _$AppLocale {
   Future<void> _restore() async {
     final storage = ref.read(secureStorageServiceProvider);
     final code = await storage.getLocale();
-    if (code == null) return;
-    await setLocale(Locale(code));
+    final locale = code == null ? _detectDeviceLocale() : Locale(code);
+    await initializeDateFormatting(dateLocaleFor(locale));
+    state = locale;
   }
 
   Future<void> setLocale(Locale locale) async {

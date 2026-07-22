@@ -5,6 +5,7 @@ export type Language = "fr" | "en";
 
 interface PreferencesState {
   language: Language;
+  hasExplicitChoice: boolean;
   setLanguage: (language: Language) => void;
 }
 
@@ -12,7 +13,8 @@ export const usePreferencesStore = create<PreferencesState>()(
   persist(
     (set) => ({
       language: "fr",
-      setLanguage: (language) => set({ language }),
+      hasExplicitChoice: false,
+      setLanguage: (language) => set({ language, hasExplicitChoice: true }),
     }),
     { name: "preferences-store" },
   ),

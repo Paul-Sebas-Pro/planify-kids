@@ -291,7 +291,10 @@ export function RewardsPage() {
                   <span
                     className={`text-xs font-medium px-2 py-1 rounded-full ${STATUS_COLORS[claim.status] ?? ""}`}
                   >
-                    {STATUS_KEYS[claim.status] ? t(STATUS_KEYS[claim.status]) : claim.status}
+                    {(() => {
+                      const statusKey = STATUS_KEYS[claim.status];
+                      return statusKey ? t(statusKey) : claim.status;
+                    })()}
                   </span>
                   {claim.status === "PENDING" && (
                     <div className="flex gap-2">

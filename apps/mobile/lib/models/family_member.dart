@@ -28,4 +28,16 @@ class FamilyMember {
       points: (json['points'] as int?) ?? 0,
     );
   }
+
+  factory FamilyMember.fromLocalRow(dynamic row) {
+    return FamilyMember(
+      id: row['id'] as String,
+      name: row['name'] as String,
+      role: row['role'] as String,
+      familyId: row['family_id'] as String,
+      color: row['color'] as String?,
+      avatar: row['avatar'] as String?,
+      points: (row['points'] as int?) ?? 0,
+    );
+  }
 }

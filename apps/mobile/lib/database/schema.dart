@@ -6,6 +6,7 @@ const appSchema = Schema([
     Column.text('schedule_id'),
     Column.text('assigned_to_member_id'),
     Column.text('date'),
+    Column.text('slot'),
     Column.text('status'),
   ]),
   Table('tasks', [

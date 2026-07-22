@@ -17,11 +17,11 @@ final class TodayTasksProvider
         $FunctionalProvider<
           AsyncValue<List<ScheduleItem>>,
           List<ScheduleItem>,
-          FutureOr<List<ScheduleItem>>
+          Stream<List<ScheduleItem>>
         >
     with
         $FutureModifier<List<ScheduleItem>>,
-        $FutureProvider<List<ScheduleItem>> {
+        $StreamProvider<List<ScheduleItem>> {
   TodayTasksProvider._()
     : super(
         from: null,
@@ -38,17 +38,17 @@ final class TodayTasksProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<ScheduleItem>> $createElement(
+  $StreamProviderElement<List<ScheduleItem>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<ScheduleItem>> create(Ref ref) {
+  Stream<List<ScheduleItem>> create(Ref ref) {
     return todayTasks(ref);
   }
 }
 
-String _$todayTasksHash() => r'3d894449617132dabe551dfeaadb5a015effc504';
+String _$todayTasksHash() => r'f2573d1c0f09d6a3ee9535a722d5aeb25d02928a';
 
 @ProviderFor(TasksNotifier)
 final tasksProvider = TasksNotifierProvider._();
@@ -74,7 +74,7 @@ final class TasksNotifierProvider
   TasksNotifier create() => TasksNotifier();
 }
 
-String _$tasksNotifierHash() => r'1e6d6b0824d7cf2424ee26498f35d888d00657ce';
+String _$tasksNotifierHash() => r'6f3f7ac43e604ce05ad5c426b519e69352ef2658';
 
 abstract class _$TasksNotifier extends $AsyncNotifier<List<ScheduleItem>> {
   FutureOr<List<ScheduleItem>> build();

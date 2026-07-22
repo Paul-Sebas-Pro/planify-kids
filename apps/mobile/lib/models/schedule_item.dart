@@ -42,6 +42,20 @@ class ScheduleItem {
     );
   }
 
+  factory ScheduleItem.fromLocalRow(dynamic row) {
+    return ScheduleItem(
+      id: row['id'] as String,
+      taskId: row['task_id'] as String? ?? '',
+      taskName: row['task_name'] as String? ?? '',
+      taskIcon: row['task_icon'] as String?,
+      taskPoints: (row['task_points'] as int?) ?? 0,
+      assignedToMemberId: row['assigned_to_member_id'] as String,
+      date: DateTime.parse(row['date'] as String),
+      status: row['status'] as String,
+      slot: row['slot'] as String? ?? 'EVENING',
+    );
+  }
+
   ScheduleItem copyWith({String? status}) {
     return ScheduleItem(
       id: id,

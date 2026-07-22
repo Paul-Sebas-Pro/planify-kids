@@ -17,11 +17,11 @@ final class MemberBadgesProvider
         $FunctionalProvider<
           AsyncValue<List<MemberBadge>>,
           List<MemberBadge>,
-          FutureOr<List<MemberBadge>>
+          Stream<List<MemberBadge>>
         >
     with
         $FutureModifier<List<MemberBadge>>,
-        $FutureProvider<List<MemberBadge>> {
+        $StreamProvider<List<MemberBadge>> {
   MemberBadgesProvider._()
     : super(
         from: null,
@@ -38,14 +38,14 @@ final class MemberBadgesProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<MemberBadge>> $createElement(
+  $StreamProviderElement<List<MemberBadge>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<MemberBadge>> create(Ref ref) {
+  Stream<List<MemberBadge>> create(Ref ref) {
     return memberBadges(ref);
   }
 }
 
-String _$memberBadgesHash() => r'be014016e40a7deb30f0d783006383b5aadc8d72';
+String _$memberBadgesHash() => r'2345f62cb73d4c7945c08245f1744530cddcead9';

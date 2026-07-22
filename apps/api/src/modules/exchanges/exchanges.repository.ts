@@ -50,12 +50,13 @@ export function getPendingExchangeForItem(scheduleItemId: string) {
   });
 }
 
-export function createExchange(input: ProposeExchangeInput) {
+export function createExchange(input: ProposeExchangeInput, familyId: string) {
   return prisma.taskExchange.create({
     data: {
       scheduleItemId: input.scheduleItemId,
       fromMemberId: input.fromMemberId,
       toMemberId: input.toMemberId,
+      familyId,
     },
     include: exchangeInclude,
   });

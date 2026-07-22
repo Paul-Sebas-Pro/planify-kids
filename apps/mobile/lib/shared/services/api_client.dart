@@ -44,6 +44,13 @@ class ApiClient {
     return (res.data as Map<String, dynamic>)['data'] as Map<String, dynamic>;
   }
 
+  // ── PowerSync ─────────────────────────────────────────────────────────
+
+  Future<String> fetchPowerSyncToken() async {
+    final res = await _dio.get('/powersync/token');
+    return _unwrap(res)['token'] as String;
+  }
+
   List<dynamic> _unwrapList(Response res) {
     return (res.data as Map<String, dynamic>)['data'] as List<dynamic>;
   }

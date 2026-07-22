@@ -1,0 +1,68 @@
+# COPIE DE RÉFÉRENCE — coller manuellement dans PowerSync Dashboard > Sync Rules.
+# La version qui fait foi est celle du dashboard, pas ce fichier (pas de
+# déploiement automatisé v1). Cette copie sert de traçabilité versionnée.
+#
+# Périmètre v1 : FamilyMember, TaskTemplate, ScheduleItem, TaskExchange,
+# MemberBadge, Badge (6 tables scaffoldées côté mobile, cf. schema.dart).
+# Hors scope : User, Reward, RewardClaim, Notification, FamilyChallenge,
+# SchoolCalendarCache (restent 100% REST).
+#
+# IMPORTANT : les JOINs ne sont pas supportés en Sync Rules (parameter
+# queries ET data queries limitées à une seule table). TaskExchange et
+# MemberBadge ont donc une colonne familyId dénormalisée (cf. migration
+# Prisma apps/api/src/prisma/schema.prisma). ScheduleItem garde son scoping
+# via un bucket paramétré sur Schedule.id (a déjà scheduleId).
+
+bucket_definitions:
+  # Un bucket par famille — family_id vient du claim JWT custom émis par
+  # GET /powersync/token (apps/api/src/modules/powersync/powersync.service.ts).
+  family_data:
+    parameters: SELECT request.jwt() ->> 'familyId' as family_id
+    data:
+      # FamilyMember → family_members (schema.dart)
+      - SELECT id, name, role, points, color, avatar, "familyId" as family_id
+        FROM "FamilyMember"
+        WHERE "familyId" = bucket.family_id
+
+      # TaskTemplate → tasks (schema.dart, nom différent côté mobile)
+      # "isActive" est un boolean Postgres — pas de cast nécessaire, PowerSync
+      # n'a pas de type booléen et le représente déjà en 0/1 côté SQLite local
+      # (le cast Postgres `::int` n'est pas supporté par le parseur SQL de
+      # PowerSync, d'où l'erreur "CAST not supported for 'int'" au validateur).
+      - SELECT id, name, icon, points, "isActive" as is_active,
+               "familyId" as family_id
+        FROM "TaskTemplate"
+        WHERE "familyId" = bucket.family_id
+
+      # TaskExchange → exchanges (schema.dart) — familyId dénormalisé
+      - SELECT id, "scheduleItemId" as schedule_item_id,
+               "fromMemberId" as from_member_id, "toMemberId" as to_member_id,
+               status
+        FROM "TaskExchange"
+        WHERE "familyId" = bucket.family_id
+
+      # MemberBadge → member_badges (schema.dart) — familyId dénormalisé
+      - SELECT id, "memberId" as member_id, "badgeId" as badge_id,
+               "earnedAt" as earned_at
+        FROM "MemberBadge"
+        WHERE "familyId" = bucket.family_id
+
+  # Bucket paramétré dynamique — un sous-bucket par Schedule appartenant à
+  # la famille du token. ScheduleItem → schedule_items (schema.dart).
+  family_schedule_items:
+    parameters: SELECT id as schedule_id FROM "Schedule"
+      WHERE "familyId" = request.jwt() ->> 'familyId'
+    data:
+      - SELECT id, "taskTemplateId" as task_id, "scheduleId" as schedule_id,
+               "assignedToMemberId" as assigned_to_member_id, date, slot, status
+        FROM "ScheduleItem"
+        WHERE "scheduleId" = bucket.schedule_id
+
+  # Bucket global, non filtré (pas de "parameters:") — Badge n'a pas de
+  # familyId, référentiel partagé par toutes les familles.
+  badges:
+    data:
+      - SELECT id, name, icon, description,
+               "conditionType" as condition_type,
+               "conditionValue" as condition_value
+        FROM "Badge"

@@ -116,7 +116,7 @@ describe("proposeExchangeService", () => {
 
     await proposeExchangeService("family-1", input);
 
-    expect(mockCreate).toHaveBeenCalledWith(input);
+    expect(mockCreate).toHaveBeenCalledWith(input, "family-1");
   });
 });
 

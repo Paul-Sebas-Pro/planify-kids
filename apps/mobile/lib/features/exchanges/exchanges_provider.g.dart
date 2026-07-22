@@ -13,7 +13,7 @@ part of 'exchanges_provider.dart';
 final exchangesProvider = ExchangesNotifierProvider._();
 
 final class ExchangesNotifierProvider
-    extends $AsyncNotifierProvider<ExchangesNotifier, List<Exchange>> {
+    extends $StreamNotifierProvider<ExchangesNotifier, List<Exchange>> {
   ExchangesNotifierProvider._()
     : super(
         from: null,
@@ -33,10 +33,10 @@ final class ExchangesNotifierProvider
   ExchangesNotifier create() => ExchangesNotifier();
 }
 
-String _$exchangesNotifierHash() => r'07702aa946446201b4d4fe752da5fd1d44fa61d1';
+String _$exchangesNotifierHash() => r'8a0f4f1cc1f54d6699f12a1af29aa1b7508089d3';
 
-abstract class _$ExchangesNotifier extends $AsyncNotifier<List<Exchange>> {
-  FutureOr<List<Exchange>> build();
+abstract class _$ExchangesNotifier extends $StreamNotifier<List<Exchange>> {
+  Stream<List<Exchange>> build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
@@ -61,11 +61,11 @@ final class FamilyMembersProvider
         $FunctionalProvider<
           AsyncValue<List<FamilyMember>>,
           List<FamilyMember>,
-          FutureOr<List<FamilyMember>>
+          Stream<List<FamilyMember>>
         >
     with
         $FutureModifier<List<FamilyMember>>,
-        $FutureProvider<List<FamilyMember>> {
+        $StreamProvider<List<FamilyMember>> {
   FamilyMembersProvider._()
     : super(
         from: null,
@@ -82,14 +82,14 @@ final class FamilyMembersProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<FamilyMember>> $createElement(
+  $StreamProviderElement<List<FamilyMember>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<FamilyMember>> create(Ref ref) {
+  Stream<List<FamilyMember>> create(Ref ref) {
     return familyMembers(ref);
   }
 }
 
-String _$familyMembersHash() => r'5a7bf36d7528ecd8fc6941cc12c721b46de21f00';
+String _$familyMembersHash() => r'875804c7cac73581ba3eae2d86a9c3517dd9203d';

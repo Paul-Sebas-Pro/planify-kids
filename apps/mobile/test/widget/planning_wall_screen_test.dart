@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -57,14 +55,14 @@ Widget _wrap({
 }) {
   return ProviderScope(
     overrides: [
-      weekPlanningProvider.overrideWith((ref) async {
-        if (items case AsyncData(:final value)) return value;
+      weekPlanningProvider.overrideWith((ref) {
+        if (items case AsyncData(:final value)) return Stream.value(value);
         if (items case AsyncError(:final error, :final stackTrace)) {
-          Error.throwWithStackTrace(error, stackTrace);
+          return Stream<List<ScheduleItem>>.error(error, stackTrace);
         }
-        return Completer<List<ScheduleItem>>().future;
+        return const Stream<List<ScheduleItem>>.empty();
       }),
-      planningWallMembersProvider.overrideWith((ref) => Future.value(members)),
+      planningWallMembersProvider.overrideWith((ref) => Stream.value(members)),
     ],
     child: const MaterialApp(home: PlanningWallScreen()),
   );

@@ -201,10 +201,11 @@ model ScheduleItem {
 }
 
 model TaskExchange {
-  id             String @id @default(uuid())
+  id             String  @id @default(uuid())
   scheduleItemId String
   fromMemberId   String
   toMemberId     String
+  familyId       String // dénormalisé pour les PowerSync Sync Rules (pas de JOIN supporté)
 
   status ExchangeStatus @default(PENDING)
 
@@ -212,6 +213,8 @@ model TaskExchange {
   updatedAt DateTime @updatedAt
 
   scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
 }
 
 model Badge {
@@ -230,9 +233,10 @@ model Badge {
 }
 
 model MemberBadge {
-  id       String @id @default(uuid())
+  id       String  @id @default(uuid())
   memberId String
   badgeId  String
+  familyId String // dénormalisé pour les PowerSync Sync Rules (pas de JOIN supporté)
 
   earnedAt DateTime @default(now())
 
@@ -240,6 +244,7 @@ model MemberBadge {
   badge  Badge        @relation(fields: [badgeId], references: [id])
 
   @@unique([memberId, badgeId])
+  @@index([familyId])
 }
 
 model Reward {

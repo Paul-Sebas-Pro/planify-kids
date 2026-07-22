@@ -42,7 +42,7 @@ export async function proposeExchangeService(
     throw new AppError("Un échange est déjà en attente pour cette tâche", 409);
   }
 
-  return createExchange(input);
+  return createExchange(input, familyId);
 }
 
 export async function respondExchangeService(

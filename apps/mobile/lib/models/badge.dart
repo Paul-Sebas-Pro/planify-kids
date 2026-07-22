@@ -25,6 +25,17 @@ class Badge {
       conditionValue: json['conditionValue'] as int,
     );
   }
+
+  factory Badge.fromLocalRow(dynamic row) {
+    return Badge(
+      id: row['badge_id'] as String,
+      name: row['badge_name'] as String,
+      icon: row['badge_icon'] as String,
+      description: row['badge_description'] as String?,
+      conditionType: row['badge_condition_type'] as String,
+      conditionValue: row['badge_condition_value'] as int,
+    );
+  }
 }
 
 class MemberBadge {
@@ -43,6 +54,14 @@ class MemberBadge {
       id: json['id'] as String,
       earnedAt: DateTime.parse(json['earnedAt'] as String),
       badge: Badge.fromJson(json['badge'] as Map<String, dynamic>),
+    );
+  }
+
+  factory MemberBadge.fromLocalRow(dynamic row) {
+    return MemberBadge(
+      id: row['id'] as String,
+      earnedAt: DateTime.parse(row['earned_at'] as String),
+      badge: Badge.fromLocalRow(row),
     );
   }
 }

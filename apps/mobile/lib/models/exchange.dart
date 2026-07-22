@@ -33,6 +33,22 @@ class Exchange {
           : null,
     );
   }
+
+  factory Exchange.fromLocalRow(dynamic row) {
+    return Exchange(
+      id: row['id'] as String,
+      scheduleItemId: row['schedule_item_id'] as String,
+      fromMemberId: row['from_member_id'] as String,
+      toMemberId: row['to_member_id'] as String,
+      status: row['status'] as String,
+      createdAt: row['created_at'] != null
+          ? DateTime.parse(row['created_at'] as String)
+          : DateTime.now(),
+      scheduleItem: row['si_date'] != null
+          ? ScheduleItemInfo.fromLocalRow(row)
+          : null,
+    );
+  }
 }
 
 class ScheduleItemInfo {
@@ -58,6 +74,16 @@ class ScheduleItemInfo {
       taskName: task['name'] as String? ?? '',
       taskIcon: task['icon'] as String?,
       taskPoints: (task['points'] as int?) ?? 0,
+    );
+  }
+
+  factory ScheduleItemInfo.fromLocalRow(dynamic row) {
+    return ScheduleItemInfo(
+      date: DateTime.parse(row['si_date'] as String),
+      assignedToMemberId: row['si_assigned_to_member_id'] as String? ?? '',
+      taskName: row['si_task_name'] as String? ?? '',
+      taskIcon: row['si_task_icon'] as String?,
+      taskPoints: (row['si_task_points'] as int?) ?? 0,
     );
   }
 }

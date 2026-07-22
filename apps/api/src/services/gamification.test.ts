@@ -82,7 +82,7 @@ describe("awardPointsForTask", () => {
     await awardPointsForTask("member-1", 10);
 
     expect(mockCreateMany).toHaveBeenCalledWith({
-      data: [{ memberId: "member-1", badgeId: "badge-pts" }],
+      data: [{ memberId: "member-1", badgeId: "badge-pts", familyId: "family-1" }],
       skipDuplicates: true,
     });
     expect(mockNotifyBadgeEarned).toHaveBeenCalledWith("member-1", "family-1", "Champion");
@@ -99,7 +99,7 @@ describe("awardPointsForTask", () => {
     await awardPointsForTask("member-1", 5);
 
     expect(mockCreateMany).toHaveBeenCalledWith({
-      data: [{ memberId: "member-1", badgeId: "badge-tasks" }],
+      data: [{ memberId: "member-1", badgeId: "badge-tasks", familyId: "family-1" }],
       skipDuplicates: true,
     });
   });
@@ -133,7 +133,7 @@ describe("awardPointsForTask", () => {
     await awardPointsForTask("member-1", 10);
 
     expect(mockCreateMany).toHaveBeenCalledWith({
-      data: [{ memberId: "member-1", badgeId: "badge-streak" }],
+      data: [{ memberId: "member-1", badgeId: "badge-streak", familyId: "family-1" }],
       skipDuplicates: true,
     });
   });

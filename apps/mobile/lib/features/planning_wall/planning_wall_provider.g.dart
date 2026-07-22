@@ -17,11 +17,11 @@ final class WeekPlanningProvider
         $FunctionalProvider<
           AsyncValue<List<ScheduleItem>>,
           List<ScheduleItem>,
-          FutureOr<List<ScheduleItem>>
+          Stream<List<ScheduleItem>>
         >
     with
         $FutureModifier<List<ScheduleItem>>,
-        $FutureProvider<List<ScheduleItem>> {
+        $StreamProvider<List<ScheduleItem>> {
   WeekPlanningProvider._()
     : super(
         from: null,
@@ -38,17 +38,17 @@ final class WeekPlanningProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<ScheduleItem>> $createElement(
+  $StreamProviderElement<List<ScheduleItem>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<ScheduleItem>> create(Ref ref) {
+  Stream<List<ScheduleItem>> create(Ref ref) {
     return weekPlanning(ref);
   }
 }
 
-String _$weekPlanningHash() => r'0e460df100a3d57307bd6bda538475d038114008';
+String _$weekPlanningHash() => r'5359681fc63f0b4be004bb0d3d1387096094a4fa';
 
 @ProviderFor(planningWallMembers)
 final planningWallMembersProvider = PlanningWallMembersProvider._();
@@ -58,11 +58,11 @@ final class PlanningWallMembersProvider
         $FunctionalProvider<
           AsyncValue<List<FamilyMember>>,
           List<FamilyMember>,
-          FutureOr<List<FamilyMember>>
+          Stream<List<FamilyMember>>
         >
     with
         $FutureModifier<List<FamilyMember>>,
-        $FutureProvider<List<FamilyMember>> {
+        $StreamProvider<List<FamilyMember>> {
   PlanningWallMembersProvider._()
     : super(
         from: null,
@@ -79,15 +79,15 @@ final class PlanningWallMembersProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<FamilyMember>> $createElement(
+  $StreamProviderElement<List<FamilyMember>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<FamilyMember>> create(Ref ref) {
+  Stream<List<FamilyMember>> create(Ref ref) {
     return planningWallMembers(ref);
   }
 }
 
 String _$planningWallMembersHash() =>
-    r'907079c434d7d7dbd906710b3c62433e3d758a44';
+    r'9c6f26e5095b67f5b778c1e50c0670425324604e';

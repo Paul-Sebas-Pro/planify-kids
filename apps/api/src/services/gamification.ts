@@ -121,7 +121,7 @@ async function checkAndAwardBadges(
 
   if (toAward.length > 0) {
     await prisma.memberBadge.createMany({
-      data: toAward.map((badge) => ({ memberId, badgeId: badge.id })),
+      data: toAward.map((badge) => ({ memberId, badgeId: badge.id, familyId })),
       skipDuplicates: true,
     });
 

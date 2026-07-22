@@ -13,6 +13,8 @@ const envSchema = z.object({
   FIREBASE_PROJECT_ID: z.string().optional(),
   FIREBASE_CLIENT_EMAIL: z.string().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
+  POWERSYNC_URL: z.string().url().optional(),
+  POWERSYNC_JWT_SECRET: z.string().min(32).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -20,3 +20,15 @@ Future<PowerSyncDatabase> openAppDatabase(PlanifyConnector connector) async {
 
   return appDatabase;
 }
+
+/// Attend la 1ère synchronisation complète avant de lire les tables locales
+/// (évite un flash "aucune donnée" trompeur au premier lancement). Si
+/// PowerSync n'est pas configuré (`POWERSYNC_URL` vide — pas encore
+/// d'instance créée, ou tests), la DB locale ne se connectera jamais : ne
+/// pas attendre indéfiniment, lire directement (tables vides tant que
+/// PowerSync n'est pas actif).
+Future<void> awaitInitialSync(PowerSyncDatabase db) async {
+  if (Env.powerSyncUrl.isEmpty) return;
+  if (db.currentStatus.hasSynced == true) return;
+  await db.statusStream.firstWhere((s) => s.hasSynced == true);
+}

@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'app/app.dart';
 import 'database/connector.dart';
 import 'database/database.dart';
+import 'shared/services/api_client.dart';
 import 'shared/services/secure_storage.dart';
 
 // Notifications push actives uniquement si google-services.json / GoogleService-Info.plist présent
@@ -25,7 +26,8 @@ void main() async {
 
   if (!kIsWeb) {
     final storage = SecureStorageService();
-    final connector = PlanifyConnector(storage);
+    final api = ApiClient(storage);
+    final connector = PlanifyConnector(api);
     await openAppDatabase(connector);
   }
 

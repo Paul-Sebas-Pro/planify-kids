@@ -20,5 +20,8 @@ export function issuePowerSyncToken(
     audience: env.POWERSYNC_URL,
     algorithm: "HS256",
     expiresIn: "50m",
+    // Doit matcher le "kid" enregistré dans le keystore PowerSync (dashboard
+    // Client Auth) — sinon PSYNC_S2101 "Could not find an appropriate key".
+    keyid: "POWERSYNC_JWT_SECRET",
   });
 }

@@ -1,4 +1,4 @@
-import jwt, { type Secret } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { env } from "../../config/env.js";
 import { AppError } from "../../core/errors/AppError.js";
 
@@ -15,7 +15,13 @@ export function issuePowerSyncToken(
     );
   }
 
-  return jwt.sign({ familyId, role }, env.POWERSYNC_JWT_SECRET as Secret, {
+  // Le secret généré (openssl rand -base64 | tr...) est la forme base64url
+  // encodée du format JWK 'k' — la clé HMAC réelle est constituée des octets
+  // décodés, pas de la chaîne encodée elle-même (sinon PSYNC_S2101 "signature
+  // verification failed" côté PowerSync, qui décode avant de vérifier).
+  const key = Buffer.from(env.POWERSYNC_JWT_SECRET, "base64url");
+
+  return jwt.sign({ familyId, role }, key, {
     subject: memberId,
     audience: env.POWERSYNC_URL,
     algorithm: "HS256",

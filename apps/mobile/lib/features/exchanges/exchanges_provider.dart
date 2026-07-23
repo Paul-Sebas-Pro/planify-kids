@@ -9,11 +9,13 @@ part 'exchanges_provider.g.dart';
 
 const _exchangesQuery = '''
   SELECT e.id, e.schedule_item_id, e.from_member_id, e.to_member_id, e.status,
+         e.created_at,
          si.date as si_date, si.assigned_to_member_id as si_assigned_to_member_id,
          t.name as si_task_name, t.icon as si_task_icon, t.points as si_task_points
   FROM exchanges e
   LEFT JOIN schedule_items si ON si.id = e.schedule_item_id
   LEFT JOIN tasks t ON t.id = si.task_id
+  ORDER BY e.created_at DESC
 ''';
 
 @riverpod

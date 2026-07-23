@@ -12,6 +12,15 @@
 # MemberBadge ont donc une colonne familyId dénormalisée (cf. migration
 # Prisma apps/api/src/prisma/schema.prisma). ScheduleItem garde son scoping
 # via un bucket paramétré sur Schedule.id (a déjà scheduleId).
+#
+# IMPORTANT (bug diagnostiqué le 2026-07-24) : le "row_type" appliqué par
+# PowerSync pour matérialiser une ligne dans sa table locale ps_data__<x>
+# est dérivé du nom de la table Postgres source (FROM "Badge" → type
+# "Badge"), PAS du nom de table déclaré côté client (schema.dart : "badges").
+# Sans alias, la ligne reste dans ps_oplog (comptée dans hasSynced) mais
+# n'est JAMAIS copiée dans ps_data__badges — table locale vide malgré une
+# sync "réussie" sans aucune erreur. Chaque FROM est donc explicitement
+# aliasé sur le nom de table local exact.
 
 bucket_definitions:
   # Un bucket par famille — family_id vient du claim JWT custom émis par
@@ -21,7 +30,7 @@ bucket_definitions:
     data:
       # FamilyMember → family_members (schema.dart)
       - SELECT id, name, role, points, color, avatar, "familyId" as family_id
-        FROM "FamilyMember"
+        FROM "FamilyMember" family_members
         WHERE "familyId" = bucket.family_id
 
       # TaskTemplate → tasks (schema.dart, nom différent côté mobile)
@@ -31,20 +40,20 @@ bucket_definitions:
       # PowerSync, d'où l'erreur "CAST not supported for 'int'" au validateur).
       - SELECT id, name, icon, points, "isActive" as is_active,
                "familyId" as family_id
-        FROM "TaskTemplate"
+        FROM "TaskTemplate" tasks
         WHERE "familyId" = bucket.family_id
 
       # TaskExchange → exchanges (schema.dart) — familyId dénormalisé
       - SELECT id, "scheduleItemId" as schedule_item_id,
                "fromMemberId" as from_member_id, "toMemberId" as to_member_id,
                status
-        FROM "TaskExchange"
+        FROM "TaskExchange" exchanges
         WHERE "familyId" = bucket.family_id
 
       # MemberBadge → member_badges (schema.dart) — familyId dénormalisé
       - SELECT id, "memberId" as member_id, "badgeId" as badge_id,
                "earnedAt" as earned_at
-        FROM "MemberBadge"
+        FROM "MemberBadge" member_badges
         WHERE "familyId" = bucket.family_id
 
   # Bucket paramétré dynamique — un sous-bucket par Schedule appartenant à
@@ -55,7 +64,7 @@ bucket_definitions:
     data:
       - SELECT id, "taskTemplateId" as task_id, "scheduleId" as schedule_id,
                "assignedToMemberId" as assigned_to_member_id, date, slot, status
-        FROM "ScheduleItem"
+        FROM "ScheduleItem" schedule_items
         WHERE "scheduleId" = bucket.schedule_id
 
   # Bucket global, non filtré (pas de "parameters:") — Badge n'a pas de
@@ -65,4 +74,4 @@ bucket_definitions:
       - SELECT id, name, icon, description,
                "conditionType" as condition_type,
                "conditionValue" as condition_value
-        FROM "Badge"
+        FROM "Badge" badges

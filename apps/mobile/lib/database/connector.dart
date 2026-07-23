@@ -10,13 +10,13 @@ class PlanifyConnector extends PowerSyncBackendConnector {
   @override
   Future<PowerSyncCredentials?> fetchCredentials() async {
     if (Env.powerSyncUrl.isEmpty) return null;
-    try {
-      final token = await _api.fetchPowerSyncToken();
-      return PowerSyncCredentials(endpoint: Env.powerSyncUrl, token: token);
-    } catch (_) {
-      // Token app expiré / pas de réseau — PowerSync retentera automatiquement.
-      return null;
-    }
+    // Contrat PowerSync (connector.dart du SDK) : retourner null signifie
+    // "utilisateur non connecté" (arrête les tentatives) — une erreur
+    // réseau/temporaire doit être levée pour déclencher un retry, jamais
+    // avalée en silence (sinon le token expiré reste en cache indéfiniment,
+    // cf. PSYNC_S2103 observé en réel).
+    final token = await _api.fetchPowerSyncToken();
+    return PowerSyncCredentials(endpoint: Env.powerSyncUrl, token: token);
   }
 
   @override

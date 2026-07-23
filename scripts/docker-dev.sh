@@ -121,6 +121,7 @@ show_urls() {
   echo "    Statut          : $0 --status"
   echo "    Arrêt propre    : $0 --down"
   echo "    Rebuild images  : $0 --build"
+  echo "    Reset schéma DB : $0 --reset-db"
   echo ""
 }
 
@@ -130,30 +131,39 @@ DOWN=0
 LOGS=0
 STATUS=0
 SEED=0
+RESET_DB=0
 
 usage() {
   cat <<EOF
 Usage: $0 [options]
 
 Options :
-  -b, --build    Reconstruit les images Docker
-  -d, --down     Arrête et supprime les containers
-  -l, --logs     Suit les logs après le démarrage
-  -s, --status   Affiche le statut des containers
-      --seed     Lance le seed BDD après démarrage
-  -h, --help     Affiche cette aide
+  -b, --build     Reconstruit les images Docker (nouvelles dépendances)
+  -d, --down      Arrête et supprime les containers
+  -l, --logs      Suit les logs après le démarrage
+  -s, --status    Affiche le statut des containers
+      --seed      Lance le seed BDD après démarrage
+  -r, --reset-db  ⚠️ Réinitialise le schéma Postgres local (force-reset) —
+                  nécessaire après une migration ajoutant une colonne requise
+                  sur une table déjà peuplée localement. Implique --seed.
+                  Toutes les données locales (Postgres) sont perdues.
+  -h, --help      Affiche cette aide
+
+Exemple après une migration de schéma + nouvelle dépendance :
+  $0 --build --reset-db
 EOF
   exit 0
 }
 
 for arg in "$@"; do
   case $arg in
-    -b|--build)  BUILD=1 ;;
-    -d|--down)   DOWN=1 ;;
-    -l|--logs)   LOGS=1 ;;
-    -s|--status) STATUS=1 ;;
-    --seed)      SEED=1 ;;
-    -h|--help)   usage ;;
+    -b|--build)     BUILD=1 ;;
+    -d|--down)      DOWN=1 ;;
+    -l|--logs)      LOGS=1 ;;
+    -s|--status)    STATUS=1 ;;
+    --seed)         SEED=1 ;;
+    -r|--reset-db)  RESET_DB=1; SEED=1 ;;
+    -h|--help)      usage ;;
     *)
       err "Option inconnue : $arg"
       usage
@@ -210,6 +220,14 @@ while ! curl -sf "http://localhost:${API_PORT}/health" &>/dev/null; do
   fi
   sleep 1
 done
+
+if [[ $RESET_DB -eq 1 ]]; then
+  sep
+  warn "Reset du schéma Postgres local (⚠️ destructif — toutes les données locales sont perdues)"
+  log "prisma db push --force-reset..."
+  docker compose -p "$PROJECT" exec api pnpm --filter @planify-kids/api exec prisma db push --force-reset --accept-data-loss
+  ok "Schéma réinitialisé"
+fi
 
 if [[ $SEED -eq 1 ]]; then
   log "Seed de la base de données..."

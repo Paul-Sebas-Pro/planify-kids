@@ -8,6 +8,10 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/types/package.json ./packages/types/
 COPY apps/api/package.json ./apps/api/
+# apps/api a un hook postinstall (prisma generate) qui a besoin du schema —
+# copié ici avant pnpm install, pas avec le reste des sources plus bas.
+COPY apps/api/prisma.config.ts ./apps/api/
+COPY apps/api/src/prisma ./apps/api/src/prisma
 
 RUN pnpm install --no-frozen-lockfile
 

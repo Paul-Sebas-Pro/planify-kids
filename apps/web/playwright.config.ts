@@ -11,6 +11,11 @@ export default defineConfig({
     baseURL: process.env["BASE_URL"] ?? "http://localhost:5173",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    // Simule un utilisateur FR (app 100% francophone) — sans ça, la locale
+    // par défaut de Chromium headless (en-US) déclenche la détection auto
+    // de langue navigateur (i18n/config.ts) et bascule l'UI en anglais,
+    // cassant tous les sélecteurs de texte français des specs e2e.
+    locale: "fr-FR",
   },
   projects: [
     {

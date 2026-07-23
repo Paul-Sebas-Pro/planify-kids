@@ -33,6 +33,7 @@ const appSchema = Schema([
     Column.text('from_member_id'),
     Column.text('to_member_id'),
     Column.text('status'),
+    Column.text('created_at'),
   ]),
   Table('family_members', [
     Column.text('name'),

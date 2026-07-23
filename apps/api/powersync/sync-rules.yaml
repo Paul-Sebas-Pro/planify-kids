@@ -46,7 +46,7 @@ bucket_definitions:
       # TaskExchange → exchanges (schema.dart) — familyId dénormalisé
       - SELECT id, "scheduleItemId" as schedule_item_id,
                "fromMemberId" as from_member_id, "toMemberId" as to_member_id,
-               status
+               status, "createdAt" as created_at
         FROM "TaskExchange" exchanges
         WHERE "familyId" = bucket.family_id
 

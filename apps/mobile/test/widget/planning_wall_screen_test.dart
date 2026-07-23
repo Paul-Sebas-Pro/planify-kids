@@ -104,8 +104,9 @@ void main() {
 
       expect(find.text('Midi'), findsOneWidget);
       expect(find.text('Soir'), findsOneWidget);
-      expect(find.text('Alice'), findsOneWidget);
-      expect(find.text('Bob'), findsOneWidget);
+      // Alice/Bob apparaissent 2x chacun : chip de filtre + ligne tâche du jour.
+      expect(find.text('Alice'), findsNWidgets(2));
+      expect(find.text('Bob'), findsNWidgets(2));
       expect(find.textContaining('Mettre la table'), findsOneWidget);
       expect(find.textContaining('Ranger sa chambre'), findsOneWidget);
       expect(find.text('+5'), findsOneWidget);

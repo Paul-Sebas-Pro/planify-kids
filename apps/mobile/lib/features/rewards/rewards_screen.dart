@@ -126,30 +126,53 @@ class _RewardCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Text(reward.icon, style: const TextStyle(fontSize: 32)),
-        title: Text(reward.name, style: theme.textTheme.titleSmall),
-        subtitle: Text(
-          '${reward.pointsCost} pts',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: canAfford
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.bold,
-          ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(reward.icon, style: const TextStyle(fontSize: 32)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    reward.name,
+                    style: theme.textTheme.titleSmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${reward.pointsCost} pts',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: canAfford
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: hasPending
+                  ? Chip(
+                      label: Text(context.l10n.rewardsPending),
+                      backgroundColor: Colors.orange.withValues(alpha: 0.15),
+                      labelStyle:
+                          const TextStyle(color: Colors.orange, fontSize: 11),
+                    )
+                  : FilledButton(
+                      onPressed: canAfford ? onClaim : null,
+                      child: Text(context.l10n.rewardsClaim),
+                    ),
+            ),
+          ],
         ),
-        trailing: hasPending
-            ? Chip(
-                label: Text(context.l10n.rewardsPending),
-                backgroundColor: Colors.orange.withValues(alpha: 0.15),
-                labelStyle: const TextStyle(color: Colors.orange, fontSize: 11),
-              )
-            : FilledButton(
-                onPressed: canAfford ? onClaim : null,
-                child: Text(context.l10n.rewardsClaim),
-              ),
       ),
     );
   }

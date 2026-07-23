@@ -661,6 +661,36 @@ abstract class AppLocalizations {
   /// **'Soir'**
   String get planningWallEvening;
 
+  /// No description provided for @planningWallFilterAllMembers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les membres'**
+  String get planningWallFilterAllMembers;
+
+  /// No description provided for @planningWallFilterAllStatus.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous statuts'**
+  String get planningWallFilterAllStatus;
+
+  /// No description provided for @planningWallStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'À faire'**
+  String get planningWallStatusPending;
+
+  /// No description provided for @planningWallStatusCompleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fait'**
+  String get planningWallStatusCompleted;
+
+  /// No description provided for @planningWallStatusSkipped.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passée'**
+  String get planningWallStatusSkipped;
+
   /// No description provided for @historyTitle.
   ///
   /// In fr, this message translates to:

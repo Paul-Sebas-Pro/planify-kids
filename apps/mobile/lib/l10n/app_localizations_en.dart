@@ -317,6 +317,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planningWallEvening => 'Evening';
 
   @override
+  String get planningWallFilterAllMembers => 'All members';
+
+  @override
+  String get planningWallFilterAllStatus => 'All statuses';
+
+  @override
+  String get planningWallStatusPending => 'To do';
+
+  @override
+  String get planningWallStatusCompleted => 'Done';
+
+  @override
+  String get planningWallStatusSkipped => 'Skipped';
+
+  @override
   String get historyTitle => 'My history';
 
   @override

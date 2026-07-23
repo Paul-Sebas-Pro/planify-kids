@@ -175,7 +175,11 @@
     "exchangeCta": "Échanger →",
     "exchangeWith": "Échanger avec",
     "choose": "Choisir…",
-    "propose": "Proposer"
+    "propose": "Proposer",
+    "filterAllMembers": "Tous les membres",
+    "filterAllStatus": "Tous statuts",
+    "viewWeek": "Semaine",
+    "viewDay": "Jour"
   },
   "familyPage": {
     "title": "Famille",

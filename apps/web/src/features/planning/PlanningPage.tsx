@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { CalendarEntry, ScheduleDetail, ScheduleItemDetail, TaskExchange } from "@planify-kids/types";
 import { SLOT_LABELS } from "@planify-kids/types";
@@ -40,6 +40,14 @@ export function PlanningPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showGenerate, setShowGenerate] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Filtres vue planning
+  const [filterMemberId, setFilterMemberId] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<
+    ScheduleItemDetail["status"] | null
+  >(null);
+  const [viewMode, setViewMode] = useState<"week" | "day">("week");
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   // itemId en cours de proposition d'échange
   const [exchangeItemId, setExchangeItemId] = useState<string | null>(null);
@@ -81,6 +89,27 @@ export function PlanningPage() {
   const exchanges: TaskExchange[] = exchangesData?.data ?? [];
   const pendingExchanges = exchanges.filter((e) => e.status === "PENDING");
   const children = (membersData?.data ?? []).filter((m) => m.role === "CHILD");
+  const allMembers = membersData?.data ?? [];
+
+  // Filtres vue planning — dérivés de detail (jours de la plage, jour sélectionné,
+  // items filtrés par membre/statut)
+  const scheduleDays = detail
+    ? getDaysInRange(detail.startDate, detail.endDate)
+    : [];
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const effectiveSelectedDay =
+    (selectedDay && scheduleDays.includes(selectedDay)
+      ? selectedDay
+      : scheduleDays.includes(todayStr)
+        ? todayStr
+        : scheduleDays[0]) ?? "";
+  const filteredItems = detail
+    ? detail.items.filter(
+        (i) =>
+          (!filterMemberId || i.assignedToMemberId === filterMemberId) &&
+          (!filterStatus || i.status === filterStatus),
+      )
+    : [];
 
   // Jours fériés/vacances de la semaine affichée, indexés par date (YYYY-MM-DD)
   const calendarByDay = new Map<string, CalendarEntry>(
@@ -268,8 +297,79 @@ export function PlanningPage() {
                 </button>
               </div>
 
+              {/* Filtres */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
+                <div className="flex flex-wrap gap-1.5">
+                  <FilterChip
+                    active={filterMemberId === null}
+                    onClick={() => setFilterMemberId(null)}
+                  >
+                    {t("planningPage.filterAllMembers")}
+                  </FilterChip>
+                  {allMembers.map((m) => (
+                    <FilterChip
+                      key={m.id}
+                      active={filterMemberId === m.id}
+                      onClick={() => setFilterMemberId(m.id)}
+                      dotColor={m.color ?? undefined}
+                    >
+                      {m.name}
+                    </FilterChip>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  <FilterChip
+                    active={filterStatus === null}
+                    onClick={() => setFilterStatus(null)}
+                  >
+                    {t("planningPage.filterAllStatus")}
+                  </FilterChip>
+                  {(Object.keys(STATUS_KEYS) as (keyof typeof STATUS_KEYS)[]).map(
+                    (s) => (
+                      <FilterChip
+                        key={s}
+                        active={filterStatus === s}
+                        onClick={() => setFilterStatus(s)}
+                      >
+                        {t(STATUS_KEYS[s])}
+                      </FilterChip>
+                    ),
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 ml-auto">
+                  <FilterChip
+                    active={viewMode === "week"}
+                    onClick={() => setViewMode("week")}
+                  >
+                    {t("planningPage.viewWeek")}
+                  </FilterChip>
+                  <FilterChip
+                    active={viewMode === "day"}
+                    onClick={() => setViewMode("day")}
+                  >
+                    {t("planningPage.viewDay")}
+                  </FilterChip>
+                  {viewMode === "day" && (
+                    <select
+                      value={effectiveSelectedDay}
+                      onChange={(e) => setSelectedDay(e.target.value)}
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    >
+                      {scheduleDays.map((d) => (
+                        <option key={d} value={d}>
+                          {formatScheduleDate(d)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+
               <WeekCalendar
-                detail={detail}
+                detail={{ ...detail, items: filteredItems }}
+                daysOverride={viewMode === "day" ? [effectiveSelectedDay] : undefined}
                 calendarByDay={calendarByDay}
                 pendingItemIds={pendingItemIds}
                 exchangeItemId={exchangeItemId}
@@ -484,8 +584,41 @@ const CALENDAR_TINT: Record<CalendarEntry["type"], string> = {
   VACATION: "bg-blue-50",
 };
 
+function FilterChip({
+  active,
+  onClick,
+  dotColor,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  dotColor?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-full transition-colors ${
+        active
+          ? "bg-primary text-white"
+          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+      }`}
+    >
+      {dotColor && (
+        <span
+          className="w-2 h-2 rounded-full shrink-0"
+          style={{ backgroundColor: dotColor }}
+        />
+      )}
+      {children}
+    </button>
+  );
+}
+
 function WeekCalendar({
   detail,
+  daysOverride,
   calendarByDay,
   pendingItemIds,
   exchangeItemId,
@@ -501,6 +634,7 @@ function WeekCalendar({
   onCancelExchange,
 }: {
   detail: ScheduleDetail;
+  daysOverride?: string[];
   calendarByDay: Map<string, CalendarEntry>;
   pendingItemIds: Set<string>;
   exchangeItemId: string | null;
@@ -516,7 +650,7 @@ function WeekCalendar({
   onCancelExchange: () => void;
 }) {
   const { t } = useTranslation();
-  const days = getDaysInRange(detail.startDate, detail.endDate);
+  const days = daysOverride ?? getDaysInRange(detail.startDate, detail.endDate);
   const cols = days.length;
 
   const byDay = detail.items.reduce<Record<string, ScheduleItemDetail[]>>(

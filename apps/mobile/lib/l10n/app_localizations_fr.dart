@@ -140,6 +140,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get celebrationAllDoneSubtitle =>
+      'Toutes tes tâches du jour sont faites !';
+
+  @override
+  String get celebrationTapToContinue => 'Touche l\'écran pour continuer';
+
+  @override
   String todayProgressSummary(
     Object completed,
     Object tacheS,

@@ -33,6 +33,15 @@ class _FakeTasksNotifier extends TasksNotifier {
     // Loading: future that never completes, no timer pending.
     return Completer<List<ScheduleItem>>().future;
   }
+
+  @override
+  Future<void> markCompleted(String itemId) async {
+    final items = state.value ?? [];
+    state = AsyncData([
+      for (final i in items)
+        i.id == itemId ? i.copyWith(status: 'COMPLETED') : i,
+    ]);
+  }
 }
 
 final _alice = AuthUser(
@@ -92,6 +101,43 @@ void main() {
       await tester.pump();
       expect(find.text('Ranger sa chambre'), findsOneWidget);
       expect(find.text('Fait !'), findsOneWidget);
+    });
+
+    testWidgets('dernière tâche cochée — célébration plein écran',
+        (tester) async {
+      await tester.pumpWidget(_wrap(tasks: AsyncData([_task])));
+      await tester.pump();
+      await tester.tap(find.text('Fait !'));
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Toutes tes tâches du jour sont faites !'),
+          findsOneWidget);
+
+      // Se ferme seule.
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Toutes tes tâches du jour sont faites !'),
+          findsNothing);
+    });
+
+    testWidgets('tâche cochée mais pas la dernière — pas de célébration',
+        (tester) async {
+      final other = ScheduleItem(
+        id: 'item-2',
+        taskId: 'task-2',
+        taskName: 'Mettre la table',
+        taskIcon: '🍽️',
+        taskPoints: 5,
+        assignedToMemberId: 'alice-id',
+        date: DateTime(2026, 6, 16),
+        status: 'PENDING',
+      );
+      await tester.pumpWidget(_wrap(tasks: AsyncData([_task, other])));
+      await tester.pump();
+      await tester.tap(find.text('Fait !').first);
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('Toutes tes tâches du jour sont faites !'),
+          findsNothing);
     });
 
     testWidgets('bouton logout présent dans AppBar', (tester) async {

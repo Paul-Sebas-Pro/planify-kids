@@ -3,17 +3,22 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/schedule_item.dart';
 import '../../shared/l10n/l10n_extensions.dart';
+import '../../shared/widgets/celebration.dart';
 
 class TaskCard extends StatelessWidget {
   final ScheduleItem item;
   final VoidCallback? onComplete;
   final VoidCallback? onUndo;
 
+  /// Rebond d'apparition — à passer sur la carte qui vient d'être cochée.
+  final bool celebrate;
+
   const TaskCard({
     super.key,
     required this.item,
     this.onComplete,
     this.onUndo,
+    this.celebrate = false,
   });
 
   @override
@@ -61,7 +66,7 @@ class TaskCard extends StatelessWidget {
           const Color(0xFF4CAF50),
           const Color(0xFFFF9800),
           onComplete != null
-              ? _DoneButton(onPressed: onComplete!)
+              ? _DoneButton(points: item.taskPoints, onPressed: onComplete!)
               : const SizedBox.shrink() as Widget,
         ),
     };
@@ -70,7 +75,7 @@ class TaskCard extends StatelessWidget {
         ? const Color(0xFFFFA726)
         : const Color(0xFF5C6BC0);
 
-    return Container(
+    final card = Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       decoration: BoxDecoration(
         color: bgColor,
@@ -151,6 +156,20 @@ class TaskCard extends StatelessWidget {
         ),
       ),
     );
+
+    if (!celebrate || (MediaQuery.maybeDisableAnimationsOf(context) ?? false)) {
+      return card;
+    }
+    // Joué une seule fois à la création de la carte : la carte cochée est un
+    // nouvel élément (elle change de section), pas une mise à jour de l'ancien.
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.85, end: 1),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.elasticOut,
+      builder: (context, scale, child) =>
+          Transform.scale(scale: scale, child: child),
+      child: card,
+    );
   }
 }
 
@@ -196,13 +215,17 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _DoneButton extends StatelessWidget {
+  final int points;
   final VoidCallback onPressed;
-  const _DoneButton({required this.onPressed});
+  const _DoneButton({required this.points, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return FilledButton(
-      onPressed: onPressed,
+      onPressed: () {
+        showTaskDoneBurst(context, points: points);
+        onPressed();
+      },
       style: FilledButton.styleFrom(
         minimumSize: const Size(72, 36),
         padding: const EdgeInsets.symmetric(horizontal: 14),

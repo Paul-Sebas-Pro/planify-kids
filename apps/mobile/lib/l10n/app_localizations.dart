@@ -338,6 +338,18 @@ abstract class AppLocalizations {
   /// **'Salut {name} !'**
   String todayGreeting(Object name);
 
+  /// No description provided for @celebrationAllDoneSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes tes tâches du jour sont faites !'**
+  String get celebrationAllDoneSubtitle;
+
+  /// No description provided for @celebrationTapToContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Touche l\'écran pour continuer'**
+  String get celebrationTapToContinue;
+
   /// No description provided for @todayProgressSummary.
   ///
   /// In fr, this message translates to:

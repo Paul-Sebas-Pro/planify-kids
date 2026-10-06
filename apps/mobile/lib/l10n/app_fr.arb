@@ -40,6 +40,8 @@
   "todayEmptyState": "Aucune tâche aujourd'hui !",
   "todayGreetingDone": "Bravo {name} ! 🎉",
   "todayGreeting": "Salut {name} !",
+  "celebrationAllDoneSubtitle": "Toutes tes tâches du jour sont faites !",
+  "celebrationTapToContinue": "Touche l'écran pour continuer",
   "todayProgressSummary": "{completed} / {total} tâche{tacheS} terminée{termineeS}",
   "todaySectionPending": "À faire ({count})",
   "todaySectionDone": "Terminé ({count})",

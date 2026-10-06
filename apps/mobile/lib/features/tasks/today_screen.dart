@@ -7,15 +7,35 @@ import '../../models/schedule_item.dart';
 import '../../shared/l10n/l10n_extensions.dart';
 import '../../shared/providers/locale_provider.dart';
 import '../../shared/widgets/api_error_widget.dart';
+import '../../shared/widgets/celebration.dart';
 import '../auth/auth_provider.dart';
 import 'task_card.dart';
 import 'tasks_provider.dart';
 
-class TodayScreen extends ConsumerWidget {
+class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TodayScreen> createState() => _TodayScreenState();
+}
+
+class _TodayScreenState extends ConsumerState<TodayScreen> {
+  /// Dernière tâche cochée depuis cet écran — sa carte "Terminé" rebondit.
+  String? _justCompletedId;
+
+  Future<void> _complete(ScheduleItem item, {required bool isLast}) async {
+    setState(() => _justCompletedId = item.id);
+    await ref.read(tasksProvider.notifier).markCompleted(item.id);
+    if (!isLast || !mounted) return;
+    // Laisse la gerbe "+N pts" se jouer avant la grande célébration.
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (!mounted) return;
+    final name = ref.read(authProvider).value?.name ?? '';
+    await showAllDoneCelebration(context, name: name);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tasksAsync = ref.watch(tasksProvider);
     final user = ref.watch(authProvider).value;
     final locale = ref.watch(appLocaleProvider);
@@ -92,7 +112,7 @@ class TodayScreen extends ConsumerWidget {
                   cardBuilder: (item) => TaskCard(
                     item: item,
                     onComplete: () =>
-                        ref.read(tasksProvider.notifier).markCompleted(item.id),
+                        _complete(item, isLast: pending.length == 1),
                   ),
                 ),
               ],
@@ -105,6 +125,7 @@ class TodayScreen extends ConsumerWidget {
                   items: done,
                   cardBuilder: (item) => TaskCard(
                     item: item,
+                    celebrate: item.id == _justCompletedId,
                     onUndo: () => _confirmUndo(context, ref, item.id),
                   ),
                 ),

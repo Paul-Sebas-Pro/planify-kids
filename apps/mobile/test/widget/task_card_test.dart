@@ -24,36 +24,69 @@ void main() {
     testWidgets('affiche nom et points', (tester) async {
       await tester.pumpWidget(wrap(TaskCard(item: pendingItem)));
       expect(find.text('Ranger sa chambre'), findsOneWidget);
-      expect(find.text('10 pts'), findsOneWidget);
+      expect(find.text('+10 pts'), findsOneWidget);
     });
 
-    testWidgets('PENDING — bouton Fait! visible, check absent', (tester) async {
-      await tester.pumpWidget(wrap(TaskCard(item: pendingItem)));
+    testWidgets('PENDING — bouton Fait ! visible, chip Fait ✓ absent',
+        (tester) async {
+      await tester.pumpWidget(
+        wrap(TaskCard(item: pendingItem, onComplete: () {})),
+      );
       expect(find.text('Fait !'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle), findsNothing);
+      expect(find.text('Fait ✓'), findsNothing);
     });
 
-    testWidgets('COMPLETED — check visible, bouton Fait! absent', (tester) async {
+    testWidgets('COMPLETED — chip Fait ✓ visible, bouton Fait ! absent',
+        (tester) async {
       await tester.pumpWidget(wrap(TaskCard(item: completedItem)));
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(find.text('Fait ✓'), findsOneWidget);
       expect(find.text('Fait !'), findsNothing);
     });
 
-    testWidgets('tap Fait! déclenche onComplete', (tester) async {
+    testWidgets('COMPLETED avec onUndo — icône annuler visible',
+        (tester) async {
+      await tester.pumpWidget(
+        wrap(TaskCard(item: completedItem, onUndo: () {})),
+      );
+      expect(find.byIcon(Icons.undo), findsOneWidget);
+    });
+
+    testWidgets('tap Fait ! déclenche onComplete et la gerbe +pts',
+        (tester) async {
       var called = false;
       await tester.pumpWidget(
         wrap(TaskCard(item: pendingItem, onComplete: () => called = true)),
       );
       await tester.tap(find.text('Fait !'));
+      await tester.pump(const Duration(milliseconds: 100));
       expect(called, isTrue);
+      // "+10 pts" sur la carte + celui qui s'envole dans l'overlay.
+      expect(find.text('+10 pts'), findsNWidgets(2));
+
+      // L'overlay se retire seul à la fin de l'animation.
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('+10 pts'), findsOneWidget);
     });
 
-    testWidgets('sans onComplete — bouton désactivé', (tester) async {
-      await tester.pumpWidget(wrap(TaskCard(item: pendingItem)));
-      final btn = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Fait !'),
+    testWidgets('réduire les animations — pas de gerbe', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: Scaffold(
+              body: TaskCard(item: pendingItem, onComplete: () {}),
+            ),
+          ),
+        ),
       );
-      expect(btn.onPressed, isNull);
+      await tester.tap(find.text('Fait !'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('+10 pts'), findsOneWidget);
+    });
+
+    testWidgets('sans onComplete — aucun bouton', (tester) async {
+      await tester.pumpWidget(wrap(TaskCard(item: pendingItem)));
+      expect(find.byType(FilledButton), findsNothing);
     });
   });
 }

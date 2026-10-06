@@ -206,7 +206,7 @@ adb install -r apps/mobile/build/app/outputs/flutter-apk/app-release.apk
 
 ### Limitations connues sur tablette
 
-- **PowerSync / sync offline** : scaffoldé mais non fonctionnel sans instance PowerSync cloud (reporté, cf. Direction 1 Sprint 5) — l'app fonctionne en mode 100% API (nécessite connexion internet)
+- **PowerSync / sync offline** : fonctionnel (vérifié en réel 2026-07-24). L'instance PowerSync Cloud (offre gratuite) **se met en pause après une période d'inactivité** — symptôme : connexion enfant OK mais liste des tâches vide sur tablette. Fix : redéployer l'instance depuis le dashboard PowerSync (constaté 2026-10-06).
 - **Notifications push FCM** : nécessite `google-services.json` dans `apps/mobile/android/app/` + env vars Firebase côté Vercel (`FIREBASE_PROJECT_ID`/`CLIENT_EMAIL`/`PRIVATE_KEY`) — sans ça, no-op silencieux, pas de crash
 - **SSE temps réel** : dégradé en polling TanStack Query côté web ; côté Flutter, pas de SSE utilisé (polling natif)
 
@@ -377,6 +377,35 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 28 - 2026-10-06
+
+**Objectif**: Corriger les 14 erreurs Supabase Security Advisor `0013_rls_disabled_in_public` (une par table Prisma).
+
+**Concepts introduits**:
+
+- **Le Data API Supabase (PostgREST) expose le schéma `public` en CRUD** à quiconque a l'URL du projet + la clé anon, même si l'app ne l'utilise pas (ici : aucun `@supabase/*` dans le code, tout passe par Prisma). Sans RLS, `User.passwordHash` et les PIN (hachés argon2) étaient lisibles.
+- **RLS activée sans aucune policy = accès refusé à `anon`/`authenticated`, sans impact app** : Prisma se connecte en rôle `postgres` (propriétaire des tables, RLS non appliquée au propriétaire), PowerSync en rôle `BYPASSRLS` + réplication logique.
+- **`prisma db push` ne gère pas RLS** : event trigger `ensure_rls` (recette officielle Supabase) pour activer RLS automatiquement sur toute future table de `public`.
+- **Faux positifs de l'éditeur SQL Supabase** : il signale `DROP EVENT TRIGGER IF EXISTS` comme destructif, et lit la chaîne `'CREATE TABLE AS'` comme la création d'une table nommée `AS`. Ne pas accepter sa proposition d'« enable RLS » automatique (ajouterait un `ALTER TABLE AS` invalide).
+- **Warning log `42602 invalid configuration parameter name "supautils.restrict_extension_versions"`** : interne à Supabase (décalage de version de l'extension `supautils`), sans effet, rien à faire.
+- **L'instance PowerSync Cloud gratuite se met en pause après inactivité** : connexion enfant OK mais liste des tâches vide. Fix : redéployer l'instance depuis le dashboard PowerSync. Fausse piste initiale (RLS soupçonnée) écartée.
+
+**Modifications** :
+
+```diff
++ apps/api/src/prisma/supabase-security.sql   (RLS toutes tables public + event trigger ensure_rls + requête de vérification, idempotent)
+M PROJECT_STATE.md                             (étape RLS dans la procédure de déploiement, limitation pause PowerSync)
+```
+
+**Résultats** :
+
+- Script exécuté sur la DB prod : Security Advisor 0 erreur.
+- App web fonctionnelle, connexion + liste des tâches tablette OK (après redéploiement PowerSync).
+
+**Prochaine session** : Backlog Sprint 8 (5 écarts audit cahier des charges) à prioriser.
+
+---
 
 ### Session 27 - 2026-07-23
 

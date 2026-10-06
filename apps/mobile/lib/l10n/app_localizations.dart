@@ -344,6 +344,12 @@ abstract class AppLocalizations {
   /// **'Toutes tes tâches du jour sont faites !'**
   String get celebrationAllDoneSubtitle;
 
+  /// No description provided for @celebrationNewBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau badge !'**
+  String get celebrationNewBadge;
+
   /// No description provided for @celebrationTapToContinue.
   ///
   /// In fr, this message translates to:

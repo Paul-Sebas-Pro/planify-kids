@@ -144,6 +144,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Toutes tes tâches du jour sont faites !';
 
   @override
+  String get celebrationNewBadge => 'Nouveau badge !';
+
+  @override
   String get celebrationTapToContinue => 'Touche l\'écran pour continuer';
 
   @override

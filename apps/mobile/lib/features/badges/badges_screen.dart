@@ -69,7 +69,7 @@ class BadgesScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        DateFormat('dd/MM', dateLocaleFor(locale)).format(mb.earnedAt),
+                        DateFormat('dd/MM', dateLocaleFor(locale)).format(mb.earnedAt.toLocal()),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

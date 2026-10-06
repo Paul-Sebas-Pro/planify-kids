@@ -41,6 +41,7 @@
   "todayGreetingDone": "Well done {name}! 🎉",
   "todayGreeting": "Hi {name}!",
   "celebrationAllDoneSubtitle": "All of today's tasks are done!",
+  "celebrationNewBadge": "New badge!",
   "celebrationTapToContinue": "Tap to continue",
   "todayProgressSummary": "{completed} / {total} task{tacheS} completed",
   "todaySectionPending": "To do ({count})",

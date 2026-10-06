@@ -5,6 +5,7 @@ class SecureStorageService {
   static const _userKey = 'current_user_json';
   static const _familyCodeKey = 'family_code';
   static const _localeKey = 'locale';
+  static const _badgesCelebratedPrefix = 'badges_celebrated_until_';
 
   Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
@@ -38,6 +39,21 @@ class SecureStorageService {
 
   Future<void> saveLocale(String code) async {
     await (await _prefs).setString(_localeKey, code);
+  }
+
+  /// Date `earnedAt` du dernier badge fêté pour ce membre (null = jamais
+  /// initialisé sur cet appareil). Survit au logout, comme le code famille.
+  Future<DateTime?> getBadgesCelebratedUntil(String memberId) async {
+    final raw =
+        (await _prefs).getString('$_badgesCelebratedPrefix$memberId');
+    return raw == null ? null : DateTime.tryParse(raw);
+  }
+
+  Future<void> saveBadgesCelebratedUntil(String memberId, DateTime at) async {
+    await (await _prefs).setString(
+      '$_badgesCelebratedPrefix$memberId',
+      at.toUtc().toIso8601String(),
+    );
   }
 
   /// Retire la session (token + utilisateur) en gardant le code famille

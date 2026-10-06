@@ -150,13 +150,21 @@ class _TaskDoneBurstState extends State<_TaskDoneBurst>
   }
 }
 
-/// Célébration plein écran quand la dernière tâche du jour est cochée.
-/// Se ferme seule après ~3,5 s ou au tap.
-Future<void> showAllDoneCelebration(
-  BuildContext context, {
-  required String name,
-}) {
-  HapticFeedback.heavyImpact();
+// File d'attente des célébrations plein écran : jamais deux fenêtres
+// empilées (ex. badge "Première tâche" qui arrive par la sync pendant la
+// célébration "journée terminée") — elles s'enchaînent.
+Future<void> _queue = Future<void>.value();
+
+Future<void> _enqueue(BuildContext context, Widget Function() content) {
+  final next = _queue.then((_) {
+    if (!context.mounted) return null;
+    return _showCelebrationDialog(context, content());
+  }).catchError((Object _) {});
+  _queue = next;
+  return next;
+}
+
+Future<void> _showCelebrationDialog(BuildContext context, Widget content) {
   return showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
@@ -167,20 +175,67 @@ Future<void> showAllDoneCelebration(
       scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
       child: FadeTransition(opacity: animation, child: child),
     ),
-    pageBuilder: (_, _, _) => _AllDoneCelebration(name: name),
+    pageBuilder: (_, _, _) => content,
   );
 }
 
-class _AllDoneCelebration extends StatefulWidget {
-  final String name;
-
-  const _AllDoneCelebration({required this.name});
-
-  @override
-  State<_AllDoneCelebration> createState() => _AllDoneCelebrationState();
+/// Célébration plein écran quand la dernière tâche du jour est cochée.
+/// Se ferme seule après ~3,5 s ou au tap.
+Future<void> showAllDoneCelebration(
+  BuildContext context, {
+  required String name,
+}) {
+  return _enqueue(context, () {
+    HapticFeedback.heavyImpact();
+    return _CelebrationCard(
+      emoji: '🏆',
+      title: context.l10n.todayGreetingDone(name),
+      subtitle: context.l10n.celebrationAllDoneSubtitle,
+      autoClose: const Duration(milliseconds: 3500),
+    );
+  });
 }
 
-class _AllDoneCelebrationState extends State<_AllDoneCelebration>
+/// Célébration d'un badge gagné (attribué côté serveur, reçu par la sync).
+/// Reste un peu plus longtemps : l'enfant doit pouvoir lire le nom du badge.
+Future<void> showBadgeCelebration(
+  BuildContext context, {
+  required String icon,
+  required String name,
+  String? description,
+}) {
+  return _enqueue(context, () {
+    HapticFeedback.heavyImpact();
+    return _CelebrationCard(
+      headline: context.l10n.celebrationNewBadge,
+      emoji: icon,
+      title: name,
+      subtitle: description,
+      autoClose: const Duration(seconds: 5),
+    );
+  });
+}
+
+class _CelebrationCard extends StatefulWidget {
+  final String? headline;
+  final String emoji;
+  final String title;
+  final String? subtitle;
+  final Duration autoClose;
+
+  const _CelebrationCard({
+    this.headline,
+    required this.emoji,
+    required this.title,
+    this.subtitle,
+    required this.autoClose,
+  });
+
+  @override
+  State<_CelebrationCard> createState() => _CelebrationCardState();
+}
+
+class _CelebrationCardState extends State<_CelebrationCard>
     with SingleTickerProviderStateMixin {
   late final ConfettiController _confetti;
   late final AnimationController _autoClose;
@@ -191,10 +246,7 @@ class _AllDoneCelebrationState extends State<_AllDoneCelebration>
     _confetti = ConfettiController(duration: const Duration(seconds: 2));
     // Minuterie portée par un AnimationController plutôt qu'un Timer :
     // disposée avec le widget si l'enfant ferme avant la fin.
-    _autoClose = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3500),
-    )
+    _autoClose = AnimationController(vsync: this, duration: widget.autoClose)
       ..addStatusListener((status) {
         if (status == AnimationStatus.completed) _close();
       })
@@ -223,6 +275,8 @@ class _AllDoneCelebrationState extends State<_AllDoneCelebration>
 
   @override
   Widget build(BuildContext context) {
+    final emoji = Text(widget.emoji, style: const TextStyle(fontSize: 80));
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _close,
@@ -253,10 +307,31 @@ class _AllDoneCelebrationState extends State<_AllDoneCelebration>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('🏆', style: TextStyle(fontSize: 80)),
+                    if (widget.headline != null) ...[
+                      Text(
+                        widget.headline!,
+                        style: GoogleFonts.fredoka(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFFF9800),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (_animationsDisabled(context))
+                      emoji
+                    else
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.3, end: 1),
+                        duration: const Duration(milliseconds: 900),
+                        curve: Curves.elasticOut,
+                        builder: (context, scale, child) =>
+                            Transform.scale(scale: scale, child: child),
+                        child: emoji,
+                      ),
                     const SizedBox(height: 12),
                     Text(
-                      context.l10n.todayGreetingDone(widget.name),
+                      widget.title,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.fredoka(
                         fontSize: 30,
@@ -264,15 +339,17 @@ class _AllDoneCelebrationState extends State<_AllDoneCelebration>
                         color: const Color(0xFF1A1A2E),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      context.l10n.celebrationAllDoneSubtitle,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.nunito(
-                        fontSize: 18,
-                        color: Colors.grey.shade700,
+                    if (widget.subtitle != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.subtitle!,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          fontSize: 18,
+                          color: Colors.grey.shade700,
+                        ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 20),
                     Text(
                       context.l10n.celebrationTapToContinue,

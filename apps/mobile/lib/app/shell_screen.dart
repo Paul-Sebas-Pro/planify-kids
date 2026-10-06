@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/badges/badge_celebration.dart';
 import '../features/notifications/notifications_provider.dart';
 import '../shared/l10n/l10n_extensions.dart';
 
@@ -37,7 +38,7 @@ class ShellScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      body: child,
+      body: BadgeCelebrationListener(child: child),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex(context),
         onDestinationSelected: (i) {

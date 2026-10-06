@@ -143,6 +143,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get celebrationAllDoneSubtitle => 'All of today\'s tasks are done!';
 
   @override
+  String get celebrationNewBadge => 'New badge!';
+
+  @override
   String get celebrationTapToContinue => 'Tap to continue';
 
   @override

@@ -5,9 +5,10 @@
 - **Projet**: Planify Kids
 - **Version**: 0.1.0
 - **Démarré le**: 2026-04-08
-- **Statut**: Sprint 5/6/7 TERMINÉS ✅ — **offline PowerSync tenu et vérifié en réel sur tablette** (lecture tous écrans + écriture offline-first confirmée : mode avion, persistance, remontée après reconnexion), dernier gros morceau du cahier des charges. i18n FR/EN + détection auto langue faits. Reste uniquement des demandes UX ponctuelles au fil de l'eau (filtres planning web/mobile ajoutés cette session, refonte carte récompense mobile ajoutée cette session) — pas de blocage produit connu à ce jour.
+- **Statut**: Sprint 5/6/7 TERMINÉS ✅ — **offline PowerSync tenu et vérifié en réel sur tablette** (lecture tous écrans + écriture offline-first confirmée : mode avion, persistance, remontée après reconnexion), dernier gros morceau du cahier des charges. i18n FR/EN + détection auto langue faits. **Audit cahier des charges round 2 fait (2026-07-23)** : 5 écarts réels identifiés (drag & drop absent, animations validation absentes, badge "challenge" déconnecté du système Badge, PIN enfant pas vraiment optionnel, merge-conflict sync non formalisé) — voir Backlog Sprint 8. Pas de blocage produit connu à ce jour.
 - **Last Session**: 2026-07-23/24 — Trois volets. **(1) Clôture PowerSync** : setup PowerSync Cloud terminé après une longue série de bugs réels diagnostiqués et corrigés un par un (cast SQL, pooler Supavisor incompatible réplication logique, JWT sans `kid`, secret HS256 mal encodé, toggle "Development tokens" interférant avec `request.jwt()`, `POWERSYNC_URL` périmé après recréation du projet, et le bug final — PowerSync matérialise une ligne locale via le nom de table **Postgres source** du `FROM` des sync rules et pas le nom de table déclaré côté client : `FROM "Badge"` → row_type `"Badge"`, mais le schema mobile déclare `badges` — sans alias explicite (`FROM "Badge" badges`), la ligne reste bloquée dans `ps_oplog`, jamais copiée vers `ps_data__<table>`, sync "réussie" sans la moindre erreur mais tables locales vides. Diagnostiqué via l'outil officiel `diagnostics-app.powersync.com` + un script Dart autonome (vraie `PowerSyncDatabase` sur fichier temporaire hors app, inspectant directement `ps_oplog` vs `ps_data__*`) — bien plus fiable que les logs dashboard, qui mélangeaient en plus les sessions de l'outil diagnostics web (`powersync-js`) avec le vrai device (`powersync-dart-core`), source de plusieurs fausses pistes. **Test final sur tablette : succès** (lecture + écriture offline confirmées de bout en bout). Bug annexe trouvé pendant ces tests : tri échanges cassé (colonne `created_at` jamais scaffoldée dans le schema PowerSync local) — fixé, tri `ORDER BY created_at DESC`. **(2) Régressions CI/Vercel découvertes en marge du rebuild APK** : build Vercel cassé (bundler serverless `/api/index.ts` a un pipeline séparé du `buildCommand` custom, ne générait jamais le client Prisma pour ce chemin) — fix `postinstall: prisma generate` + fallback JS dans `prisma.config.ts` (le helper `env()` strict cassait l'install CI, `DATABASE_URL` pas encore défini à ce stade) ; 11 tests E2E cassés par la détection auto langue (Chromium headless en `en-US` par défaut) — fix `locale: "fr-FR"` dans `playwright.config.ts`. Puis l'environnement Docker local a cassé au même endroit (`postinstall` tourne avant que `schema.prisma` soit copié dans l'image `api.Dockerfile`, car copié en 2 temps pour le cache de layers) — fix ordre des `COPY`, + nouveau flag `--reset-db` sur `scripts/docker-dev.sh` (force-reset schéma local + reseed, pour une DB locale avec colonne requise ajoutée sur données déjà là). **(3) 3 demandes UX** (proposées puis validées avant implémentation) : filtres planning web (`PlanningPage.tsx` — chips membre/statut + vue Semaine/Jour) ; mêmes filtres sur le mural mobile (`PlanningWallScreen`, demande explicite tablette) ; carte récompense mobile refaite (`RewardsScreen` — nom sur 2 lignes + ellipsis au lieu de `ListTile` qui écrasait le bouton "Demander" sur les noms longs). Tout testé et confirmé fonctionnel par l'utilisateur (web + mobile).
-- **Next Steps**: Aucun blocage connu. (1) Désactiver "Development tokens" sur le dashboard PowerSync si pas déjà fait de façon permanente (utile seulement pour le diagnostic, source de confusion sinon). (2) Follow-up mineur i18n non traité : `vite.config.ts` PWA manifest `lang: "fr"` statique. (3) `task_card_test.dart` a 4 échecs pré-existants côté mobile, confirmés non liés à quoi que ce soit touché jusqu'ici, jamais fixés — à investiguer si un jour on retouche `TaskCard`. (4) Repasser le cahier des charges au propre pour identifier d'éventuels écarts restants maintenant que PowerSync est bouclé (dernier audit exhaustif remonte au 2026-07-06, beaucoup de choses ont changé depuis).
+- **Session 27 - 2026-07-23**: Development tokens désactivé sur le dashboard PowerSync (utilisateur, hors session). Audit cahier des charges round 2 (agent Explore, 10 points ciblés — items déjà fermés au 2026-07-06 exclus du scope) : 5 écarts réels + 3 écarts cosmétiques (routes API nommées différemment mais fonctionnellement équivalentes, archi Hono/émojis/ES-PT déjà assumés). Détail complet en Backlog Sprint 8. Aucun code touché cette session — audit + doc seulement.
+- **Next Steps**: Aucun blocage connu. Voir Backlog Sprint 8 pour les 5 écarts audit (à prioriser avec l'utilisateur). Items mineurs restants : (1) `vite.config.ts` PWA manifest `lang: "fr"` statique (devrait suivre la langue détectée/choisie). (2) `task_card_test.dart` a 4 échecs pré-existants côté mobile, confirmés non liés à quoi que ce soit touché jusqu'ici, jamais fixés — à investiguer si un jour on retouche `TaskCard`.
 
 ---
 
@@ -97,6 +98,8 @@ Si le mot de passe contient `@`, l'encoder en `%40`.
 # Depuis la racine du monorepo (à relancer après chaque modification schema.prisma)
 DATABASE_URL="postgresql://..." pnpm --filter @planify-kids/api db:push --accept-data-loss
 ```
+
+Puis exécuter `apps/api/src/prisma/supabase-security.sql` dans Supabase → SQL Editor (idempotent) : active RLS sur toutes les tables `public` + event trigger `ensure_rls` pour les futures tables. Sans ça, le Data API Supabase (PostgREST) expose toutes les tables en CRUD à quiconque a l'URL + la clé anon (Security Advisor `0013_rls_disabled_in_public`). Aucun impact app : Prisma (rôle `postgres`, propriétaire) et PowerSync (rôle `BYPASSRLS`) ne sont pas soumis à RLS.
 
 ### 3. Seeder la base de données
 
@@ -266,6 +269,31 @@ Audit complet `CAHIER_CHARGES.md` vs code réel effectué — écarts identifié
 
 ---
 
+## 📋 Backlog Sprint 8 — Audit cahier des charges round 2 (2026-07-23)
+
+Audit ciblé (agent Explore, 10 points du cahier jamais vérifiés explicitement — items déjà fermés au 2026-07-06 exclus du scope : offline PowerSync, planning mural, streak, 80/20, notifications, i18n FR/EN). Résultat : 5 écarts réels, 3 écarts cosmétiques sans impact.
+
+### 🟠 Écarts réels — à prioriser
+
+- [ ] **§4.4/§10 — Pas de drag & drop nulle part** : cahier demande glisser-déposer pour proposer un échange de tâche. Réel : web = `<select>` HTML (`apps/web/src/features/planning/PlanningPage.tsx:782-795`), mobile = `DropdownButtonFormField` dans `_ProposeExchangeDialog` (`apps/mobile/lib/features/exchanges/exchanges_screen.dart:294,319`). Aucun `Draggable`/`DragTarget`/`dnd-kit`/`react-dnd` dans tout le repo. Fonctionnel identique, mais interaction moins ludique/rapide sur tablette tactile que le geste attendu pour des enfants 6-20 ans.
+- [ ] **§4.5/§10 — Pas d'animation de célébration** : cocher une tâche / gagner un badge = simple changement d'état visuel plat (web : `transition-colors` Tailwind seulement, pas de lib d'anim au `package.json` ; mobile : zéro `AnimatedContainer`/`AnimationController` dans `apps/mobile/lib`). Cahier §4.5 attend explicitement une "animation" dans le workflow de validation. Manque le renforcement ludique/émotionnel censé motiver les enfants.
+- [ ] **§13 — Badge "challenge" déconnecté** : `Badge.conditionType` supporte `TASKS_COMPLETED`/`POINTS`/`STREAK` (`apps/api/src/services/gamification.ts:113-117`) mais aucun `"CHALLENGE"`. `FamilyChallenge` (`schema.prisma:296-311`, module `apps/api/src/modules/challenges/`) est un système à part entière, à points/période, sans aucune référence à `Badge` — terminer un défi familial donne un bonus de points mais jamais de badge dédié.
+- [ ] **§7 — PIN enfant pas vraiment optionnel** : `pin` nullable en base et absent de `createMemberSchema` (donc optionnel à la création), mais `loginChildService` lève `UnauthorizedError("Aucun PIN configuré")` si absent (`apps/api/src/modules/auth/auth.service.ts:112-114`) et `loginChildSchema.pin` est obligatoire côté validation (`apps/api/src/modules/auth/auth.schema.ts:17-21`). Un enfant sans PIN configuré ne peut pas se connecter — pas de mode "avatar seul" pour les plus jeunes comme le cahier §7 semble l'envisager.
+- [ ] **§9 — Merge-conflict sync non formalisé** : `PlanifyConnector.uploadData()` (`apps/mobile/lib/database/connector.dart:22-43`) rejoue chaque écriture locale comme un `PATCH` REST séquentiel, sans comparaison de version/horodatage. PowerSync gère une file CRUD mais aucune stratégie de résolution de conflit n'est codée/documentée — "dernier écrit gagne" implicite. Risque faible en usage réel (1 appareil/enfant), mais 2 appareils modifiant le même item hors-ligne en simultané s'écraseraient silencieusement.
+
+### 🟢 Écarts cosmétiques — sans impact, pour information
+
+- Routes API nommées différemment du cahier mais fonctionnellement équivalentes : `/planning/swap` → `/exchanges` (module dédié) ; `/planning/complete` → `PATCH /planning/items/:itemId` (générique, couvre aussi undo/skip) ; `/family/member` → `/family/members` (pluriel).
+- Architecture Hono (pas Express) — déviation assumée depuis le début du projet.
+- Icônes émoji via `IconPicker` maison (pas Material Icons/Phosphor) — déviation assumée.
+- Multi-langue ES/PT jamais implémenté (seuls FR/EN faits) — déjà connu, scope réduit volontairement en Session 21.
+
+**Conforme, vérifié** : dashboard stats parent (tâches/points/badges/progression par enfant, `apps/web/src/features/dashboard/DashboardPage.tsx`), badges milestones + streak, routes tasks/auth/family/planning fonctionnellement complètes.
+
+**Valeur** : les 5 écarts réels touchent l'expérience enfant (ludique/émotionnel) et 2 angles morts produit (accès sans PIN, conflits multi-appareils) plutôt que des trous fonctionnels — rien de bloquant, mais mesure l'écart entre "cahier des charges" et "produit fini poli".
+
+---
+
 ## 📋 Backlog Sprint 6 — Retours terrain tablette (2026-07-05)
 
 Retours du premier test réel sur tablette Android (login enfant + usage quotidien) :
@@ -349,6 +377,23 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 ---
 
 ## 🗓 Sessions de Développement
+
+### Session 27 - 2026-07-23
+
+**Objectif**: Reprise post-clôture PowerSync. Désactivation "Development tokens" (dashboard PowerSync, fait par l'utilisateur hors session). Ré-audit cahier des charges vs code réel (round 2, dernier audit exhaustif au 2026-07-06) — identifier les écarts restants maintenant que PowerSync/streak/planning mural/i18n FR-EN/80-20 sont bouclés.
+
+**Méthode** : agent Explore délégué sur 10 points précis du cahier jamais vérifiés explicitement (drag & drop échange, animations UX, routes API exactes, badges milestones/streak/challenge, dashboard stats, PIN optionnel, merge-conflict sync, assets icônes/fonts, archi Express vs Hono, i18n ES/PT) — scope volontairement restreint aux items non déjà fermés par les sessions précédentes, pour éviter de re-vérifier du terrain déjà couvert.
+
+**Résultats** :
+
+- 5 écarts réels identifiés (drag & drop absent partout, animations de célébration absentes, badge "challenge" déconnecté du système `Badge`/`FamilyChallenge`, PIN enfant pas vraiment optionnel — bloque la connexion sans lui, merge-conflict sync jamais formalisé) — détail complet + fichier:ligne en Backlog Sprint 8.
+- 3 écarts cosmétiques confirmés sans impact (nommage routes API, archi Hono, icônes émoji, ES/PT absents) — déjà connus ou sans conséquence fonctionnelle.
+- Conformité confirmée sur dashboard stats parent, badges milestones/streak, routes CRUD principales.
+- Aucun code touché — session 100% audit + documentation (`PROJECT_STATE.md`).
+
+**Prochaine session** : Prioriser et traiter les 5 écarts réels du Backlog Sprint 8 avec l'utilisateur (aucun n'est bloquant, à arbitrer par valeur/effort). Items mineurs toujours en attente : `vite.config.ts` PWA manifest `lang: "fr"` statique, 4 échecs pré-existants `task_card_test.dart`.
+
+---
 
 ### Session 26 - 2026-07-23/24
 

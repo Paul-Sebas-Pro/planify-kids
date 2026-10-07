@@ -265,8 +265,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           return Stack(
             children: [
               list,
-              Align(
-                alignment: Alignment.bottomCenter,
+              // Carte flottante détachée de la barre de navigation (test réel
+              // smartphone : collé à la barre, le bandeau se confondait avec
+              // elle).
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
                 child: IgnorePointer(
                   ignoring: _dragging == null,
                   child: AnimatedSlide(
@@ -309,21 +314,55 @@ class _DraggableTask extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) => LongPressDraggable<ScheduleItem>(
-        data: item,
-        hapticFeedbackOnStart: true,
-        onDragStarted: onDragStarted,
-        onDragEnd: (_) => onDragEnded(),
-        feedback: SizedBox(
-          width: constraints.maxWidth,
-          child: Material(
-            color: Colors.transparent,
-            child: Transform.rotate(angle: -0.03, child: card),
-          ),
+    return LongPressDraggable<ScheduleItem>(
+      data: item,
+      hapticFeedbackOnStart: true,
+      onDragStarted: onDragStarted,
+      onDragEnd: (_) => onDragEnded(),
+      // Étiquette compacte affichée AU-DESSUS du doigt : la carte pleine
+      // largeur accrochée sous le doigt recouvrait le bandeau des avatars.
+      dragAnchorStrategy: pointerDragAnchorStrategy,
+      feedback: FractionalTranslation(
+        translation: const Offset(-0.5, -1.6),
+        child: _DragChip(item: item),
+      ),
+      childWhenDragging: Opacity(opacity: 0.3, child: card),
+      child: card,
+    );
+  }
+}
+
+class _DragChip extends StatelessWidget {
+  final ScheduleItem item;
+
+  const _DragChip({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 8,
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(item.taskIcon ?? '✅', style: const TextStyle(fontSize: 22)),
+            const SizedBox(width: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 200),
+              child: Text(
+                item.taskName,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1A1A2E),
+                ),
+              ),
+            ),
+          ],
         ),
-        childWhenDragging: Opacity(opacity: 0.3, child: card),
-        child: card,
       ),
     );
   }

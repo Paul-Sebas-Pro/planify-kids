@@ -21,14 +21,16 @@ class ExchangeDropTray extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Pas de SafeArea : l'écran est déjà au-dessus de la barre de navigation
+    // (Scaffold du shell), la marge système est donc déjà retirée.
     return Material(
       elevation: 12,
       color: Colors.white,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      child: SafeArea(
-        top: false,
+      borderRadius: BorderRadius.circular(24),
+      child: SizedBox(
+        width: double.infinity,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

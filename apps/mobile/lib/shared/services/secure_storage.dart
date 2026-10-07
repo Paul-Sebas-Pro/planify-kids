@@ -6,6 +6,7 @@ class SecureStorageService {
   static const _familyCodeKey = 'family_code';
   static const _localeKey = 'locale';
   static const _badgesCelebratedPrefix = 'badges_celebrated_until_';
+  static const _exchangeDragHintSeenKey = 'exchange_drag_hint_seen';
 
   Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
@@ -54,6 +55,16 @@ class SecureStorageService {
       '$_badgesCelebratedPrefix$memberId',
       at.toUtc().toIso8601String(),
     );
+  }
+
+  /// Astuce « appui long pour échanger » déjà comprise : un échange a été
+  /// proposé par glisser-déposer sur cet appareil.
+  Future<bool> getExchangeDragHintSeen() async {
+    return (await _prefs).getBool(_exchangeDragHintSeenKey) ?? false;
+  }
+
+  Future<void> saveExchangeDragHintSeen() async {
+    await (await _prefs).setBool(_exchangeDragHintSeenKey, true);
   }
 
   /// Retire la session (token + utilisateur) en gardant le code famille

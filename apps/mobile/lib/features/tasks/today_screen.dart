@@ -1,15 +1,20 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../models/family_member.dart';
 import '../../models/schedule_item.dart';
 import '../../shared/l10n/l10n_extensions.dart';
 import '../../shared/providers/locale_provider.dart';
 import '../../shared/providers/my_points_provider.dart';
+import '../../shared/providers/providers.dart';
 import '../../shared/widgets/api_error_widget.dart';
 import '../../shared/widgets/celebration.dart';
 import '../auth/auth_provider.dart';
+import '../exchanges/exchanges_provider.dart';
+import 'exchange_drop_tray.dart';
 import 'task_card.dart';
 import 'tasks_provider.dart';
 
@@ -23,6 +28,87 @@ class TodayScreen extends ConsumerStatefulWidget {
 class _TodayScreenState extends ConsumerState<TodayScreen> {
   /// Dernière tâche cochée depuis cet écran — sa carte "Terminé" rebondit.
   String? _justCompletedId;
+
+  /// Tâche en cours de glisser (échange par drag & drop) : affiche le bandeau
+  /// des frères et sœurs.
+  ScheduleItem? _dragging;
+
+  /// Échanges proposés depuis cet écran, en attendant que la sync les ramène
+  /// dans la table locale `exchanges`.
+  final Set<String> _proposedItemIds = {};
+
+  /// Astuce « appui long » : masquée tant que le stockage n'est pas lu (pas
+  /// de clignotement), puis jusqu'au premier échange glissé-déposé.
+  bool _hintSeen = true;
+
+  @override
+  void initState() {
+    super.initState();
+    ref
+        .read(secureStorageServiceProvider)
+        .getExchangeDragHintSeen()
+        .then((seen) {
+      if (mounted) setState(() => _hintSeen = seen);
+    }).catchError((Object _) {});
+  }
+
+  Future<void> _proposeExchange(ScheduleItem item, FamilyMember to) async {
+    setState(() => _dragging = null);
+    final user = ref.read(authProvider).value;
+    if (user == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.l10n.exchangeConfirmTitle),
+        content: Text(
+          context.l10n.exchangeConfirmBody(to.name, item.taskName),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(context.l10n.exchangesCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(context.l10n.exchangesPropose),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+    try {
+      await ref.read(exchangesProvider.notifier).propose(
+            scheduleItemId: item.id,
+            fromMemberId: user.id,
+            toMemberId: to.id,
+          );
+      if (!mounted) return;
+      setState(() {
+        _proposedItemIds.add(item.id);
+        _hintSeen = true;
+      });
+      ref
+          .read(secureStorageServiceProvider)
+          .saveExchangeDragHintSeen()
+          .catchError((Object _) {});
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.exchangeProposedSnack(to.name))),
+      );
+    } catch (e) {
+      // Pas de réponse du serveur = pas de réseau (l'échange passe par l'API,
+      // il n'est pas mis en file hors ligne).
+      final offline = e is DioException && e.response == null;
+      messenger.showSnackBar(SnackBar(
+        content: Text(
+          offline ? l10n.exchangeOffline : l10n.exchangesSubmitError,
+        ),
+      ));
+    }
+  }
 
   Future<void> _complete(ScheduleItem item, {required bool isLast}) async {
     setState(() => _justCompletedId = item.id);
@@ -40,6 +126,18 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final tasksAsync = ref.watch(tasksProvider);
     final user = ref.watch(authProvider).value;
     final points = ref.watch(myPointsProvider).value ?? user?.points ?? 0;
+    final siblings = (ref.watch(familyMembersProvider).value ??
+            const <FamilyMember>[])
+        .where((m) => m.role == 'CHILD' && m.id != user?.id)
+        .toList();
+    final exchangePendingIds = {
+      ...?ref
+          .watch(exchangesProvider)
+          .value
+          ?.where((e) => e.isPending)
+          .map((e) => e.scheduleItemId),
+      ..._proposedItemIds,
+    };
     final locale = ref.watch(appLocaleProvider);
     final today = DateFormat('EEEE d MMMM', dateLocaleFor(locale))
         .format(DateTime.now());
@@ -96,7 +194,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               .where((i) => !i.isPending && !i.isCompleted)
               .toList();
 
-          return ListView(
+          final list = ListView(
             children: [
               _ProgressBanner(
                 name: user?.name ?? '',
@@ -109,13 +207,29 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   label: context.l10n.todaySectionPending(pending.length),
                   icon: Icons.radio_button_unchecked,
                 ),
+                if (!_hintSeen && siblings.isNotEmpty) const _ExchangeHint(),
                 _SlotGroup(
                   items: pending,
-                  cardBuilder: (item) => TaskCard(
-                    item: item,
-                    onComplete: () =>
-                        _complete(item, isLast: pending.length == 1),
-                  ),
+                  cardBuilder: (item) {
+                    final inExchange = exchangePendingIds.contains(item.id);
+                    final card = TaskCard(
+                      item: item,
+                      exchangePending: inExchange,
+                      onComplete: () =>
+                          _complete(item, isLast: pending.length == 1),
+                    );
+                    // Seules les tâches « À faire » sans échange en cours
+                    // se glissent vers un frère ou une sœur.
+                    if (inExchange || siblings.isEmpty) return card;
+                    return _DraggableTask(
+                      item: item,
+                      card: card,
+                      onDragStarted: () => setState(() => _dragging = item),
+                      onDragEnded: () {
+                        if (mounted) setState(() => _dragging = null);
+                      },
+                    );
+                  },
                 ),
               ],
               if (done.isNotEmpty) ...[
@@ -145,7 +259,94 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               const SizedBox(height: 80),
             ],
           );
+
+          final reduceMotion =
+              MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+          return Stack(
+            children: [
+              list,
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: IgnorePointer(
+                  ignoring: _dragging == null,
+                  child: AnimatedSlide(
+                    offset: _dragging == null
+                        ? const Offset(0, 1.2)
+                        : Offset.zero,
+                    duration: reduceMotion
+                        ? Duration.zero
+                        : const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    child: ExchangeDropTray(
+                      siblings: siblings,
+                      onDrop: _proposeExchange,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
         },
+      ),
+    );
+  }
+}
+
+/// Carte « À faire » saisissable par appui long (un simple glisser
+/// entrerait en conflit avec le défilement et le bouton « Fait ! »).
+class _DraggableTask extends StatelessWidget {
+  final ScheduleItem item;
+  final Widget card;
+  final VoidCallback onDragStarted;
+  final VoidCallback onDragEnded;
+
+  const _DraggableTask({
+    required this.item,
+    required this.card,
+    required this.onDragStarted,
+    required this.onDragEnded,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => LongPressDraggable<ScheduleItem>(
+        data: item,
+        hapticFeedbackOnStart: true,
+        onDragStarted: onDragStarted,
+        onDragEnd: (_) => onDragEnded(),
+        feedback: SizedBox(
+          width: constraints.maxWidth,
+          child: Material(
+            color: Colors.transparent,
+            child: Transform.rotate(angle: -0.03, child: card),
+          ),
+        ),
+        childWhenDragging: Opacity(opacity: 0.3, child: card),
+        child: card,
+      ),
+    );
+  }
+}
+
+class _ExchangeHint extends StatelessWidget {
+  const _ExchangeHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Row(
+        children: [
+          const Icon(Icons.swap_horiz, size: 16, color: Color(0xFFF9A825)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              context.l10n.todayExchangeHint,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ),
+        ],
       ),
     );
   }

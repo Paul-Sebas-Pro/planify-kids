@@ -13,12 +13,16 @@ class TaskCard extends StatelessWidget {
   /// Rebond d'apparition — à passer sur la carte qui vient d'être cochée.
   final bool celebrate;
 
+  /// Un échange est proposé pour cette tâche et attend une réponse.
+  final bool exchangePending;
+
   const TaskCard({
     super.key,
     required this.item,
     this.onComplete,
     this.onUndo,
     this.celebrate = false,
+    this.exchangePending = false,
   });
 
   @override
@@ -143,6 +147,15 @@ class TaskCard extends StatelessWidget {
                                     : Colors.grey.shade400,
                               ),
                             ),
+                            if (exchangePending)
+                              Text(
+                                context.l10n.taskCardExchangePending,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFF9A825),
+                                ),
+                              ),
                           ],
                         ),
                       ),

@@ -115,7 +115,10 @@ export const membersApi = {
       "/family/members",
       body,
     ),
-  update: (id: string, body: Partial<CreateMemberRequest>) =>
+  update: (
+    id: string,
+    body: Partial<CreateMemberRequest> & { pinRequired?: boolean },
+  ) =>
     request<{ success: boolean; data: FamilyMember }>(
       "PATCH",
       `/family/members/${id}`,

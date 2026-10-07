@@ -49,6 +49,10 @@ export interface FamilyMember {
   birthDate?: string;
   role: Role;
   points: number;
+  /** Un PIN est défini (le hash n'est jamais renvoyé par l'API). */
+  hasPin: boolean;
+  /** false = connexion enfant sans PIN, choisi par le parent. */
+  pinRequired: boolean;
   createdAt: string;
 }
 

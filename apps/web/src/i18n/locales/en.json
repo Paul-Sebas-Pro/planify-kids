@@ -199,7 +199,14 @@
     "birthDateLabel": "Date of birth",
     "editPinTitle": "Edit PIN",
     "newPinLabel": "New PIN (4 digits)",
-    "pinInvalid": "The PIN must be exactly 4 digits"
+    "pinInvalid": "The PIN must be exactly 4 digits",
+    "pinStatusSet": "PIN set",
+    "pinStatusOff": "No PIN",
+    "pinStatusMissing": "PIN needed",
+    "pinStatusMissingHint": "Without a PIN, this child cannot log in on the tablet.",
+    "pinOffLabel": "Log in without PIN",
+    "pinOffHint": "For younger children: the child taps their avatar to log in. Anyone who knows the family code can also log in as them.",
+    "pinKeepCurrent": "Leave empty to keep the current PIN"
   },
   "memberTimeline": {
     "eventTaskCompleted": "Task completed",

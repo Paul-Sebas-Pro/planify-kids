@@ -19,6 +19,7 @@
   "loginCodeRequired": "Code de 6 caractères requis",
   "loginInvalidFamilyCode": "Code famille invalide",
   "loginNetworkErrorGeneric": "Erreur réseau",
+  "loginChildFailed": "Connexion impossible, réessaie",
   "loginPinIncorrect": "PIN incorrect.",
   "profileTitle": "Mon profil",
   "profileLogoutTooltip": "Déconnexion",

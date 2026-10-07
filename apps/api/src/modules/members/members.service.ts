@@ -29,6 +29,8 @@ export async function updateMemberService(
 ) {
   const member = await getMemberById(id, familyId);
   if (!member) throw new NotFoundError("Membre");
+  if (input.pinRequired !== undefined && member.role !== "CHILD")
+    throw new ForbiddenError("Le PIN ne s'applique qu'aux enfants");
   return updateMember(id, input);
 }
 

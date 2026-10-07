@@ -67,6 +67,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginNetworkErrorGeneric => 'Network error';
 
   @override
+  String get loginChildFailed => 'Login failed, please try again';
+
+  @override
   String get loginPinIncorrect => 'Incorrect PIN.';
 
   @override

@@ -12,7 +12,9 @@ export function findFamilyByCode(code: string) {
     include: {
       members: {
         where: { role: "CHILD" },
-        select: { id: true, name: true, color: true, avatar: true },
+        select: {
+          id: true, name: true, color: true, avatar: true, pinRequired: true,
+        },
       },
     },
   });
@@ -23,7 +25,7 @@ export function findChildMember(memberId: string, familyId: string) {
     where: { id: memberId, familyId, role: "CHILD" },
     select: {
       id: true, name: true, role: true,
-      color: true, avatar: true, points: true, pin: true,
+      color: true, avatar: true, points: true, pin: true, pinRequired: true,
     },
   });
 }

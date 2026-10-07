@@ -86,6 +86,24 @@ describe("updateMemberService", () => {
     expect(mockUpdate).toHaveBeenCalledWith("member-1", { name: "Nouveau" });
     expect(result.name).toBe("Nouveau");
   });
+
+  it("désactive le PIN d'un enfant", async () => {
+    mockGetById.mockResolvedValue(fakeMember as any);
+    mockUpdate.mockResolvedValue({ ...fakeMember, pinRequired: false } as any);
+
+    await updateMemberService("member-1", "family-1", { pinRequired: false });
+
+    expect(mockUpdate).toHaveBeenCalledWith("member-1", { pinRequired: false });
+  });
+
+  it("refuse pinRequired sur un parent (ForbiddenError)", async () => {
+    mockGetById.mockResolvedValue({ ...fakeMember, role: "PARENT" } as any);
+
+    await expect(
+      updateMemberService("member-1", "family-1", { pinRequired: false }),
+    ).rejects.toThrow(ForbiddenError);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
 });
 
 describe("deleteMemberService", () => {

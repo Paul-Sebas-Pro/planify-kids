@@ -231,19 +231,40 @@ class _ChildLoginFormState extends ConsumerState<_ChildLoginForm> {
     }
   }
 
+  /// PIN exigé pour l'enfant sélectionné. Le parent peut le désactiver
+  /// (enfant jeune) ; absent de la réponse API (ancienne version) = exigé.
+  bool get _pinRequired {
+    final child = _children.where((m) => m['id'] == _selectedMemberId);
+    if (child.isEmpty) return true;
+    return child.first['pinRequired'] as bool? ?? true;
+  }
+
+  bool get _canSubmit =>
+      _selectedMemberId != null &&
+      (!_pinRequired || _pinCtrl.text.length == 4);
+
+  void _selectChild(String id) {
+    setState(() => _selectedMemberId = id);
+    // Sans PIN : toucher son prénom suffit pour se connecter.
+    if (!_pinRequired) _submit();
+  }
+
   Future<void> _submit() async {
-    if (_selectedMemberId == null || _pinCtrl.text.length != 4) return;
+    if (!_canSubmit) return;
+    final pinRequired = _pinRequired;
     await ref.read(authProvider.notifier).loginChild(
           _codeCtrl.text.trim().toUpperCase(),
           _selectedMemberId!,
-          _pinCtrl.text,
+          pinRequired ? _pinCtrl.text : null,
         );
 
     if (!mounted) return;
     final authState = ref.read(authProvider);
     if (authState.hasError) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.loginPinIncorrect),
+        content: Text(pinRequired
+            ? context.l10n.loginPinIncorrect
+            : context.l10n.loginChildFailed),
         backgroundColor: Theme.of(context).colorScheme.error,
       ));
     }
@@ -298,31 +319,30 @@ class _ChildLoginFormState extends ConsumerState<_ChildLoginForm> {
               return FilterChip(
                 label: Text(m['name'] as String),
                 selected: selected,
-                onSelected: (_) =>
-                    setState(() => _selectedMemberId = m['id'] as String),
+                onSelected: isLoading
+                    ? null
+                    : (_) => _selectChild(m['id'] as String),
               );
             }).toList(),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _pinCtrl,
-            maxLength: 4,
-            obscureText: true,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: context.l10n.loginPinLabel,
-              prefixIcon: const Icon(Icons.pin_outlined),
-              counterText: '',
+          if (_pinRequired) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _pinCtrl,
+              maxLength: 4,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: context.l10n.loginPinLabel,
+                prefixIcon: const Icon(Icons.pin_outlined),
+                counterText: '',
+              ),
+              onChanged: (_) => setState(() {}),
             ),
-            onChanged: (_) => setState(() {}),
-          ),
+          ],
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: (isLoading ||
-                    _selectedMemberId == null ||
-                    _pinCtrl.text.length != 4)
-                ? null
-                : _submit,
+            onPressed: (isLoading || !_canSubmit) ? null : _submit,
             child: isLoading
                 ? const SizedBox(
                     height: 20,

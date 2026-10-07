@@ -14,6 +14,8 @@ vi.mock("../../config/env", () => ({
 vi.mock("./auth.repository", () => ({
   findUserByEmail: vi.fn(),
   createUserWithFamily: vi.fn(),
+  findFamilyByCode: vi.fn(),
+  findChildMember: vi.fn(),
 }));
 
 vi.mock("argon2", () => ({
@@ -23,12 +25,18 @@ vi.mock("argon2", () => ({
 
 import * as repo from "./auth.repository.js";
 import * as argon2 from "argon2";
-import { registerService, loginService } from "./auth.service.js";
+import {
+  registerService,
+  loginService,
+  loginChildService,
+} from "./auth.service.js";
 
 const mockHash = vi.mocked(argon2.hash);
 const mockVerify = vi.mocked(argon2.verify);
 const mockFindByEmail = vi.mocked(repo.findUserByEmail);
 const mockCreateUserWithFamily = vi.mocked(repo.createUserWithFamily);
+const mockFindFamilyByCode = vi.mocked(repo.findFamilyByCode);
+const mockFindChildMember = vi.mocked(repo.findChildMember);
 
 const fakeUser = {
   id: "user-1",
@@ -136,5 +144,84 @@ describe("loginService", () => {
     expect(result.family.name).toBe("Famille Test");
     expect(result.member.role).toBe("PARENT");
     expect(result.tokens.accessToken).toBeDefined();
+  });
+});
+
+describe("loginChildService", () => {
+  const MEMBER_ID = "11111111-1111-4111-8111-111111111111";
+  const child = (over: Record<string, unknown>) =>
+    ({
+      id: MEMBER_ID,
+      name: "Tom",
+      role: "CHILD",
+      color: null,
+      avatar: null,
+      points: 0,
+      pin: "hashed-pin",
+      pinRequired: true,
+      ...over,
+    }) as any;
+
+  beforeEach(() => {
+    mockFindFamilyByCode.mockResolvedValue(fakeFamily as any);
+  });
+
+  it("PIN désactivé par le parent — connexion sans PIN", async () => {
+    mockFindChildMember.mockResolvedValue(child({ pin: null, pinRequired: false }));
+
+    const result = await loginChildService({
+      familyCode: "DEMO01",
+      memberId: MEMBER_ID,
+    });
+
+    expect(result.tokens.accessToken).toBeDefined();
+    expect(mockVerify).not.toHaveBeenCalled();
+  });
+
+  it("PIN exigé mais absent de la requête — UnauthorizedError", async () => {
+    mockFindChildMember.mockResolvedValue(child({}));
+
+    await expect(
+      loginChildService({ familyCode: "DEMO01", memberId: MEMBER_ID }),
+    ).rejects.toThrow(UnauthorizedError);
+  });
+
+  it("PIN exigé mais jamais défini — UnauthorizedError", async () => {
+    mockFindChildMember.mockResolvedValue(child({ pin: null }));
+
+    await expect(
+      loginChildService({
+        familyCode: "DEMO01",
+        memberId: MEMBER_ID,
+        pin: "1234",
+      }),
+    ).rejects.toThrow(UnauthorizedError);
+  });
+
+  it("PIN exigé et correct — connexion", async () => {
+    mockFindChildMember.mockResolvedValue(child({}));
+    mockVerify.mockResolvedValue(true);
+
+    const result = await loginChildService({
+      familyCode: "DEMO01",
+      memberId: MEMBER_ID,
+      pin: "1234",
+    });
+
+    expect(mockVerify).toHaveBeenCalledWith("hashed-pin", "1234");
+    expect(result.member.id).toBe(MEMBER_ID);
+  });
+
+  it("PIN exigé et faux — UnauthorizedError", async () => {
+    mockFindChildMember.mockResolvedValue(child({}));
+    mockVerify.mockResolvedValue(false);
+
+    await expect(
+      loginChildService({
+        familyCode: "DEMO01",
+        memberId: MEMBER_ID,
+        pin: "0000",
+      }),
+    ).rejects.toThrow(UnauthorizedError);
   });
 });

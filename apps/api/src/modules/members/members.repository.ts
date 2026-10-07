@@ -2,11 +2,22 @@ import * as argon2 from "argon2";
 import { prisma } from "../../config/database.js";
 import type { CreateMemberInput, UpdateMemberInput } from "./members.schema.js";
 
-export function getMembersByFamily(familyId: string) {
-  return prisma.familyMember.findMany({
+// Jamais renvoyés au client : le hash du PIN (4 chiffres, cassable hors
+// ligne en quelques minutes) et le token FCM. `hasPin` remplace le hash.
+const OMIT_FCM_TOKEN = { fcmToken: true } as const;
+
+function toPublicMember<T extends { pin: string | null }>(member: T) {
+  const { pin, ...rest } = member;
+  return { ...rest, hasPin: pin !== null };
+}
+
+export async function getMembersByFamily(familyId: string) {
+  const members = await prisma.familyMember.findMany({
     where: { familyId },
     orderBy: { createdAt: "asc" },
+    omit: OMIT_FCM_TOKEN,
   });
+  return members.map(toPublicMember);
 }
 
 export function getMemberById(id: string, familyId: string) {
@@ -15,8 +26,11 @@ export function getMemberById(id: string, familyId: string) {
   });
 }
 
-export function createMember(familyId: string, input: CreateMemberInput) {
-  return prisma.familyMember.create({
+export async function createMember(
+  familyId: string,
+  input: CreateMemberInput,
+) {
+  const member = await prisma.familyMember.create({
     data: {
       familyId,
       name: input.name,
@@ -25,11 +39,13 @@ export function createMember(familyId: string, input: CreateMemberInput) {
       avatar: input.avatar ?? null,
       birthDate: input.birthDate ? new Date(input.birthDate) : null,
     },
+    omit: OMIT_FCM_TOKEN,
   });
+  return toPublicMember(member);
 }
 
-export function updateMember(id: string, input: UpdateMemberInput) {
-  return prisma.familyMember.update({
+export async function updateMember(id: string, input: UpdateMemberInput) {
+  const member = await prisma.familyMember.update({
     where: { id },
     data: {
       ...(input.name !== undefined && { name: input.name }),
@@ -38,8 +54,13 @@ export function updateMember(id: string, input: UpdateMemberInput) {
       ...(input.birthDate !== undefined && {
         birthDate: new Date(input.birthDate),
       }),
+      ...(input.pinRequired !== undefined && {
+        pinRequired: input.pinRequired,
+      }),
     },
+    omit: OMIT_FCM_TOKEN,
   });
+  return toPublicMember(member);
 }
 
 export function deleteMember(id: string) {

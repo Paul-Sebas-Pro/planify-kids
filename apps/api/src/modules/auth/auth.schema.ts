@@ -17,7 +17,12 @@ export const loginSchema = z.object({
 export const loginChildSchema = z.object({
   familyCode: z.string().length(6),
   memberId: z.string().uuid(),
-  pin: z.string().length(4).regex(/^\d{4}$/, "PIN doit être 4 chiffres"),
+  // Absent si le parent a désactivé le PIN de cet enfant (pinRequired=false)
+  pin: z
+    .string()
+    .length(4)
+    .regex(/^\d{4}$/, "PIN doit être 4 chiffres")
+    .optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

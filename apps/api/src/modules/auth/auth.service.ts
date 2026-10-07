@@ -109,13 +109,15 @@ export async function loginChildService(input: LoginChildInput) {
   if (!member) {
     throw new UnauthorizedError("Enfant introuvable dans cette famille");
   }
-  if (!member.pin) {
-    throw new UnauthorizedError("Aucun PIN configuré pour cet enfant");
-  }
-
-  const valid = await argon2.verify(member.pin, input.pin);
-  if (!valid) {
-    throw new UnauthorizedError("PIN incorrect");
+  if (member.pinRequired) {
+    if (!member.pin) {
+      throw new UnauthorizedError("Aucun PIN configuré pour cet enfant");
+    }
+    const valid =
+      input.pin !== undefined && (await argon2.verify(member.pin, input.pin));
+    if (!valid) {
+      throw new UnauthorizedError("PIN incorrect");
+    }
   }
 
   const tokens = generateTokens(member.id, family.id, "CHILD", member.id);

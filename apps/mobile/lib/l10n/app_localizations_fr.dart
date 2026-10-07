@@ -67,6 +67,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loginNetworkErrorGeneric => 'Erreur réseau';
 
   @override
+  String get loginChildFailed => 'Connexion impossible, réessaie';
+
+  @override
   String get loginPinIncorrect => 'PIN incorrect.';
 
   @override

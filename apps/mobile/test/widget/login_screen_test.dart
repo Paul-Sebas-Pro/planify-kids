@@ -11,8 +11,16 @@ import 'package:mobile/shared/services/secure_storage.dart';
 // Fakes -----------------------------------------------------------------------
 
 class _FakeAuthNotifier extends AuthNotifier {
+  final childLogins = <(String, String, String?)>[];
+
   @override
   Future<AuthUser?> build() async => null; // déconnecté
+
+  @override
+  Future<void> loginChild(
+      String familyCode, String memberId, String? pin) async {
+    childLogins.add((familyCode, memberId, pin));
+  }
 }
 
 class _FakeStorage extends SecureStorageService {
@@ -54,6 +62,13 @@ class _FakeApiClient extends ApiClient {
     if (code == 'DEMO01') {
       return [
         {'id': 'alice-id', 'name': 'Alice', 'color': '#FF6584', 'avatar': null},
+        {
+          'id': 'tom-id',
+          'name': 'Tom',
+          'color': '#4CAF50',
+          'avatar': null,
+          'pinRequired': false,
+        },
       ];
     }
     throw Exception('Code invalide');
@@ -131,6 +146,45 @@ void main() {
 
       expect(find.text('DEMO01'), findsOneWidget);
       expect(find.text('Alice'), findsOneWidget);
+    });
+
+    Future<_FakeAuthNotifier> openChildTab(WidgetTester tester) async {
+      final storage = _FakeStorage();
+      await storage.saveFamilyCode('DEMO01');
+      final auth = _FakeAuthNotifier();
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          authProvider.overrideWith(() => auth),
+          secureStorageServiceProvider.overrideWithValue(storage),
+          apiClientProvider.overrideWithValue(_FakeApiClient()),
+        ],
+        child: const MaterialApp(home: LoginScreen()),
+      ));
+      await tester.tap(find.text('Enfant'));
+      await tester.pumpAndSettle();
+      return auth;
+    }
+
+    testWidgets('enfant avec PIN — champ PIN affiché, pas de connexion directe',
+        (tester) async {
+      final auth = await openChildTab(tester);
+
+      await tester.tap(find.text('Alice'));
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(TextField, 'PIN (4 chiffres)'), findsOneWidget);
+      expect(auth.childLogins, isEmpty);
+    });
+
+    testWidgets('enfant sans PIN — pas de champ PIN, connexion au tap',
+        (tester) async {
+      final auth = await openChildTab(tester);
+
+      await tester.tap(find.text('Tom'));
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(TextField, 'PIN (4 chiffres)'), findsNothing);
+      expect(auth.childLogins, [('DEMO01', 'tom-id', null)]);
     });
   });
 }

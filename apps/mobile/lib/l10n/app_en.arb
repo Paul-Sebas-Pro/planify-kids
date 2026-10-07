@@ -19,6 +19,7 @@
   "loginCodeRequired": "6-character code required",
   "loginInvalidFamilyCode": "Invalid family code",
   "loginNetworkErrorGeneric": "Network error",
+  "loginChildFailed": "Login failed, please try again",
   "loginPinIncorrect": "Incorrect PIN.",
   "profileTitle": "My profile",
   "profileLogoutTooltip": "Log out",

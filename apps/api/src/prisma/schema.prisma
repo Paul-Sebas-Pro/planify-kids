@@ -117,6 +117,9 @@ model FamilyMember {
   birthDate DateTime?
   role      Role
   pin       String?
+  // false = connexion enfant sans PIN (choix explicite du parent, ex. enfant
+  // jeune). Défaut true : un enfant créé sans PIN n'est jamais "ouvert".
+  pinRequired Boolean @default(true)
 
   points   Int     @default(0)
   fcmToken String?

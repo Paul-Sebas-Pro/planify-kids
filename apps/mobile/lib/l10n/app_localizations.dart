@@ -212,6 +212,12 @@ abstract class AppLocalizations {
   /// **'Erreur réseau'**
   String get loginNetworkErrorGeneric;
 
+  /// No description provided for @loginChildFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion impossible, réessaie'**
+  String get loginChildFailed;
+
   /// No description provided for @loginPinIncorrect.
   ///
   /// In fr, this message translates to:

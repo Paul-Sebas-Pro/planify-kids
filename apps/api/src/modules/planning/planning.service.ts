@@ -1,4 +1,3 @@
-import type { FamilyMember } from "@prisma/client";
 import { AppError, NotFoundError } from "../../core/errors/AppError.js";
 import { getTasksByFamily } from "../tasks/tasks.repository.js";
 import { getMembersByFamily } from "../members/members.repository.js";
@@ -41,8 +40,8 @@ export async function generatePlanningService(
 
   const tasks = await getTasksByFamily(familyId, true);
   const members = await getMembersByFamily(familyId);
-  const children = members.filter((m: FamilyMember) => m.role === "CHILD");
-  const parents = members.filter((m: FamilyMember) => m.role === "PARENT");
+  const children = members.filter((m) => m.role === "CHILD");
+  const parents = members.filter((m) => m.role === "PARENT");
 
   if (children.length === 0) {
     throw new AppError("Aucun enfant dans la famille", 400);

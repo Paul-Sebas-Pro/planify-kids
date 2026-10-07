@@ -79,12 +79,13 @@ class ApiClient {
         .toList();
   }
 
+  /// [pin] null : enfant pour qui le parent a désactivé le PIN.
   Future<({String token, AuthUser member})> loginChild(
-      String familyCode, String memberId, String pin) async {
+      String familyCode, String memberId, String? pin) async {
     final res = await _dio.post('/auth/login-child', data: {
       'familyCode': familyCode.toUpperCase(),
       'memberId': memberId,
-      'pin': pin,
+      'pin': ?pin,
     });
     final data = _unwrap(res);
     final member = AuthUser.fromLoginData(data);

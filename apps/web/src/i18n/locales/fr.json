@@ -199,7 +199,14 @@
     "birthDateLabel": "Date de naissance",
     "editPinTitle": "Modifier le PIN",
     "newPinLabel": "Nouveau PIN (4 chiffres)",
-    "pinInvalid": "Le PIN doit être exactement 4 chiffres"
+    "pinInvalid": "Le PIN doit être exactement 4 chiffres",
+    "pinStatusSet": "PIN défini",
+    "pinStatusOff": "Sans PIN",
+    "pinStatusMissing": "PIN à définir",
+    "pinStatusMissingHint": "Sans PIN, cet enfant ne peut pas se connecter à la tablette.",
+    "pinOffLabel": "Connexion sans PIN",
+    "pinOffHint": "Pour les plus jeunes : l'enfant touche son avatar et se connecte. Toute personne connaissant le code famille pourra aussi se connecter à sa place.",
+    "pinKeepCurrent": "Laisser vide pour garder le PIN actuel"
   },
   "memberTimeline": {
     "eventTaskCompleted": "Tâche terminée",

@@ -43,7 +43,7 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   Future<void> loginChild(
-      String familyCode, String memberId, String pin) async {
+      String familyCode, String memberId, String? pin) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final api = ref.read(apiClientProvider);

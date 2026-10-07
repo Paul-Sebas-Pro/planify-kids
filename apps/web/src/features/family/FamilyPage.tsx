@@ -186,6 +186,7 @@ export function FamilyPage() {
                   {m.role === "PARENT" ? t("familyPage.parent") : t("familyPage.child")} &middot;{" "}
                   {m.points} pts
                 </p>
+                {m.role === "CHILD" && <PinStatus member={m} />}
               </div>
               <div className="flex flex-col gap-1 shrink-0 items-end">
                 <button
@@ -346,6 +347,7 @@ export function FamilyPage() {
           onClose={() => setPinTarget(null)}
           onSuccess={() => {
             setPinTarget(null);
+            qc.invalidateQueries({ queryKey: ["members"] });
           }}
         />
       )}
@@ -360,6 +362,24 @@ export function FamilyPage() {
   );
 }
 
+function PinStatus({ member }: { member: FamilyMember }) {
+  const { t } = useTranslation();
+  if (!member.pinRequired) {
+    return <p className="text-xs text-gray-400">🔓 {t("familyPage.pinStatusOff")}</p>;
+  }
+  if (!member.hasPin) {
+    return (
+      <p
+        className="text-xs text-danger font-semibold"
+        title={t("familyPage.pinStatusMissingHint")}
+      >
+        ⚠️ {t("familyPage.pinStatusMissing")}
+      </p>
+    );
+  }
+  return <p className="text-xs text-gray-400">🔒 {t("familyPage.pinStatusSet")}</p>;
+}
+
 function PinModal({
   member,
   onClose,
@@ -371,10 +391,16 @@ function PinModal({
 }) {
   const { t } = useTranslation();
   const [pin, setPin] = useState("");
+  const [pinOff, setPinOff] = useState(!member.pinRequired);
   const [error, setError] = useState<string | null>(null);
 
   const mutation = useMutation({
-    mutationFn: (p: string) => membersApi.updatePin(member.id, p),
+    mutationFn: async () => {
+      if (!pinOff && pin) await membersApi.updatePin(member.id, pin);
+      if (pinOff === member.pinRequired) {
+        await membersApi.update(member.id, { pinRequired: !pinOff });
+      }
+    },
     onSuccess,
     onError: (err: Error) => setError(err.message),
   });
@@ -382,11 +408,14 @@ function PinModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!/^\d{4}$/.test(pin)) {
+    // PIN exigé : un nouveau PIN est obligatoire s'il n'y en a pas encore,
+    // facultatif sinon (vide = garder l'actuel).
+    const pinNeeded = !pinOff && (!member.hasPin || pin !== "");
+    if (pinNeeded && !/^\d{4}$/.test(pin)) {
       setError(t("familyPage.pinInvalid"));
       return;
     }
-    mutation.mutate(pin);
+    mutation.mutate();
   }
 
   return (
@@ -396,20 +425,48 @@ function PinModal({
         <p className="text-sm text-gray-400 mb-4">{member.name}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              {t("familyPage.newPinLabel")}
-            </label>
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
             <input
-              type="password"
-              inputMode="numeric"
-              maxLength={4}
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-              placeholder="••••"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/40"
+              type="checkbox"
+              checked={pinOff}
+              onChange={(e) => setPinOff(e.target.checked)}
+              className="mt-0.5 accent-primary"
             />
-          </div>
+            <span>
+              <span className="font-semibold text-gray-700">
+                {t("familyPage.pinOffLabel")}
+              </span>
+              <span className="block text-xs text-gray-400 mt-0.5">
+                {t("familyPage.pinOffHint")}
+              </span>
+            </span>
+          </label>
+
+          {!pinOff && (
+            <div>
+              <label
+                htmlFor="pin-input"
+                className="block text-sm font-semibold text-gray-700 mb-1"
+              >
+                {t("familyPage.newPinLabel")}
+              </label>
+              <input
+                id="pin-input"
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                placeholder="••••"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+              {member.hasPin && (
+                <p className="text-xs text-gray-400 mt-1">
+                  {t("familyPage.pinKeepCurrent")}
+                </p>
+              )}
+            </div>
+          )}
 
           {error && <p className="text-danger text-xs">{error}</p>}
 

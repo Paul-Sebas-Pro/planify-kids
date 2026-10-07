@@ -19,6 +19,7 @@ export const updateMemberSchema = z.object({
     .optional(),
   avatar: z.string().max(50).optional(),
   birthDate: z.iso.date().optional(),
+  pinRequired: z.boolean().optional(),
 });
 
 export const updatePinSchema = z.object({

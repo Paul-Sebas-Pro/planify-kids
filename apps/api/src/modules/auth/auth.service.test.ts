@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ConflictError, UnauthorizedError } from "../../core/errors/AppError.js";
+import {
+  ConflictError,
+  TooManyAttemptsError,
+  UnauthorizedError,
+} from "../../core/errors/AppError.js";
 
 // Mocks hoistés avant les imports du module testé
 vi.mock("../../config/env", () => ({
@@ -16,6 +20,12 @@ vi.mock("./auth.repository", () => ({
   createUserWithFamily: vi.fn(),
   findFamilyByCode: vi.fn(),
   findChildMember: vi.fn(),
+  registerChildPinAttempt: vi.fn(),
+  lockChildPin: vi.fn(),
+  resetChildPinAttempts: vi.fn(),
+  registerLoginAttempt: vi.fn(),
+  lockLogin: vi.fn(),
+  resetLoginAttempts: vi.fn(),
 }));
 
 vi.mock("argon2", () => ({
@@ -37,11 +47,18 @@ const mockFindByEmail = vi.mocked(repo.findUserByEmail);
 const mockCreateUserWithFamily = vi.mocked(repo.createUserWithFamily);
 const mockFindFamilyByCode = vi.mocked(repo.findFamilyByCode);
 const mockFindChildMember = vi.mocked(repo.findChildMember);
+const mockRegisterPin = vi.mocked(repo.registerChildPinAttempt);
+const mockLockPin = vi.mocked(repo.lockChildPin);
+const mockResetPin = vi.mocked(repo.resetChildPinAttempts);
+const mockRegisterLogin = vi.mocked(repo.registerLoginAttempt);
+const mockLockLogin = vi.mocked(repo.lockLogin);
+const mockResetLogin = vi.mocked(repo.resetLoginAttempts);
 
 const fakeUser = {
   id: "user-1",
   email: "parent@test.com",
   passwordHash: "hashed",
+  loginLockedUntil: null,
   members: [],
 };
 const fakeFamily = { id: "family-1", name: "Famille Test" };
@@ -56,6 +73,8 @@ const fakeMember = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockRegisterPin.mockResolvedValue(1);
+  mockRegisterLogin.mockResolvedValue(1);
 });
 
 describe("registerService", () => {
@@ -159,6 +178,7 @@ describe("loginChildService", () => {
       points: 0,
       pin: "hashed-pin",
       pinRequired: true,
+      pinLockedUntil: null,
       ...over,
     }) as any;
 
@@ -223,5 +243,124 @@ describe("loginChildService", () => {
         pin: "0000",
       }),
     ).rejects.toThrow(UnauthorizedError);
+  });
+});
+
+describe("verrouillage anti-force brute", () => {
+  const MEMBER_ID = "11111111-1111-4111-8111-111111111111";
+  const child = (over: Record<string, unknown> = {}) =>
+    ({
+      id: MEMBER_ID,
+      name: "Tom",
+      role: "CHILD",
+      points: 0,
+      pin: "hashed-pin",
+      pinRequired: true,
+      pinLockedUntil: null,
+      ...over,
+    }) as any;
+  const login = (pin = "0000") =>
+    loginChildService({ familyCode: "DEMO01", memberId: MEMBER_ID, pin });
+
+  beforeEach(() => {
+    mockFindFamilyByCode.mockResolvedValue(fakeFamily as any);
+  });
+
+  it("enfant bloqué — 429 sans vérifier le PIN ni compter", async () => {
+    mockFindChildMember.mockResolvedValue(
+      child({ pinLockedUntil: new Date(Date.now() + 10 * 60_000) }),
+    );
+
+    await expect(login("1234")).rejects.toThrow(TooManyAttemptsError);
+    expect(mockVerify).not.toHaveBeenCalled();
+    expect(mockRegisterPin).not.toHaveBeenCalled();
+  });
+
+  it("blocage expiré — tentative normale", async () => {
+    mockFindChildMember.mockResolvedValue(
+      child({ pinLockedUntil: new Date(Date.now() - 1000) }),
+    );
+    mockVerify.mockResolvedValue(true);
+
+    await expect(login("1234")).resolves.toBeDefined();
+  });
+
+  it("5e PIN faux — compte bloqué 15 min, 401 renvoyé", async () => {
+    mockFindChildMember.mockResolvedValue(child());
+    mockRegisterPin.mockResolvedValue(5);
+    mockVerify.mockResolvedValue(false);
+
+    await expect(login()).rejects.toThrow(UnauthorizedError);
+    expect(mockLockPin).toHaveBeenCalledOnce();
+    const until = mockLockPin.mock.calls[0]?.[1] as Date;
+    expect(until.getTime() - Date.now()).toBeGreaterThan(14 * 60_000);
+  });
+
+  it("4e PIN faux — pas encore bloqué", async () => {
+    mockFindChildMember.mockResolvedValue(child());
+    mockRegisterPin.mockResolvedValue(4);
+    mockVerify.mockResolvedValue(false);
+
+    await expect(login()).rejects.toThrow(UnauthorizedError);
+    expect(mockLockPin).not.toHaveBeenCalled();
+  });
+
+  it("rafale parallèle au-delà du quota — 429 sans vérifier le PIN", async () => {
+    mockFindChildMember.mockResolvedValue(child());
+    mockRegisterPin.mockResolvedValue(6);
+
+    await expect(login("1234")).rejects.toThrow(TooManyAttemptsError);
+    expect(mockVerify).not.toHaveBeenCalled();
+    expect(mockLockPin).toHaveBeenCalledOnce();
+  });
+
+  it("PIN correct — compteur remis à zéro", async () => {
+    mockFindChildMember.mockResolvedValue(child());
+    mockRegisterPin.mockResolvedValue(3);
+    mockVerify.mockResolvedValue(true);
+
+    await login("1234");
+    expect(mockResetPin).toHaveBeenCalledWith(MEMBER_ID);
+  });
+
+  it("enfant sans PIN (choix parent) — aucun comptage", async () => {
+    mockFindChildMember.mockResolvedValue(child({ pin: null, pinRequired: false }));
+
+    await loginChildService({ familyCode: "DEMO01", memberId: MEMBER_ID });
+    expect(mockRegisterPin).not.toHaveBeenCalled();
+  });
+
+  it("parent : 5e mot de passe faux — compte bloqué", async () => {
+    mockFindByEmail.mockResolvedValue(fakeUser as any);
+    mockRegisterLogin.mockResolvedValue(5);
+    mockVerify.mockResolvedValue(false);
+
+    await expect(
+      loginService({ email: "parent@test.com", password: "mauvais" }),
+    ).rejects.toThrow(UnauthorizedError);
+    expect(mockLockLogin).toHaveBeenCalledOnce();
+  });
+
+  it("parent bloqué — 429 sans vérifier le mot de passe", async () => {
+    mockFindByEmail.mockResolvedValue({
+      ...fakeUser,
+      loginLockedUntil: new Date(Date.now() + 60_000),
+    } as any);
+
+    await expect(
+      loginService({ email: "parent@test.com", password: "password123" }),
+    ).rejects.toThrow(TooManyAttemptsError);
+    expect(mockVerify).not.toHaveBeenCalled();
+  });
+
+  it("parent : connexion réussie — compteur remis à zéro", async () => {
+    mockFindByEmail.mockResolvedValue({
+      ...fakeUser,
+      members: [fakeMember],
+    } as any);
+    mockVerify.mockResolvedValue(true);
+
+    await loginService({ email: "parent@test.com", password: "password123" });
+    expect(mockResetLogin).toHaveBeenCalledWith("user-1");
   });
 });

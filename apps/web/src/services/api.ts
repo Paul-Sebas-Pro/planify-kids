@@ -46,12 +46,14 @@ async function request<T>(
   });
 
   if (!res.ok) {
+    // L'API renvoie `{ success: false, error: "message" }` (error.middleware.ts)
     const err = (await res
       .json()
-      .catch(() => ({ message: res.statusText }))) as {
+      .catch(() => ({ error: res.statusText }))) as {
+      error?: string;
       message?: string;
     };
-    throw new Error(err.message ?? `HTTP ${res.status}`);
+    throw new Error(err.error ?? err.message ?? `HTTP ${res.status}`);
   }
 
   return res.json() as Promise<T>;

@@ -3,6 +3,7 @@ import jwt, { type Secret } from "jsonwebtoken";
 import { env } from "../../config/env.js";
 import {
   ConflictError,
+  TooManyAttemptsError,
   UnauthorizedError,
 } from "../../core/errors/AppError.js";
 import {
@@ -10,8 +11,60 @@ import {
   createUserWithFamily,
   findFamilyByCode,
   findChildMember,
+  registerChildPinAttempt,
+  lockChildPin,
+  resetChildPinAttempts,
+  registerLoginAttempt,
+  lockLogin,
+  resetLoginAttempts,
 } from "./auth.repository.js";
 import type { RegisterInput, LoginInput, LoginChildInput } from "./auth.schema.js";
+
+// Anti-force brute : un PIN à 4 chiffres (10 000 combinaisons) se devine en
+// quelques minutes par script sans limite de tentatives.
+export const MAX_FAILED_ATTEMPTS = 5;
+const LOCK_DURATION_MS = 15 * 60 * 1000;
+
+interface AttemptGuard {
+  lockedUntil: Date | null;
+  registerAttempt: () => Promise<number>;
+  lock: (until: Date) => Promise<unknown>;
+  reset: () => Promise<unknown>;
+  verify: () => Promise<boolean>;
+  onFailure: () => Error;
+}
+
+/**
+ * Vérifie un secret (PIN, mot de passe) avec verrouillage après
+ * MAX_FAILED_ATTEMPTS échecs. La tentative est comptée AVANT la vérification
+ * (incrément atomique en base) : une rafale de requêtes parallèles ne peut pas
+ * dépasser le quota. Pendant le blocage, le secret n'est même pas vérifié.
+ */
+async function verifyWithLockout(guard: AttemptGuard): Promise<void> {
+  const now = Date.now();
+  const lockedFor = (until: Date) =>
+    new TooManyAttemptsError(Math.ceil((until.getTime() - now) / 60_000));
+
+  if (guard.lockedUntil && guard.lockedUntil.getTime() > now) {
+    throw lockedFor(guard.lockedUntil);
+  }
+
+  const attempts = await guard.registerAttempt();
+  if (attempts > MAX_FAILED_ATTEMPTS) {
+    const until = new Date(now + LOCK_DURATION_MS);
+    await guard.lock(until);
+    throw lockedFor(until);
+  }
+
+  if (!(await guard.verify())) {
+    if (attempts >= MAX_FAILED_ATTEMPTS) {
+      await guard.lock(new Date(now + LOCK_DURATION_MS));
+    }
+    throw guard.onFailure();
+  }
+
+  await guard.reset();
+}
 
 function generateTokens(
   sub: string,
@@ -60,10 +113,14 @@ export async function loginService(input: LoginInput) {
     throw new UnauthorizedError("Email ou mot de passe incorrect");
   }
 
-  const valid = await argon2.verify(user.passwordHash, input.password);
-  if (!valid) {
-    throw new UnauthorizedError("Email ou mot de passe incorrect");
-  }
+  await verifyWithLockout({
+    lockedUntil: user.loginLockedUntil,
+    registerAttempt: () => registerLoginAttempt(user.id),
+    lock: (until) => lockLogin(user.id, until),
+    reset: () => resetLoginAttempts(user.id),
+    verify: () => argon2.verify(user.passwordHash, input.password),
+    onFailure: () => new UnauthorizedError("Email ou mot de passe incorrect"),
+  });
 
   const parentMember = user.members.find((m: any) => m.role === "PARENT");
   if (!parentMember) {
@@ -110,14 +167,19 @@ export async function loginChildService(input: LoginChildInput) {
     throw new UnauthorizedError("Enfant introuvable dans cette famille");
   }
   if (member.pinRequired) {
-    if (!member.pin) {
+    const pinHash = member.pin;
+    if (!pinHash) {
       throw new UnauthorizedError("Aucun PIN configuré pour cet enfant");
     }
-    const valid =
-      input.pin !== undefined && (await argon2.verify(member.pin, input.pin));
-    if (!valid) {
-      throw new UnauthorizedError("PIN incorrect");
-    }
+    await verifyWithLockout({
+      lockedUntil: member.pinLockedUntil,
+      registerAttempt: () => registerChildPinAttempt(member.id),
+      lock: (until) => lockChildPin(member.id, until),
+      reset: () => resetChildPinAttempts(member.id),
+      verify: async () =>
+        input.pin !== undefined && (await argon2.verify(pinHash, input.pin)),
+      onFailure: () => new UnauthorizedError("PIN incorrect"),
+    });
   }
 
   const tokens = generateTokens(member.id, family.id, "CHILD", member.id);

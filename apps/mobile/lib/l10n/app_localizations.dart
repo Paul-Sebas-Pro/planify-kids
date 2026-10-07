@@ -218,6 +218,12 @@ abstract class AppLocalizations {
   /// **'Connexion impossible, réessaie'**
   String get loginChildFailed;
 
+  /// No description provided for @loginTooManyAttempts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop d\'essais. Attends 15 minutes ou demande à un parent.'**
+  String get loginTooManyAttempts;
+
   /// No description provided for @loginPinIncorrect.
   ///
   /// In fr, this message translates to:

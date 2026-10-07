@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +14,9 @@ import 'package:mobile/shared/services/secure_storage.dart';
 class _FakeAuthNotifier extends AuthNotifier {
   final childLogins = <(String, String, String?)>[];
 
+  /// Code HTTP d'échec simulé pour la prochaine connexion enfant.
+  int? failWith;
+
   @override
   Future<AuthUser?> build() async => null; // déconnecté
 
@@ -20,6 +24,17 @@ class _FakeAuthNotifier extends AuthNotifier {
   Future<void> loginChild(
       String familyCode, String memberId, String? pin) async {
     childLogins.add((familyCode, memberId, pin));
+    final code = failWith;
+    if (code != null) {
+      final req = RequestOptions(path: '/auth/login-child');
+      state = AsyncError(
+        DioException(
+          requestOptions: req,
+          response: Response(requestOptions: req, statusCode: code),
+        ),
+        StackTrace.current,
+      );
+    }
   }
 }
 
@@ -185,6 +200,22 @@ void main() {
 
       expect(find.widgetWithText(TextField, 'PIN (4 chiffres)'), findsNothing);
       expect(auth.childLogins, [('DEMO01', 'tom-id', null)]);
+    });
+
+    testWidgets('trop d\'essais (429) — message de blocage, pas « PIN incorrect »',
+        (tester) async {
+      final auth = await openChildTab(tester);
+      auth.failWith = 429;
+
+      await tester.tap(find.text('Alice'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+          find.widgetWithText(TextField, 'PIN (4 chiffres)'), '0000');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Se connecter'));
+      await tester.pump();
+
+      expect(find.textContaining("Trop d'essais"), findsOneWidget);
     });
   });
 }

@@ -20,6 +20,7 @@
   "loginInvalidFamilyCode": "Code famille invalide",
   "loginNetworkErrorGeneric": "Erreur réseau",
   "loginChildFailed": "Connexion impossible, réessaie",
+  "loginTooManyAttempts": "Trop d'essais. Attends 15 minutes ou demande à un parent.",
   "loginPinIncorrect": "PIN incorrect.",
   "profileTitle": "Mon profil",
   "profileLogoutTooltip": "Déconnexion",

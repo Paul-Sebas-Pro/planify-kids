@@ -20,6 +20,7 @@
   "loginInvalidFamilyCode": "Invalid family code",
   "loginNetworkErrorGeneric": "Network error",
   "loginChildFailed": "Login failed, please try again",
+  "loginTooManyAttempts": "Too many tries. Wait 15 minutes or ask a parent.",
   "loginPinIncorrect": "Incorrect PIN.",
   "profileTitle": "My profile",
   "profileLogoutTooltip": "Log out",

@@ -261,10 +261,15 @@ class _ChildLoginFormState extends ConsumerState<_ChildLoginForm> {
     if (!mounted) return;
     final authState = ref.read(authProvider);
     if (authState.hasError) {
+      final error = authState.error;
+      final tooManyAttempts =
+          error is DioException && error.response?.statusCode == 429;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(pinRequired
-            ? context.l10n.loginPinIncorrect
-            : context.l10n.loginChildFailed),
+        content: Text(tooManyAttempts
+            ? context.l10n.loginTooManyAttempts
+            : pinRequired
+                ? context.l10n.loginPinIncorrect
+                : context.l10n.loginChildFailed),
         backgroundColor: Theme.of(context).colorScheme.error,
       ));
     }

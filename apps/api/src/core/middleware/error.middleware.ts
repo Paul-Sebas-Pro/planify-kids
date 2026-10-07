@@ -6,7 +6,7 @@ export function errorMiddleware(err: unknown, c: Context) {
   if (err instanceof AppError) {
     return c.json(
       { success: false, error: err.message, code: err.code },
-      err.statusCode as 400 | 401 | 403 | 404 | 409 | 500
+      err.statusCode as 400 | 401 | 403 | 404 | 409 | 429 | 500
     );
   }
 

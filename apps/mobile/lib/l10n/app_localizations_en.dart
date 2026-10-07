@@ -70,6 +70,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginChildFailed => 'Login failed, please try again';
 
   @override
+  String get loginTooManyAttempts =>
+      'Too many tries. Wait 15 minutes or ask a parent.';
+
+  @override
   String get loginPinIncorrect => 'Incorrect PIN.';
 
   @override

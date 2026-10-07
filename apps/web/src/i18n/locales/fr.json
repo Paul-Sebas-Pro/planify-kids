@@ -207,9 +207,10 @@
     "pinOffLabel": "Connexion sans PIN",
     "pinOffHint": "Pour les plus jeunes : l'enfant touche son avatar et se connecte. Toute personne connaissant le code famille pourra aussi se connecter à sa place.",
     "pinKeepCurrent": "Laisser vide pour garder le PIN actuel",
-    "pinStatusLocked": "Bloqué (trop d'essais)",
-    "pinStatusLockedHint": "5 PIN faux : connexion bloquée jusqu'à {{time}}",
-    "unlockPin": "Débloquer"
+    "unlockPin": "Débloquer",
+    "lockedTitle": "Compte verrouillé — changer le code PIN",
+    "lockedDetail": "5 PIN faux : connexion bloquée jusqu'à {{time}}",
+    "changePin": "Changer le PIN"
   },
   "memberTimeline": {
     "eventTaskCompleted": "Tâche terminée",

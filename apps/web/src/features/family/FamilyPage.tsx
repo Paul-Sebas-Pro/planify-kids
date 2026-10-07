@@ -165,63 +165,77 @@ export function FamilyPage() {
         />
       ) : (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          {members.map((m) => (
-            <div
-              key={m.id}
-              className="bg-white rounded-card p-4 shadow-sm flex items-center gap-3"
-            >
+          {members.map((m) => {
+            const lockedUntil = m.role === "CHILD" ? pinLockedUntil(m) : null;
+            return (
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-                style={{ backgroundColor: m.color ?? "#9e9e9e" }}
+                key={m.id}
+                className={`bg-white rounded-card p-4 shadow-sm ${
+                  lockedUntil ? "ring-2 ring-danger/50" : ""
+                }`}
               >
-                {m.avatar ? (
-                  <span className="text-lg">{m.avatar}</span>
-                ) : (
-                  m.name[0]?.toUpperCase()
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm truncate">{m.name}</p>
-                <p className="text-xs text-gray-400">
-                  {m.role === "PARENT" ? t("familyPage.parent") : t("familyPage.child")} &middot;{" "}
-                  {m.points} pts
-                </p>
-                {m.role === "CHILD" && <PinStatus member={m} />}
-              </div>
-              <div className="flex flex-col gap-1 shrink-0 items-end">
-                <button
-                  onClick={() => openEdit(m)}
-                  className="text-xs text-secondary hover:underline"
-                >
-                  {t("common.edit")}
-                </button>
-                {m.role === "CHILD" && (
-                  <>
-                    <button
-                      onClick={() => setPinTarget(m)}
-                      className="text-xs text-gray-400 hover:underline"
-                    >
-                      {t("familyPage.pin")}
-                    </button>
-                    <button
-                      onClick={() => setTimelineTarget(m)}
-                      className="text-xs text-blue-400 hover:underline"
-                    >
-                      {t("familyPage.history")}
-                    </button>
-                  </>
-                )}
-                {m.id !== currentMember?.id && (
-                  <button
-                    onClick={() => deleteMutation.mutate(m.id)}
-                    className="text-xs text-danger hover:underline"
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                    style={{ backgroundColor: m.color ?? "#9e9e9e" }}
                   >
-                    {t("common.delete")}
-                  </button>
+                    {m.avatar ? (
+                      <span className="text-lg">{m.avatar}</span>
+                    ) : (
+                      m.name[0]?.toUpperCase()
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{m.name}</p>
+                    <p className="text-xs text-gray-400">
+                      {m.role === "PARENT" ? t("familyPage.parent") : t("familyPage.child")} &middot;{" "}
+                      {m.points} pts
+                    </p>
+                    {m.role === "CHILD" && <PinStatus member={m} />}
+                  </div>
+                  <div className="flex flex-col gap-1 shrink-0 items-end">
+                    <button
+                      onClick={() => openEdit(m)}
+                      className="text-xs text-secondary hover:underline"
+                    >
+                      {t("common.edit")}
+                    </button>
+                    {m.role === "CHILD" && (
+                      <>
+                        <button
+                          onClick={() => setPinTarget(m)}
+                          className="text-xs text-gray-400 hover:underline"
+                        >
+                          {t("familyPage.pin")}
+                        </button>
+                        <button
+                          onClick={() => setTimelineTarget(m)}
+                          className="text-xs text-blue-400 hover:underline"
+                        >
+                          {t("familyPage.history")}
+                        </button>
+                      </>
+                    )}
+                    {m.id !== currentMember?.id && (
+                      <button
+                        onClick={() => deleteMutation.mutate(m.id)}
+                        className="text-xs text-danger hover:underline"
+                      >
+                        {t("common.delete")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {lockedUntil && (
+                  <LockedBanner
+                    member={m}
+                    lockedUntil={lockedUntil}
+                    onChangePin={() => setPinTarget(m)}
+                  />
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -362,7 +376,22 @@ export function FamilyPage() {
   );
 }
 
-function PinStatus({ member }: { member: FamilyMember }) {
+/** Blocage anti-force brute en cours (5 PIN faux), sinon null. */
+function pinLockedUntil(member: FamilyMember): Date | null {
+  if (!member.pinRequired || !member.pinLockedUntil) return null;
+  const until = new Date(member.pinLockedUntil);
+  return until > new Date() ? until : null;
+}
+
+function LockedBanner({
+  member,
+  lockedUntil,
+  onChangePin,
+}: {
+  member: FamilyMember;
+  lockedUntil: Date;
+  onChangePin: () => void;
+}) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const unlock = useMutation({
@@ -370,33 +399,60 @@ function PinStatus({ member }: { member: FamilyMember }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["members"] }),
   });
 
-  const lockedUntil = member.pinLockedUntil
-    ? new Date(member.pinLockedUntil)
-    : null;
-  if (member.pinRequired && lockedUntil && lockedUntil > new Date()) {
-    return (
-      <div className="flex items-center gap-2 flex-wrap">
-        <p
-          className="text-xs text-danger font-semibold"
-          title={t("familyPage.pinStatusLockedHint", {
+  return (
+    <div
+      role="alert"
+      className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2"
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        className="w-5 h-5 shrink-0 text-danger mt-0.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="4" y="11" width="16" height="10" rx="2" />
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      </svg>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold text-danger">
+          {t("familyPage.lockedTitle")}
+        </p>
+        <p className="text-xs text-red-700/80">
+          {t("familyPage.lockedDetail", {
             time: lockedUntil.toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             }),
           })}
-        >
-          ⛔ {t("familyPage.pinStatusLocked")}
         </p>
-        <button
-          onClick={() => unlock.mutate()}
-          disabled={unlock.isPending}
-          className="text-xs text-secondary font-semibold hover:underline disabled:opacity-50"
-        >
-          {t("familyPage.unlockPin")}
-        </button>
+        <div className="flex gap-3 mt-1.5">
+          <button
+            onClick={onChangePin}
+            className="text-xs font-semibold text-white bg-danger rounded-lg px-2.5 py-1 hover:bg-danger/90 transition-colors"
+          >
+            {t("familyPage.changePin")}
+          </button>
+          <button
+            onClick={() => unlock.mutate()}
+            disabled={unlock.isPending}
+            className="text-xs font-semibold text-danger hover:underline disabled:opacity-50"
+          >
+            {t("familyPage.unlockPin")}
+          </button>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+function PinStatus({ member }: { member: FamilyMember }) {
+  const { t } = useTranslation();
+  // Verrouillé : l'information est portée par le bandeau sous la carte.
+  if (pinLockedUntil(member)) return null;
   if (!member.pinRequired) {
     return <p className="text-xs text-gray-400">🔓 {t("familyPage.pinStatusOff")}</p>;
   }

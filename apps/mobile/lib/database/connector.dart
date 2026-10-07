@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:powersync/powersync.dart';
 import '../config/env.dart';
 import '../shared/services/api_client.dart';
@@ -29,7 +31,17 @@ class PlanifyConnector extends PowerSyncBackendConnector {
         if (entry.table == 'schedule_items') {
           final status = entry.opData?['status'] as String?;
           if (status != null) {
-            await _api.updateScheduleItemStatus(entry.id, status);
+            try {
+              await _api.updateScheduleItemStatus(entry.id, status);
+            } on DioException catch (e) {
+              if (!isPermanentRejection(e)) rethrow;
+              // Refus définitif (ex. 404 : item supprimé côté serveur pendant
+              // que la tablette était hors ligne). Le rejouer bloquerait toute
+              // la file indéfiniment ; on l'abandonne — PowerSync réaligne la
+              // ligne locale sur l'état serveur une fois la file vidée.
+              debugPrint('uploadData: ${entry.id} rejeté '
+                  '(${e.response?.statusCode}), écriture abandonnée');
+            }
           }
         }
         // Aucune autre table n'a d'écriture locale en v1 (cf. plan) — si une
@@ -41,4 +53,13 @@ class PlanifyConnector extends PowerSyncBackendConnector {
       if (!batch.haveMore) return;
     }
   }
+}
+
+/// Erreur 4xx que rejouer ne corrigera jamais. 401 (session expirée, l'app
+/// repasse par le login), 408 et 429 (temporaires) restent rejoués, comme
+/// les erreurs réseau et 5xx.
+bool isPermanentRejection(DioException e) {
+  final code = e.response?.statusCode;
+  if (code == null) return false;
+  return code >= 400 && code < 500 && code != 401 && code != 408 && code != 429;
 }

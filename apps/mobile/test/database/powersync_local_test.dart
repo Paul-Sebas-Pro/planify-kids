@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/database/connector.dart';
@@ -28,10 +30,22 @@ class _StubApiClient extends ApiClient {
 
   final List<(String, String)> updateScheduleItemStatusCalls = [];
 
+  /// Code HTTP d'erreur renvoyé pour un item donné (simule le serveur).
+  final Map<String, int> failures = {};
+
   @override
   Future<ScheduleItem> updateScheduleItemStatus(
       String itemId, String status) async {
     updateScheduleItemStatusCalls.add((itemId, status));
+    final code = failures[itemId];
+    if (code != null) {
+      final req = RequestOptions(path: '/planning/items/$itemId');
+      throw DioException(
+        requestOptions: req,
+        response: Response(requestOptions: req, statusCode: code),
+        type: DioExceptionType.badResponse,
+      );
+    }
     return ScheduleItem(
       id: itemId,
       taskId: 'task-1',
@@ -266,6 +280,55 @@ void main() {
       expect(api.updateScheduleItemStatusCalls, contains(('item-1', 'COMPLETED')));
       final batch = await db.getCrudBatch();
       expect(batch, isNull);
+    });
+
+    test('404 (item supprimé côté serveur) — écriture abandonnée, file '
+        'débloquée pour les suivantes', () async {
+      await _seedScheduleItem(db, id: 'item-2');
+      final api = _StubApiClient()..failures['item-1'] = 404;
+      final connector = PlanifyConnector(api);
+
+      await db.execute(
+        'UPDATE schedule_items SET status = ? WHERE id = ?',
+        ['COMPLETED', 'item-1'],
+      );
+      await db.execute(
+        'UPDATE schedule_items SET status = ? WHERE id = ?',
+        ['COMPLETED', 'item-2'],
+      );
+
+      await connector.uploadData(db);
+
+      expect(api.updateScheduleItemStatusCalls,
+          contains(('item-2', 'COMPLETED')));
+      expect(await db.getCrudBatch(), isNull);
+    });
+
+    test('500 / erreur temporaire — rejetée, écriture gardée pour retry',
+        () async {
+      final api = _StubApiClient()..failures['item-1'] = 500;
+      final connector = PlanifyConnector(api);
+
+      await db.execute(
+        'UPDATE schedule_items SET status = ? WHERE id = ?',
+        ['COMPLETED', 'item-1'],
+      );
+
+      await expectLater(connector.uploadData(db), throwsA(isA<DioException>()));
+      expect(await db.getCrudBatch(), isNotNull);
+    });
+
+    test('401 (session expirée) — gardée pour retry', () async {
+      final api = _StubApiClient()..failures['item-1'] = 401;
+      final connector = PlanifyConnector(api);
+
+      await db.execute(
+        'UPDATE schedule_items SET status = ? WHERE id = ?',
+        ['COMPLETED', 'item-1'],
+      );
+
+      await expectLater(connector.uploadData(db), throwsA(isA<DioException>()));
+      expect(await db.getCrudBatch(), isNotNull);
     });
   });
 }

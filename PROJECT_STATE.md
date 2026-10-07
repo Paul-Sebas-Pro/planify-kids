@@ -399,7 +399,7 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 - **Piège PowerSync — `timestamp` sans fuseau** (vérifié doc PowerSync) : Prisma `DateTime` = `timestamp(3)` Postgres sans fuseau (valeurs UTC), synchronisé au format `YYYY-MM-DD hh:mm:ss.sss` **sans `Z`** → `DateTime.parse` le lit en heure locale (décalage 1-2 h en France). Aurait fait passer un badge gagné juste après l'installation sous le seuil, jamais fêté. Fix : `parseUtcTimestamp()` (`models/badge.dart`) pour `earned_at`, `.toLocal()` à l'affichage (`badges_screen.dart`). **Les autres `fromLocalRow` (`exchange.created_at`, `schedule_item.date`) ont le même défaut, non corrigé** (impact nul aujourd'hui : tri fait en SQL, date planning nominale comparée en texte) — à garder en tête.
 - **Bug points figés (signalé après rebuild APK, 2026-10-07)** : le serveur créditait bien (`PATCH /planning/items/:id` → `awardPointsForTask`), mais les 3 écrans mobile (bandeau Aujourd'hui, Profil, Récompenses) lisaient `AuthUser.points`, **copie figée au login**, jamais rafraîchie. Pas que cosmétique : `canAfford` (Récompenses) utilisait cette valeur → enfant incapable de réclamer une récompense pourtant payable avant de se reconnecter. Rendu visible par le « +N pts » animé. Fix : `myPointsProvider` (`shared/providers/my_points_provider.dart`) lit `family_members.points` en local PowerSync (déjà synchronisé), repli sur la valeur du login sans ligne locale. Les points restent ceux du serveur : hors ligne, ils montent à la reconnexion (le serveur seul crédite).
 - **2 failles multi-tenant corrigées (2026-10-07)** — repérées en lisant le code du bug des points, puis recherche systématique des routes `:id` dont le service ne reçoit pas `familyId` : (1) `PATCH /planning/items/:itemId` ne vérifiait pas l'appartenance de l'item à la famille du token → tout compte authentifié pouvait changer le statut (donc **créditer/retirer des points**) d'un item d'une autre famille s'il connaissait son UUID. Fix : `updateScheduleItemService(itemId, familyId, input)` lève `NotFoundError` (404, ne révèle pas l'existence) si l'item est absent ou d'une autre famille — un item inexistant donnait avant une erreur Prisma P2025 (500). (2) `GET /badges/member/:memberId` renvoyait les badges de n'importe quel membre (fuite en lecture, faible sensibilité) → filtre `member: { familyId }` (relation, source de vérité, plutôt que la colonne `familyId` dénormalisée pour PowerSync). Toutes les autres routes `:id` passent déjà `familyId`.
-- **Observation non traitée — crud queue PowerSync bloquée sur 4xx** : `PlanifyConnector.uploadData` laisse remonter toute erreur HTTP → si un item coché hors ligne a été supprimé côté serveur entre-temps (planning supprimé par le parent), le `PATCH` répond 404, le batch n'est jamais complété et **toutes les écritures locales suivantes restent bloquées** (retry infini). Comportement préexistant (avant : 500 Prisma). Piste : ignorer (compléter) les entrées en 404/403, garder le retry pour réseau/5xx.
+- **Crud queue PowerSync bloquée sur 4xx — corrigé (2026-10-07)** : `PlanifyConnector.uploadData` laissait remonter toute erreur HTTP → si un item coché hors ligne avait été supprimé côté serveur entre-temps (planning supprimé par le parent), le `PATCH` répondait 404, le batch n'était jamais complété et **toutes les écritures locales suivantes restaient bloquées** (retry infini). Comportement préexistant (avant : 500 Prisma). Fix : `isPermanentRejection()` (`connector.dart`) — un 4xx définitif est abandonné (log `debugPrint`), la file continue ; PowerSync réaligne la ligne locale sur l'état serveur une fois la file vidée. Restent rejoués : erreurs réseau, 5xx, **401** (session expirée — l'écriture ne doit pas être perdue), 408, 429.
 - **Les 4 échecs historiques de `task_card_test.dart`** : tests simplement périmés vs le composant (format `+10 pts`, bouton absent — pas désactivé — sans `onComplete`, chip « Fait ✓ » à la place d'une icône `check_circle`). Réalignés sur le comportement voulu, pas l'inverse.
 
 **Modifications** :
@@ -426,6 +426,8 @@ M apps/mobile/test/widget/today_screen_test.dart + test/database/powersync_local
 M apps/api/src/modules/planning/{planning.service,planning.routes,planning.routes.test}.ts  (scope familyId sur PATCH items)
 + apps/api/src/modules/planning/planning.service.test.ts  (crédit, retrait, autre famille 404, inexistant 404)
 M apps/api/src/modules/badges/{badges.routes,badges.routes.test}.ts  (filtre member.familyId)
+M apps/mobile/lib/database/connector.dart          (isPermanentRejection : 4xx définitif abandonné)
+M apps/mobile/test/database/powersync_local_test.dart  (404 débloque la file, 500/401 gardés)
 M PROJECT_STATE.md                                  (étape RLS dans la procédure de déploiement, limitation pause PowerSync)
 ```
 
@@ -433,11 +435,11 @@ M PROJECT_STATE.md                                  (étape RLS dans la procédu
 
 - Script exécuté sur la DB prod : Security Advisor 0 erreur.
 - App web fonctionnelle, connexion + liste des tâches tablette OK (après redéploiement PowerSync).
-- Mobile : `flutter analyze` 0 issue, `flutter test` **40/40 — suite 100 % verte** (fin des 4 échecs `task_card_test.dart`).
+- Mobile : `flutter analyze` 0 issue, `flutter test` **43/43 — suite 100 % verte** (fin des 4 échecs `task_card_test.dart`).
 - API : **292/292 tests**, typecheck 0 erreur.
 - Animations (A + B + C) et points en direct **vérifiés en réel sur tablette** après rebuild APK.
 
-**Prochaine session** : (1) Crud queue PowerSync bloquée sur 4xx (voir observation ci-dessus). (2) Reste du Backlog Sprint 8 : PIN optionnel, badge « challenge », drag & drop, merge-conflict sync.
+**Prochaine session** : (1) Rebuild APK (fix file de sync — pas de test réel simple, scénario rare : cocher hors ligne une tâche dont le planning est supprimé côté web avant reconnexion). (2) Reste du Backlog Sprint 8 : PIN optionnel, badge « challenge », drag & drop, merge-conflict sync.
 
 ---
 

@@ -14,11 +14,13 @@ badgesRoutes.get("/", async (c) => {
   return c.json({ success: true, data: badges });
 });
 
-// GET /badges/member/:memberId  - badges gagnés par un membre
+// GET /badges/member/:memberId  - badges gagnés par un membre de SA famille
+// (un membre d'une autre famille renvoie une liste vide, multi-tenant)
 badgesRoutes.get("/member/:memberId", async (c) => {
+  const { familyId } = c.get("user");
   const memberId = c.req.param("memberId");
   const memberBadges = await prisma.memberBadge.findMany({
-    where: { memberId },
+    where: { memberId, member: { familyId } },
     include: { badge: true },
     orderBy: { earnedAt: "desc" },
   });

@@ -108,7 +108,9 @@ describe("GET /badges/member/:memberId", () => {
     expect(body.data).toHaveLength(1);
     expect(body.data[0].badge.name).toBe("Premiers pas");
     expect(mockMemberBadgeFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { memberId: MBR_ID } }),
+      expect.objectContaining({
+        where: { memberId: MBR_ID, member: { familyId: "fam-1" } },
+      }),
     );
   });
 

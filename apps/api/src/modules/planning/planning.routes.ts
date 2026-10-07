@@ -63,14 +63,15 @@ planningRoutes.get("/:id", async (c) => {
   return c.json({ success: true, data: schedule });
 });
 
-// PATCH /planning/items/:itemId  (tout membre authentifié)
+// PATCH /planning/items/:itemId  (tout membre authentifié de la famille)
 planningRoutes.patch(
   "/items/:itemId",
   zValidator("json", updateScheduleItemSchema),
   async (c) => {
+    const { familyId } = c.get("user");
     const itemId = c.req.param("itemId");
     const input = c.req.valid("json");
-    const item = await updateScheduleItemService(itemId, input);
+    const item = await updateScheduleItemService(itemId, familyId, input);
     return c.json({ success: true, data: item });
   },
 );

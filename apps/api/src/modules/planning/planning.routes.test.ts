@@ -229,7 +229,9 @@ describe("PATCH /planning/items/:itemId", () => {
     expect(res.status).toBe(200);
     const body = await res.json() as any;
     expect(body.data.status).toBe("COMPLETED");
-    expect(mockUpdateItem).toHaveBeenCalledWith("item-1", { status: "COMPLETED" });
+    expect(mockUpdateItem).toHaveBeenCalledWith("item-1", "fam-1", {
+      status: "COMPLETED",
+    });
   });
 
   it("400 si statut invalide", async () => {

@@ -119,12 +119,19 @@ export async function getSchoolCalendarService(
 
 export async function updateScheduleItemService(
   itemId: string,
+  familyId: string,
   input: UpdateScheduleItemInput,
 ) {
   const before = await getScheduleItemWithTask(itemId);
+  // Multi-tenant : un item d'une autre famille est traité comme inexistant
+  // (404, ne révèle pas son existence) — sinon n'importe quel compte pourrait
+  // créditer/retirer des points dans une autre famille.
+  if (!before || before.schedule.familyId !== familyId) {
+    throw new NotFoundError("Tâche planifiée");
+  }
   const updated = await updateScheduleItem(itemId, input);
 
-  if (before && input.status === "COMPLETED" && before.status !== "COMPLETED") {
+  if (input.status === "COMPLETED" && before.status !== "COMPLETED") {
     await awardPointsForTask(before.assignedToMemberId, before.task.points);
     await notifyTaskCompleted(
       before.schedule.familyId,
@@ -136,11 +143,7 @@ export async function updateScheduleItemService(
       taskName: before.task.name,
       points: before.task.points,
     });
-  } else if (
-    before &&
-    input.status !== "COMPLETED" &&
-    before.status === "COMPLETED"
-  ) {
+  } else if (input.status !== "COMPLETED" && before.status === "COMPLETED") {
     // Retour en arrière (undo) depuis COMPLETED — retire les points crédités à tort
     await revokePointsForTask(before.assignedToMemberId, before.task.points);
   }

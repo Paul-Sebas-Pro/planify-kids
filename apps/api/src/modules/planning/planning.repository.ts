@@ -1,5 +1,5 @@
 import { prisma } from "../../config/database.js";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, TaskStatus } from "@prisma/client";
 import type { GreedyAssignment } from "../../services/planning-greedy.js";
 import type { UpdateScheduleItemInput } from "./planning.schema.js";
 
@@ -117,17 +117,31 @@ export function getScheduleItemWithTask(itemId: string) {
   });
 }
 
-export function updateScheduleItem(
+export function getScheduleItem(itemId: string) {
+  return prisma.scheduleItem.findUnique({ where: { id: itemId } });
+}
+
+/**
+ * Mise à jour conditionnelle (compare-and-set) : n'écrit que si le statut en
+ * base est toujours `expectedStatus`. Atomique côté Postgres — deux requêtes
+ * simultanées ne peuvent pas toutes deux passer PENDING → COMPLETED (et
+ * créditer les points deux fois). Renvoie l'item mis à jour, ou null si le
+ * statut a changé entre-temps.
+ */
+export async function updateScheduleItemIfStatus(
   itemId: string,
-  input: UpdateScheduleItemInput,
+  expectedStatus: TaskStatus,
+  input: Pick<UpdateScheduleItemInput, "status">,
 ) {
-  return prisma.scheduleItem.update({
-    where: { id: itemId },
+  const { count } = await prisma.scheduleItem.updateMany({
+    where: { id: itemId, status: expectedStatus },
     data: {
       status: input.status,
       completedAt: input.status === "COMPLETED" ? new Date() : null,
     },
   });
+  if (count === 0) return null;
+  return getScheduleItem(itemId);
 }
 
 export function deleteSchedule(scheduleId: string, familyId: string) {

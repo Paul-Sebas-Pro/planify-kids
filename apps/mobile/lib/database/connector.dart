@@ -32,13 +32,20 @@ class PlanifyConnector extends PowerSyncBackendConnector {
           final status = entry.opData?['status'] as String?;
           if (status != null) {
             try {
-              await _api.updateScheduleItemStatus(entry.id, status);
+              await _api.updateScheduleItemStatus(
+                entry.id,
+                status,
+                expectedStatus: entry.previousValues?['status'] as String?,
+              );
             } on DioException catch (e) {
               if (!isPermanentRejection(e)) rethrow;
-              // Refus définitif (ex. 404 : item supprimé côté serveur pendant
-              // que la tablette était hors ligne). Le rejouer bloquerait toute
-              // la file indéfiniment ; on l'abandonne — PowerSync réaligne la
-              // ligne locale sur l'état serveur une fois la file vidée.
+              // Refus définitif : 404 (item supprimé côté serveur), 403 (tâche
+              // réassignée à un autre enfant), 409 (conflit : statut modifié
+              // côté serveur pendant que la tablette était hors ligne — la
+              // décision la plus récente côté serveur gagne). Le rejouer
+              // bloquerait toute la file indéfiniment ; on l'abandonne —
+              // PowerSync réaligne la ligne locale sur l'état serveur une fois
+              // la file vidée.
               debugPrint('uploadData: ${entry.id} rejeté '
                   '(${e.response?.statusCode}), écriture abandonnée');
             }

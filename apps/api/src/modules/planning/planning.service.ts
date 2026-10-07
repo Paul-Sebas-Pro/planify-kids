@@ -1,4 +1,9 @@
-import { AppError, NotFoundError } from "../../core/errors/AppError.js";
+import {
+  AppError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from "../../core/errors/AppError.js";
 import { getTasksByFamily } from "../tasks/tasks.repository.js";
 import { getMembersByFamily } from "../members/members.repository.js";
 import { generatePlanningGreedy } from "../../services/planning-greedy.js";
@@ -7,9 +12,10 @@ import {
   getSchedulesByFamily,
   getScheduleWithItems,
   getScheduleItemWithTask,
+  getScheduleItem,
   getMemberLoadHistory,
   getFamilySchoolZone,
-  updateScheduleItem,
+  updateScheduleItemIfStatus,
   deleteSchedule,
 } from "./planning.repository.js";
 import { classifyDays, getCalendarEntries } from "../../services/school-calendar.js";
@@ -116,19 +122,48 @@ export async function getSchoolCalendarService(
   return getCalendarEntries(schoolZone, new Date(startDate), new Date(endDate));
 }
 
+export interface ScheduleItemActor {
+  familyId: string;
+  role: "PARENT" | "CHILD";
+  memberId: string;
+}
+
+/**
+ * Stratégie de conflit (écritures hors ligne de la tablette) : le serveur
+ * fait foi et la décision la plus récente côté serveur gagne. Une écriture
+ * basée sur un état périmé (`expectedStatus` ≠ statut actuel) est refusée en
+ * 409 ; la tablette l'abandonne et se réaligne sur le serveur.
+ */
 export async function updateScheduleItemService(
   itemId: string,
-  familyId: string,
+  actor: ScheduleItemActor,
   input: UpdateScheduleItemInput,
 ) {
   const before = await getScheduleItemWithTask(itemId);
   // Multi-tenant : un item d'une autre famille est traité comme inexistant
   // (404, ne révèle pas son existence) — sinon n'importe quel compte pourrait
   // créditer/retirer des points dans une autre famille.
-  if (!before || before.schedule.familyId !== familyId) {
+  if (!before || before.schedule.familyId !== actor.familyId) {
     throw new NotFoundError("Tâche planifiée");
   }
-  const updated = await updateScheduleItem(itemId, input);
+  // Un enfant ne modifie que ses propres tâches (couvre aussi une tâche
+  // réassignée à un frère/une sœur pendant que la tablette était hors ligne).
+  if (actor.role === "CHILD" && before.assignedToMemberId !== actor.memberId) {
+    throw new ForbiddenError("Cette tâche n'est pas la tienne");
+  }
+  // Déjà dans l'état demandé (ex. cochée sur le web ET hors ligne) : rien à
+  // faire — ni double crédit, ni réécriture de completedAt (séries).
+  if (before.status === input.status) {
+    return getScheduleItem(itemId);
+  }
+  if (input.expectedStatus && input.expectedStatus !== before.status) {
+    throw new ConflictError("Tâche modifiée entre-temps");
+  }
+  const updated = await updateScheduleItemIfStatus(itemId, before.status, input);
+  if (!updated) {
+    // Modifiée par une autre requête entre la lecture et l'écriture
+    throw new ConflictError("Tâche modifiée entre-temps");
+  }
 
   if (input.status === "COMPLETED" && before.status !== "COMPLETED") {
     await awardPointsForTask(before.assignedToMemberId, before.task.points);

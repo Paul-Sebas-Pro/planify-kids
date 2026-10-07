@@ -149,10 +149,13 @@ class ApiClient {
         .toList();
   }
 
-  Future<ScheduleItem> updateScheduleItemStatus(
-      String itemId, String status) async {
+  /// [expectedStatus] : statut vu par la tablette avant sa modification —
+  /// le serveur refuse (409) si l'item a changé entre-temps.
+  Future<ScheduleItem> updateScheduleItemStatus(String itemId, String status,
+      {String? expectedStatus}) async {
     final res = await _dio.patch('/planning/items/$itemId', data: {
       'status': status,
+      'expectedStatus': ?expectedStatus,
     });
     return ScheduleItem.fromJson(_unwrap(res));
   }

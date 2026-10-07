@@ -29,14 +29,16 @@ class _StubApiClient extends ApiClient {
   _StubApiClient() : super(SecureStorageService());
 
   final List<(String, String)> updateScheduleItemStatusCalls = [];
+  final List<String?> expectedStatuses = [];
 
   /// Code HTTP d'erreur renvoyé pour un item donné (simule le serveur).
   final Map<String, int> failures = {};
 
   @override
-  Future<ScheduleItem> updateScheduleItemStatus(
-      String itemId, String status) async {
+  Future<ScheduleItem> updateScheduleItemStatus(String itemId, String status,
+      {String? expectedStatus}) async {
     updateScheduleItemStatusCalls.add((itemId, status));
+    expectedStatuses.add(expectedStatus);
     final code = failures[itemId];
     if (code != null) {
       final req = RequestOptions(path: '/planning/items/$itemId');
@@ -301,6 +303,47 @@ void main() {
 
       expect(api.updateScheduleItemStatusCalls,
           contains(('item-2', 'COMPLETED')));
+      expect(await db.getCrudBatch(), isNull);
+    });
+
+    test('envoie le statut vu avant la modification (expectedStatus)',
+        () async {
+      final api = _StubApiClient();
+      final connector = PlanifyConnector(api);
+      // Les INSERT de mise en place passent par la file en test (en réel,
+      // les lignes arrivent par la sync) : on la vide d'abord.
+      await (await db.getCrudBatch())?.complete();
+
+      await db.execute(
+        'UPDATE schedule_items SET status = ? WHERE id = ?',
+        ['COMPLETED', 'item-1'],
+      );
+      await db.execute(
+        'UPDATE schedule_items SET status = ? WHERE id = ?',
+        ['PENDING', 'item-1'],
+      );
+
+      await connector.uploadData(db);
+
+      // Chaque écriture porte l'état précédent : PENDING→COMPLETED puis
+      // COMPLETED→PENDING (undo hors ligne).
+      expect(api.updateScheduleItemStatusCalls,
+          [('item-1', 'COMPLETED'), ('item-1', 'PENDING')]);
+      expect(api.expectedStatuses, ['PENDING', 'COMPLETED']);
+    });
+
+    test('409 (conflit : modifiée côté serveur entre-temps) — abandonnée, '
+        'file débloquée', () async {
+      final api = _StubApiClient()..failures['item-1'] = 409;
+      final connector = PlanifyConnector(api);
+
+      await db.execute(
+        'UPDATE schedule_items SET status = ? WHERE id = ?',
+        ['COMPLETED', 'item-1'],
+      );
+
+      await connector.uploadData(db);
+
       expect(await db.getCrudBatch(), isNull);
     });
 

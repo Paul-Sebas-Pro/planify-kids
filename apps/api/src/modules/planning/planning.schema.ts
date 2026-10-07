@@ -5,8 +5,15 @@ export const generatePlanningSchema = z.object({
   endDate: z.iso.date(),
 });
 
+const taskStatusSchema = z.enum(["PENDING", "COMPLETED", "SKIPPED"]);
+
 export const updateScheduleItemSchema = z.object({
-  status: z.enum(["PENDING", "COMPLETED", "SKIPPED"]),
+  status: taskStatusSchema,
+  // Statut que le client avait sous les yeux avant sa modification (envoyé
+  // par la tablette pour les écritures hors ligne). S'il ne correspond plus
+  // au serveur, quelqu'un a modifié l'item entre-temps → 409, le serveur
+  // garde la décision la plus récente (stratégie de conflit validée : A).
+  expectedStatus: taskStatusSchema.optional(),
 });
 
 export const calendarQuerySchema = z.object({

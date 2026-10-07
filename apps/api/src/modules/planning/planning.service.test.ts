@@ -8,9 +8,10 @@ vi.mock("./planning.repository", () => ({
   getSchedulesByFamily: vi.fn(),
   getScheduleWithItems: vi.fn(),
   getScheduleItemWithTask: vi.fn(),
+  getScheduleItem: vi.fn(),
   getMemberLoadHistory: vi.fn(),
   getFamilySchoolZone: vi.fn(),
-  updateScheduleItem: vi.fn(),
+  updateScheduleItemIfStatus: vi.fn(),
   deleteSchedule: vi.fn(),
 }));
 
@@ -36,17 +37,22 @@ vi.mock("../members/members.repository", () => ({
 
 import * as repo from "./planning.repository.js";
 import * as gamification from "../../services/gamification.js";
+import { ConflictError, ForbiddenError } from "../../core/errors/AppError.js";
 import { updateScheduleItemService } from "./planning.service.js";
 
 const mockGetItem = vi.mocked(repo.getScheduleItemWithTask);
-const mockUpdateItem = vi.mocked(repo.updateScheduleItem);
+const mockGetPlainItem = vi.mocked(repo.getScheduleItem);
+const mockCas = vi.mocked(repo.updateScheduleItemIfStatus);
 const mockAward = vi.mocked(gamification.awardPointsForTask);
 const mockRevoke = vi.mocked(gamification.revokePointsForTask);
 
-const fakeItem = (status: string, familyId = "fam-1") =>
+const parent = { familyId: "fam-1", role: "PARENT" as const, memberId: "parent-1" };
+const child = { familyId: "fam-1", role: "CHILD" as const, memberId: "member-1" };
+
+const fakeItem = (status: string, familyId = "fam-1", assignee = "member-1") =>
   ({
     status,
-    assignedToMemberId: "member-1",
+    assignedToMemberId: assignee,
     task: { points: 10, name: "Ranger sa chambre" },
     member: { name: "Alice" },
     schedule: { familyId },
@@ -54,16 +60,17 @@ const fakeItem = (status: string, familyId = "fam-1") =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUpdateItem.mockResolvedValue({ id: "item-1" } as any);
+  mockCas.mockResolvedValue({ id: "item-1" } as any);
+  mockGetPlainItem.mockResolvedValue({ id: "item-1" } as any);
 });
 
 describe("updateScheduleItemService", () => {
-  it("crédite les points quand l'item de la famille passe à COMPLETED", async () => {
+  it("crédite les points quand l'item passe à COMPLETED (écriture conditionnelle)", async () => {
     mockGetItem.mockResolvedValue(fakeItem("PENDING"));
 
-    await updateScheduleItemService("item-1", "fam-1", { status: "COMPLETED" });
+    await updateScheduleItemService("item-1", child, { status: "COMPLETED" });
 
-    expect(mockUpdateItem).toHaveBeenCalledWith("item-1", {
+    expect(mockCas).toHaveBeenCalledWith("item-1", "PENDING", {
       status: "COMPLETED",
     });
     expect(mockAward).toHaveBeenCalledWith("member-1", 10);
@@ -72,7 +79,7 @@ describe("updateScheduleItemService", () => {
   it("retire les points sur un retour arrière depuis COMPLETED", async () => {
     mockGetItem.mockResolvedValue(fakeItem("COMPLETED"));
 
-    await updateScheduleItemService("item-1", "fam-1", { status: "PENDING" });
+    await updateScheduleItemService("item-1", parent, { status: "PENDING" });
 
     expect(mockRevoke).toHaveBeenCalledWith("member-1", 10);
     expect(mockAward).not.toHaveBeenCalled();
@@ -82,10 +89,9 @@ describe("updateScheduleItemService", () => {
     mockGetItem.mockResolvedValue(fakeItem("PENDING", "fam-2"));
 
     await expect(
-      updateScheduleItemService("item-1", "fam-1", { status: "COMPLETED" }),
+      updateScheduleItemService("item-1", parent, { status: "COMPLETED" }),
     ).rejects.toBeInstanceOf(NotFoundError);
-
-    expect(mockUpdateItem).not.toHaveBeenCalled();
+    expect(mockCas).not.toHaveBeenCalled();
     expect(mockAward).not.toHaveBeenCalled();
   });
 
@@ -93,9 +99,65 @@ describe("updateScheduleItemService", () => {
     mockGetItem.mockResolvedValue(null);
 
     await expect(
-      updateScheduleItemService("item-x", "fam-1", { status: "COMPLETED" }),
+      updateScheduleItemService("item-x", parent, { status: "COMPLETED" }),
     ).rejects.toBeInstanceOf(NotFoundError);
+    expect(mockCas).not.toHaveBeenCalled();
+  });
+});
 
-    expect(mockUpdateItem).not.toHaveBeenCalled();
+describe("updateScheduleItemService — stratégie de conflit (option A)", () => {
+  it("un enfant ne modifie pas la tâche d'un autre enfant (403)", async () => {
+    mockGetItem.mockResolvedValue(fakeItem("PENDING", "fam-1", "member-2"));
+
+    await expect(
+      updateScheduleItemService("item-1", child, { status: "COMPLETED" }),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    expect(mockCas).not.toHaveBeenCalled();
+  });
+
+  it("un parent peut modifier la tâche de n'importe quel enfant", async () => {
+    mockGetItem.mockResolvedValue(fakeItem("PENDING", "fam-1", "member-2"));
+
+    await updateScheduleItemService("item-1", parent, { status: "SKIPPED" });
+
+    expect(mockCas).toHaveBeenCalled();
+  });
+
+  it("écriture hors ligne périmée (parent a changé entre-temps) — 409, décision du parent gardée", async () => {
+    // L'enfant a coché hors ligne alors que la tâche était PENDING ; le
+    // parent l'a passée SKIPPED avant la reconnexion.
+    mockGetItem.mockResolvedValue(fakeItem("SKIPPED"));
+
+    await expect(
+      updateScheduleItemService("item-1", child, {
+        status: "COMPLETED",
+        expectedStatus: "PENDING",
+      }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(mockCas).not.toHaveBeenCalled();
+    expect(mockAward).not.toHaveBeenCalled();
+  });
+
+  it("déjà dans l'état demandé — succès sans réécriture ni double crédit", async () => {
+    // Cochée sur le web ET hors ligne sur la tablette.
+    mockGetItem.mockResolvedValue(fakeItem("COMPLETED"));
+
+    await updateScheduleItemService("item-1", child, {
+      status: "COMPLETED",
+      expectedStatus: "PENDING",
+    });
+
+    expect(mockCas).not.toHaveBeenCalled();
+    expect(mockAward).not.toHaveBeenCalled();
+  });
+
+  it("modifiée par une requête concurrente entre lecture et écriture — 409, pas de crédit", async () => {
+    mockGetItem.mockResolvedValue(fakeItem("PENDING"));
+    mockCas.mockResolvedValue(null);
+
+    await expect(
+      updateScheduleItemService("item-1", child, { status: "COMPLETED" }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(mockAward).not.toHaveBeenCalled();
   });
 });

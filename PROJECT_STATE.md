@@ -184,7 +184,7 @@ flutter build apk --release \
 
 > Sans `API_BASE_URL`, l'app pointe vers `http://10.0.2.2:3000` (valeur par défaut, réservée à l'émulateur Android en dev local) — indispensable pour un vrai appareil. Sans `POWERSYNC_URL` (défaut vide), pas de sync offline. URL de l'instance : dashboard PowerSync (elle change si l'instance est recréée).
 >
-> **PC Windows — avant chaque `git pull`** : le build régénère `apps/mobile/lib/l10n/app_localizations*.dart` (sortie légèrement différente selon la version de Flutter), ce qui bloque le pull. Les annuler d'abord : `git restore apps/mobile/lib/l10n`.
+> **Localisations générées non versionnées (depuis 2026-10-07)** : `apps/mobile/lib/l10n/app_localizations*.dart` sont dans le `.gitignore` mobile et recréés par `flutter pub get` / `flutter build` (`generate: true`). Avant, la sortie différente selon la version de Flutter (PC Windows channel master vs WSL) bloquait chaque `git pull` sur le PC Windows. **Une dernière fois** sur le PC Windows, pour récupérer le commit qui les retire : `git restore apps/mobile/lib/l10n` puis `git pull` (git supprime alors les fichiers, `flutter pub get` les recrée).
 
 L'APK généré se trouve dans :
 

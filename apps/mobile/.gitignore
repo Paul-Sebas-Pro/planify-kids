@@ -46,3 +46,8 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Localisations générées par `flutter gen-l10n` (generate: true dans pubspec.yaml) :
+# recréées par `flutter pub get` / `flutter build`. Non versionnées car la sortie
+# varie selon la version de Flutter (PC Windows vs WSL) et bloquait les `git pull`.
+/lib/l10n/app_localizations*.dart

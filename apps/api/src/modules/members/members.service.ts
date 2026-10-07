@@ -6,6 +6,7 @@ import {
   updateMember,
   deleteMember,
   updateMemberPin,
+  unlockMemberPin,
   updateMemberFcmToken,
   getMemberTimelineData,
 } from "./members.repository.js";
@@ -44,6 +45,14 @@ export async function updatePinService(
   if (member.role !== "CHILD")
     throw new ForbiddenError("Le PIN ne s'applique qu'aux enfants");
   return updateMemberPin(id, pin);
+}
+
+export async function unlockPinService(id: string, familyId: string) {
+  const member = await getMemberById(id, familyId);
+  if (!member) throw new NotFoundError("Membre");
+  if (member.role !== "CHILD")
+    throw new ForbiddenError("Le PIN ne s'applique qu'aux enfants");
+  return unlockMemberPin(id);
 }
 
 export async function updateFcmTokenService(

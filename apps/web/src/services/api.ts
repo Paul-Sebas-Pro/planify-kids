@@ -130,6 +130,11 @@ export const membersApi = {
     request<{ success: boolean }>("DELETE", `/family/members/${id}`),
   updatePin: (id: string, pin: string) =>
     request<{ success: boolean }>("PATCH", `/family/members/${id}/pin`, { pin }),
+  unlockPin: (id: string) =>
+    request<{ success: boolean; data: FamilyMember }>(
+      "PATCH",
+      `/family/members/${id}/pin/unlock`,
+    ),
   timeline: (id: string) =>
     request<{ success: boolean; data: TimelineEvent[] }>(
       "GET",

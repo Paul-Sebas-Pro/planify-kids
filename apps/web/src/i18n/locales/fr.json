@@ -206,7 +206,10 @@
     "pinStatusMissingHint": "Sans PIN, cet enfant ne peut pas se connecter à la tablette.",
     "pinOffLabel": "Connexion sans PIN",
     "pinOffHint": "Pour les plus jeunes : l'enfant touche son avatar et se connecte. Toute personne connaissant le code famille pourra aussi se connecter à sa place.",
-    "pinKeepCurrent": "Laisser vide pour garder le PIN actuel"
+    "pinKeepCurrent": "Laisser vide pour garder le PIN actuel",
+    "pinStatusLocked": "Bloqué (trop d'essais)",
+    "pinStatusLockedHint": "5 PIN faux : connexion bloquée jusqu'à {{time}}",
+    "unlockPin": "Débloquer"
   },
   "memberTimeline": {
     "eventTaskCompleted": "Tâche terminée",

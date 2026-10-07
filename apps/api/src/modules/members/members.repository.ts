@@ -67,9 +67,22 @@ export function deleteMember(id: string) {
   return prisma.familyMember.delete({ where: { id } });
 }
 
+// Nouveau PIN défini par le parent = déblocage (cas typique : PIN oublié).
 export async function updateMemberPin(id: string, pin: string) {
   const hash = await argon2.hash(pin);
-  return prisma.familyMember.update({ where: { id }, data: { pin: hash } });
+  return prisma.familyMember.update({
+    where: { id },
+    data: { pin: hash, failedPinAttempts: 0, pinLockedUntil: null },
+  });
+}
+
+export async function unlockMemberPin(id: string) {
+  const member = await prisma.familyMember.update({
+    where: { id },
+    data: { failedPinAttempts: 0, pinLockedUntil: null },
+    omit: OMIT_FCM_TOKEN,
+  });
+  return toPublicMember(member);
 }
 
 export function updateMemberFcmToken(id: string, fcmToken: string) {

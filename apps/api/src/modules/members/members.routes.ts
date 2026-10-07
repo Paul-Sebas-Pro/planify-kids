@@ -15,6 +15,7 @@ import {
   createMemberService,
   updateMemberService,
   updatePinService,
+  unlockPinService,
   updateFcmTokenService,
   deleteMemberService,
   getMemberTimelineService,
@@ -72,6 +73,15 @@ membersRoutes.patch(
     return c.json({ success: true });
   },
 );
+
+// PATCH /family/members/:id/pin/unlock  (parent uniquement)
+// Lève le blocage anti-force brute (5 PIN faux → 15 min) sans attendre.
+membersRoutes.patch("/:id/pin/unlock", requireRole("PARENT"), async (c) => {
+  const { familyId } = c.get("user");
+  const id = c.req.param("id");
+  const member = await unlockPinService(id, familyId);
+  return c.json({ success: true, data: member });
+});
 
 // PATCH /family/members/:id/fcm-token  (self-service — tout rôle, soi-même uniquement)
 membersRoutes.patch(

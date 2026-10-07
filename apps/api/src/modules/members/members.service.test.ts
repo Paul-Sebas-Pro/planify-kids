@@ -7,6 +7,7 @@ vi.mock("./members.repository", () => ({
   createMember: vi.fn(),
   updateMember: vi.fn(),
   deleteMember: vi.fn(),
+  unlockMemberPin: vi.fn(),
 }));
 
 import * as repo from "./members.repository.js";
@@ -15,6 +16,7 @@ import {
   createMemberService,
   updateMemberService,
   deleteMemberService,
+  unlockPinService,
 } from "./members.service.js";
 
 const mockGetByFamily = vi.mocked(repo.getMembersByFamily);
@@ -134,5 +136,31 @@ describe("deleteMemberService", () => {
     await deleteMemberService("member-1", "family-1", "user-autre");
 
     expect(mockDelete).toHaveBeenCalledWith("member-1");
+  });
+});
+
+describe("unlockPinService", () => {
+  it("débloque un enfant de la famille", async () => {
+    mockGetById.mockResolvedValue(fakeMember as any);
+
+    await unlockPinService("member-1", "family-1");
+
+    expect(vi.mocked(repo.unlockMemberPin)).toHaveBeenCalledWith("member-1");
+  });
+
+  it("NotFoundError si le membre n'est pas de la famille", async () => {
+    mockGetById.mockResolvedValue(null);
+
+    await expect(unlockPinService("member-x", "family-1")).rejects.toThrow(
+      NotFoundError,
+    );
+  });
+
+  it("ForbiddenError sur un parent", async () => {
+    mockGetById.mockResolvedValue({ ...fakeMember, role: "PARENT" } as any);
+
+    await expect(unlockPinService("member-1", "family-1")).rejects.toThrow(
+      ForbiddenError,
+    );
   });
 });

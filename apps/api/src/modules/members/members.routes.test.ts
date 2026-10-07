@@ -33,6 +33,7 @@ vi.mock("./members.service", () => ({
   createMemberService: vi.fn(),
   updateMemberService: vi.fn(),
   deleteMemberService: vi.fn(),
+  unlockPinService: vi.fn(),
 }));
 
 import app from "../../app.js";
@@ -42,6 +43,7 @@ const mockList   = vi.mocked(membersService.listMembersService);
 const mockCreate = vi.mocked(membersService.createMemberService);
 const mockUpdate = vi.mocked(membersService.updateMemberService);
 const mockDelete = vi.mocked(membersService.deleteMemberService);
+const mockUnlock = vi.mocked(membersService.unlockPinService);
 
 const json = (body: unknown) => JSON.stringify(body);
 const headers = { "Content-Type": "application/json", Authorization: "Bearer tok" };
@@ -240,5 +242,37 @@ describe("DELETE /family/members/:id", () => {
     });
 
     expect(res.status).toBe(404);
+  });
+});
+
+// ── PATCH /family/members/:id/pin/unlock ─────────────────────────────────────
+
+describe("PATCH /family/members/:id/pin/unlock", () => {
+  it("200 — parent débloque l'enfant de sa famille", async () => {
+    mockUnlock.mockResolvedValue({ id: MBR_ID, pinLockedUntil: null } as any);
+
+    const res = await app.request(`/family/members/${MBR_ID}/pin/unlock`, {
+      method: "PATCH",
+      headers,
+    });
+
+    expect(res.status).toBe(200);
+    expect(mockUnlock).toHaveBeenCalledWith(MBR_ID, "fam-1");
+  });
+
+  it("403 si rôle CHILD (un enfant ne lève pas son propre blocage)", async () => {
+    const { authMiddleware } = await import("../../core/middleware/auth.middleware");
+    vi.mocked(authMiddleware).mockImplementationOnce(async (c: any, next: any) => {
+      c.set("user", { sub: "child-1", familyId: "fam-1", role: "CHILD" });
+      await next();
+    });
+
+    const res = await app.request(`/family/members/${MBR_ID}/pin/unlock`, {
+      method: "PATCH",
+      headers,
+    });
+
+    expect(res.status).toBe(403);
+    expect(mockUnlock).not.toHaveBeenCalled();
   });
 });

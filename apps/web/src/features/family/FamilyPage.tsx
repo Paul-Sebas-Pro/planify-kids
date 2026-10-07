@@ -364,6 +364,39 @@ export function FamilyPage() {
 
 function PinStatus({ member }: { member: FamilyMember }) {
   const { t } = useTranslation();
+  const qc = useQueryClient();
+  const unlock = useMutation({
+    mutationFn: () => membersApi.unlockPin(member.id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["members"] }),
+  });
+
+  const lockedUntil = member.pinLockedUntil
+    ? new Date(member.pinLockedUntil)
+    : null;
+  if (member.pinRequired && lockedUntil && lockedUntil > new Date()) {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <p
+          className="text-xs text-danger font-semibold"
+          title={t("familyPage.pinStatusLockedHint", {
+            time: lockedUntil.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          })}
+        >
+          ⛔ {t("familyPage.pinStatusLocked")}
+        </p>
+        <button
+          onClick={() => unlock.mutate()}
+          disabled={unlock.isPending}
+          className="text-xs text-secondary font-semibold hover:underline disabled:opacity-50"
+        >
+          {t("familyPage.unlockPin")}
+        </button>
+      </div>
+    );
+  }
   if (!member.pinRequired) {
     return <p className="text-xs text-gray-400">🔓 {t("familyPage.pinStatusOff")}</p>;
   }

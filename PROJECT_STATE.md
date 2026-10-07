@@ -404,6 +404,7 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 - **Fuite du hash PIN corrigée** : `GET /family/members` (accessible à tout membre, enfants compris) renvoyait les lignes Prisma complètes, **hash argon2 du PIN** et `fcmToken` inclus — un PIN à 4 chiffres haché se casse hors ligne en minutes (10 000 essais) : un enfant pouvait retrouver le PIN de son frère/sa sœur. Fix (`members.repository.ts`) : `omit: { fcmToken }` + `toPublicMember()` remplace `pin` par `hasPin` (booléen) sur list/create/update ; `getMemberById` (usage interne) inchangé. Type partagé `FamilyMember` : `hasPin`, `pinRequired`.
 - **⚠️ Ordre de déploiement (colonnes requises par le code)** : `db push` de `pinRequired`, `failedPinAttempts`, `pinLockedUntil`, `failedLoginAttempts`, `loginLockedUntil` sur la DB prod **avant** de pousser le code — sinon Vercel déploie une API qui sélectionne une colonne inexistante et la connexion enfant casse. Colonne additive avec défaut : l'ancien code n'est pas gêné par l'ordre inverse.
 - **Anti-force brute (2026-10-07)** : aucune limite de tentatives sur `/auth/login-child` (PIN 4 chiffres = 10 000 combinaisons) ni `/auth/login`. Fix : `verifyWithLockout()` (`auth.service.ts`) — 5 échecs → blocage 15 min (`TooManyAttemptsError`, HTTP 429), par enfant (`FamilyMember.failedPinAttempts/pinLockedUntil`) et par compte parent (`User.failedLoginAttempts/loginLockedUntil`). Compteur **en base** (un compteur mémoire ne tient pas sur Vercel serverless) et **incrémenté atomiquement AVANT la vérification** : une rafale de requêtes parallèles ne peut pas toutes passer le contrôle avant le 1er échec enregistré (au-delà du quota → 429 sans vérifier). Pendant le blocage, le secret n'est même pas vérifié. Succès → compteur remis à zéro (les fautes de frappe isolées ne s'accumulent pas). Compromis assumé : un tiers peut bloquer un compte 15 min en se trompant exprès (déni de service limité).
+- **Déblocage par le parent (manque signalé par l'utilisateur au test)** : un enfant bloqué devait attendre 15 min sans recours. Fix : `PATCH /family/members/:id/pin/unlock` (parent uniquement, enfant de sa famille) + statut « ⛔ Bloqué (trop d'essais) » et bouton « Débloquer » sur la carte enfant (web, `PinStatus`, heure de fin en infobulle). Définir un nouveau PIN débloque aussi (`updateMemberPin` remet compteur et blocage à zéro — cas typique du PIN oublié). Pas d'équivalent pour le compte parent bloqué (attendre 15 min). Rappel : la désactivation du PIN est **volontairement web uniquement** — l'app mobile est l'interface enfant, sans écran réservé au parent.
 - **Code famille cryptographique** : `randomFamilyCode()` en `crypto.randomInt` sur A-Z0-9. L'ancien `Math.random().toString(36).slice(2, 8)` était prédictible **et pouvait produire moins de 6 caractères** (ex. `0.5` → `"I"`) — une telle famille ne pouvait jamais connecter ses enfants (`loginChildSchema` exige 6). Codes existants inchangés.
 - **Bug web préexistant — messages d'erreur API jamais affichés** : les 4 clients API web (`api.ts`, `planning.api.ts`, `challenges.api.ts`, `rewards.api.ts`) lisaient `err.message`, alors que l'API renvoie `{ error: "..." }` → le parent voyait « HTTP 401 » au lieu de « Email ou mot de passe incorrect » (et aurait vu « HTTP 429 » au blocage). Fix : `err.error ?? err.message`.
 - Mobile : message dédié sur 429 (« Trop d'essais. Attends 15 minutes ou demande à un parent. ») au lieu de « PIN incorrect ».
@@ -450,6 +451,9 @@ M apps/api/src/core/errors/AppError.ts + core/middleware/error.middleware.ts  (T
 M apps/api/src/modules/auth/{auth.service,auth.repository,auth.service.test}.ts  (verifyWithLockout, randomFamilyCode crypto)
 + apps/api/src/modules/auth/auth.repository.test.ts  (code famille toujours 6 caractères)
 M apps/web/src/services/{api,planning.api,challenges.api,rewards.api}.ts  (lecture du champ `error`)
+M apps/api/src/modules/members/{members.repository,members.service,members.routes}.ts + tests  (unlockPin, nouveau PIN = déblocage)
+M apps/web/src/features/family/FamilyPage.tsx + services/api.ts + i18n  (statut Bloqué + bouton Débloquer)
+M packages/types/src/family.ts                      (pinLockedUntil)
 M apps/mobile/lib/features/auth/login_screen.dart + l10n  (loginTooManyAttempts)
 M PROJECT_STATE.md                                  (étape RLS dans la procédure de déploiement, limitation pause PowerSync)
 ```
@@ -459,10 +463,10 @@ M PROJECT_STATE.md                                  (étape RLS dans la procédu
 - Script exécuté sur la DB prod : Security Advisor 0 erreur.
 - App web fonctionnelle, connexion + liste des tâches tablette OK (après redéploiement PowerSync).
 - Mobile : `flutter analyze` 0 issue, `flutter test` **46/46 — suite 100 % verte** (fin des 4 échecs `task_card_test.dart`).
-- API : **312/312 tests**, typecheck API + web 0 erreur.
+- API : **319/319 tests**, typecheck API + web 0 erreur.
 - Animations (A + B + C) et points en direct **vérifiés en réel sur tablette** après rebuild APK.
 
-**Prochaine session** : (1) Vérifier en réel : PIN optionnel (web + tablette), blocage après 5 PIN faux, message d'erreur de login web lisible. (2) Reste du Backlog Sprint 8 : badge « challenge », drag & drop, merge-conflict sync.
+**Prochaine session** : (1) Vérifier en réel : PIN optionnel (web + tablette), blocage après 5 PIN faux + déblocage par le parent, message d'erreur de login web lisible. (2) Badge « challenge » — proposition faite, en attente de validation : type `CHALLENGES_COMPLETED`, 3 badges (🤝 Esprit d'équipe 1 défi, 🏅 Super équipe 5, 👑 Famille de légende 10), décernés à chaque enfant à la réussite d'un défi familial, seuls les défis réussis après l'arrivée de l'enfant comptent. (3) Reste du Backlog Sprint 8 : drag & drop, merge-conflict sync.
 
 ---
 

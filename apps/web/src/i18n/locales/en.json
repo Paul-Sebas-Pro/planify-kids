@@ -206,7 +206,10 @@
     "pinStatusMissingHint": "Without a PIN, this child cannot log in on the tablet.",
     "pinOffLabel": "Log in without PIN",
     "pinOffHint": "For younger children: the child taps their avatar to log in. Anyone who knows the family code can also log in as them.",
-    "pinKeepCurrent": "Leave empty to keep the current PIN"
+    "pinKeepCurrent": "Leave empty to keep the current PIN",
+    "pinStatusLocked": "Locked (too many tries)",
+    "pinStatusLockedHint": "5 wrong PINs: login locked until {{time}}",
+    "unlockPin": "Unlock"
   },
   "memberTimeline": {
     "eventTaskCompleted": "Task completed",

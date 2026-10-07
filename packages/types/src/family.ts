@@ -53,6 +53,8 @@ export interface FamilyMember {
   hasPin: boolean;
   /** false = connexion enfant sans PIN, choisi par le parent. */
   pinRequired: boolean;
+  /** Blocage anti-force brute (5 PIN faux) en cours jusqu'à cette date. */
+  pinLockedUntil?: string | null;
   createdAt: string;
 }
 

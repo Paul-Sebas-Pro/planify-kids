@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../shared/l10n/l10n_extensions.dart';
 import '../../shared/providers/locale_provider.dart';
+import '../../shared/providers/my_points_provider.dart';
 import '../auth/auth_provider.dart';
 import '../notifications/notifications_provider.dart';
 import 'profile_provider.dart';
@@ -14,6 +15,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).value;
+    final points = ref.watch(myPointsProvider).value ?? user?.points ?? 0;
     final statsAsync = ref.watch(familyStatsProvider);
     final unreadCount = ref
             .watch(notificationsProvider)
@@ -66,7 +68,7 @@ class ProfileScreen extends ConsumerWidget {
                       const Text('⭐', style: TextStyle(fontSize: 20)),
                       const SizedBox(width: 4),
                       Text(
-                        context.l10n.profilePoints(user?.points ?? 0),
+                        context.l10n.profilePoints(points),
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.bold,

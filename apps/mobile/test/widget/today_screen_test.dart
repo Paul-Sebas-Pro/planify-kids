@@ -9,6 +9,7 @@ import 'package:mobile/features/tasks/tasks_provider.dart';
 import 'package:mobile/features/tasks/today_screen.dart';
 import 'package:mobile/models/auth_user.dart';
 import 'package:mobile/models/schedule_item.dart';
+import 'package:mobile/shared/providers/my_points_provider.dart';
 
 // Fakes -----------------------------------------------------------------------
 
@@ -67,11 +68,13 @@ final _task = ScheduleItem(
 Widget _wrap({
   required AsyncValue<List<ScheduleItem>> tasks,
   AuthUser? user,
+  Stream<int>? points,
 }) {
   return ProviderScope(
     overrides: [
       authProvider.overrideWith(() => _FakeAuthNotifier(user ?? _alice)),
       tasksProvider.overrideWith(() => _FakeTasksNotifier(tasks)),
+      myPointsProvider.overrideWith((ref) => points ?? Stream.value(0)),
     ],
     child: const MaterialApp(home: TodayScreen()),
   );
@@ -138,6 +141,23 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
       expect(find.text('Toutes tes tâches du jour sont faites !'),
           findsNothing);
+    });
+
+    testWidgets('bandeau — points suivis en direct, pas ceux du login',
+        (tester) async {
+      final points = StreamController<int>();
+      addTearDown(points.close);
+      await tester.pumpWidget(
+        _wrap(tasks: AsyncData([_task]), points: points.stream),
+      );
+      points.add(40);
+      await tester.pump();
+      expect(find.text('40 pts'), findsOneWidget);
+
+      // Points crédités par le serveur, reçus par la sync.
+      points.add(50);
+      await tester.pump();
+      expect(find.text('50 pts'), findsOneWidget);
     });
 
     testWidgets('bouton logout présent dans AppBar', (tester) async {

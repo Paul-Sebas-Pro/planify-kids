@@ -48,7 +48,7 @@ final class WeekPlanningProvider
   }
 }
 
-String _$weekPlanningHash() => r'5359681fc63f0b4be004bb0d3d1387096094a4fa';
+String _$weekPlanningHash() => r'2b666f091eca2513d56f8563dc88623a68a0bd67';
 
 @ProviderFor(planningWallMembers)
 final planningWallMembersProvider = PlanningWallMembersProvider._();
@@ -90,4 +90,4 @@ final class PlanningWallMembersProvider
 }
 
 String _$planningWallMembersHash() =>
-    r'9c6f26e5095b67f5b778c1e50c0670425324604e';
+    r'358e2141b1721f43d5da018272e7b27163941c77';

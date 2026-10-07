@@ -48,7 +48,7 @@ final class TodayTasksProvider
   }
 }
 
-String _$todayTasksHash() => r'f2573d1c0f09d6a3ee9535a722d5aeb25d02928a';
+String _$todayTasksHash() => r'39c27ef4f6cfaed489ed44b185f8818b6bc5b009';
 
 @ProviderFor(TasksNotifier)
 final tasksProvider = TasksNotifierProvider._();

@@ -48,4 +48,4 @@ final class MemberBadgesProvider
   }
 }
 
-String _$memberBadgesHash() => r'2345f62cb73d4c7945c08245f1744530cddcead9';
+String _$memberBadgesHash() => r'a93577096018996cc0453a133cd6b2f7a06b640f';

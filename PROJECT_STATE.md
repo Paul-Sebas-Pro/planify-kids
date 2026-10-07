@@ -176,11 +176,15 @@ Les PRs génèrent automatiquement des preview deployments Vercel.
 Depuis `apps/mobile` :
 
 ```bash
+flutter pub get
 flutter build apk --release \
-  --dart-define=API_BASE_URL=https://planify-kids-api.vercel.app/api
+  --dart-define=API_BASE_URL=https://planify-kids-api.vercel.app/api \
+  --dart-define=POWERSYNC_URL=https://<instance>.powersync.journeyapps.com
 ```
 
-> Sans ce flag, l'app pointe vers `http://10.0.2.2:3000` (valeur par défaut, réservée à l'émulateur Android en dev local) — indispensable pour un vrai appareil.
+> Sans `API_BASE_URL`, l'app pointe vers `http://10.0.2.2:3000` (valeur par défaut, réservée à l'émulateur Android en dev local) — indispensable pour un vrai appareil. Sans `POWERSYNC_URL` (défaut vide), pas de sync offline. URL de l'instance : dashboard PowerSync (elle change si l'instance est recréée).
+>
+> **PC Windows — avant chaque `git pull`** : le build régénère `apps/mobile/lib/l10n/app_localizations*.dart` (sortie légèrement différente selon la version de Flutter), ce qui bloque le pull. Les annuler d'abord : `git restore apps/mobile/lib/l10n`.
 
 L'APK généré se trouve dans :
 
@@ -393,6 +397,7 @@ Retours du premier test réel sur tablette Android (login enfant + usage quotidi
 - **Animations de célébration (Sprint 8, écart §4.5 — volets A + B validés par l'utilisateur avant implémentation)** : package `confetti` (pur Dart, piloté par `AnimationController`, aucun `Timer` → pas de "pending timer" en test widget). Module `shared/widgets/celebration.dart` : `showTaskDoneBurst()` (`OverlayEntry` positionné sur le centre du bouton **calculé au moment du tap** — la carte change de section juste après, l'effet ne doit pas la suivre) et `showAllDoneCelebration()` (`showGeneralDialog`, fermeture auto via `AnimationController` plutôt que `Timer`, disposé si l'enfant ferme avant). Rebond de la carte : `TweenAnimationBuilder` joué une seule fois à la création — la carte cochée est un **nouvel élément** (autre section de la liste, les keys ne matchent qu'entre frères), d'où un flag `celebrate` piloté par `_justCompletedId` dans `TodayScreen` (passé en `ConsumerStatefulWidget`). Réglage système « réduire les animations » respecté (`MediaQuery.maybeDisableAnimationsOf`) : vibration + texte seuls.
 - **Volet C — badge gagné** : `BadgeCelebrationListener` (monté dans `ShellScreen`, donc actif sur tous les onglets) écoute `memberBadgesProvider`. Mémoire locale = **date `earnedAt` du dernier badge fêté par membre** (`SecureStorageService.getBadgesCelebratedUntil`), pas une liste d'ids : au 1er passage elle est fixée à « maintenant » → les badges déjà acquis ne rejouent jamais, même si la 1re sync arrive plus tard (1er lancement hors ligne), alors que le 1er badge gagné après installation est bien fêté. Traitements sérialisés (deux émissions rapprochées ne lisent pas la même date). **File d'attente des célébrations plein écran** (`_enqueue` dans `celebration.dart`) : le badge « Première tâche » arrive par la sync 1-3 s après la dernière tâche, pendant la célébration « journée terminée » — elles s'enchaînent au lieu de s'empiler. `_AllDoneCelebration` factorisé en `_CelebrationCard` générique (headline/emoji/titre/sous-titre/durée).
 - **Piège PowerSync — `timestamp` sans fuseau** (vérifié doc PowerSync) : Prisma `DateTime` = `timestamp(3)` Postgres sans fuseau (valeurs UTC), synchronisé au format `YYYY-MM-DD hh:mm:ss.sss` **sans `Z`** → `DateTime.parse` le lit en heure locale (décalage 1-2 h en France). Aurait fait passer un badge gagné juste après l'installation sous le seuil, jamais fêté. Fix : `parseUtcTimestamp()` (`models/badge.dart`) pour `earned_at`, `.toLocal()` à l'affichage (`badges_screen.dart`). **Les autres `fromLocalRow` (`exchange.created_at`, `schedule_item.date`) ont le même défaut, non corrigé** (impact nul aujourd'hui : tri fait en SQL, date planning nominale comparée en texte) — à garder en tête.
+- **Bug points figés (signalé après rebuild APK, 2026-10-07)** : le serveur créditait bien (`PATCH /planning/items/:id` → `awardPointsForTask`), mais les 3 écrans mobile (bandeau Aujourd'hui, Profil, Récompenses) lisaient `AuthUser.points`, **copie figée au login**, jamais rafraîchie. Pas que cosmétique : `canAfford` (Récompenses) utilisait cette valeur → enfant incapable de réclamer une récompense pourtant payable avant de se reconnecter. Rendu visible par le « +N pts » animé. Fix : `myPointsProvider` (`shared/providers/my_points_provider.dart`) lit `family_members.points` en local PowerSync (déjà synchronisé), repli sur la valeur du login sans ligne locale. Les points restent ceux du serveur : hors ligne, ils montent à la reconnexion (le serveur seul crédite).
 - **Les 4 échecs historiques de `task_card_test.dart`** : tests simplement périmés vs le composant (format `+10 pts`, bouton absent — pas désactivé — sans `onComplete`, chip « Fait ✓ » à la place d'une icône `check_circle`). Réalignés sur le comportement voulu, pas l'inverse.
 
 **Modifications** :
@@ -412,6 +417,10 @@ M apps/mobile/lib/shared/services/secure_storage.dart  (get/saveBadgesCelebrated
 M apps/mobile/lib/models/badge.dart                 (parseUtcTimestamp pour earned_at)
 M apps/mobile/lib/features/badges/badges_screen.dart  (earnedAt.toLocal() à l'affichage)
 + apps/mobile/test/widget/badge_celebration_test.dart  (parseUtcTimestamp, takeBadgesToCelebrate, listener)
++ apps/mobile/lib/shared/providers/my_points_provider.dart (+ .g.dart)  (points en direct)
+M apps/mobile/lib/features/{tasks/today_screen,rewards/rewards_screen,profile/profile_screen}.dart  (myPointsProvider)
+M apps/mobile/lib/features/*/*.g.dart               (hashes de debug régénérés, périmés)
+M apps/mobile/test/widget/today_screen_test.dart + test/database/powersync_local_test.dart  (points en direct)
 M PROJECT_STATE.md                                  (étape RLS dans la procédure de déploiement, limitation pause PowerSync)
 ```
 
@@ -419,10 +428,10 @@ M PROJECT_STATE.md                                  (étape RLS dans la procédu
 
 - Script exécuté sur la DB prod : Security Advisor 0 erreur.
 - App web fonctionnelle, connexion + liste des tâches tablette OK (après redéploiement PowerSync).
-- Mobile : `flutter analyze` 0 issue, `flutter test` **37/37 — suite 100 % verte** (fin des 4 échecs `task_card_test.dart`).
-- Animations **pas encore vues en réel** : rebuild APK nécessaire (PC Windows).
+- Mobile : `flutter analyze` 0 issue, `flutter test` **40/40 — suite 100 % verte** (fin des 4 échecs `task_card_test.dart`).
+- Animations (A + B + C) **vérifiées en réel sur tablette** après rebuild APK. Fix points figés : pas encore vu en réel (nouveau rebuild nécessaire).
 
-**Prochaine session** : (1) rebuild APK + vérifier les 3 célébrations sur tablette (tâche, journée terminée, badge — pour le badge : compléter la 1re tâche d'un enfant sans badge, ou atteindre un seuil). (2) Bandeau « ⭐ X pts » de `TodayScreen` figé sur les points du login (jamais rafraîchi, devenu visible avec le « +N pts » animé) — lire `family_members.points` en local PowerSync. (3) Reste du Backlog Sprint 8.
+**Prochaine session** : (1) **Faille multi-tenant** `PATCH /planning/items/:itemId` (`planning.routes.ts:67`) — aucune vérification que l'item appartient à la famille du token : tout compte authentifié peut changer le statut (donc créditer/retirer des points) d'un item d'une autre famille s'il connaît son UUID. Risque pratique faible (UUID), mais viole la règle multi-tenant du projet. (2) Rebuild APK + vérifier les points en direct. (3) Reste du Backlog Sprint 8.
 
 ---
 

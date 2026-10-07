@@ -8,6 +8,7 @@ import 'package:mobile/features/auth/auth_provider.dart';
 import 'package:mobile/features/tasks/tasks_provider.dart';
 import 'package:mobile/models/auth_user.dart';
 import 'package:mobile/models/schedule_item.dart';
+import 'package:mobile/shared/providers/my_points_provider.dart';
 import 'package:mobile/shared/providers/providers.dart';
 import 'package:mobile/shared/services/api_client.dart';
 import 'package:mobile/shared/services/secure_storage.dart';
@@ -178,6 +179,64 @@ void main() {
         ['item-1'],
       );
       expect(rows.first['status'], 'COMPLETED');
+    });
+  });
+
+  group('myPointsProvider (points en direct depuis family_members)', () {
+    late PowerSyncDatabase db;
+
+    setUp(() async => db = await _openTestDb());
+    tearDown(() => db.close());
+
+    Future<int?> waitFor(ProviderContainer c, int expected) async {
+      for (var i = 0; i < 40; i++) {
+        final v = c.read(myPointsProvider).value;
+        if (v == expected) return v;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      return c.read(myPointsProvider).value;
+    }
+
+    test('sans ligne locale — repli sur les points du login', () async {
+      final container = ProviderContainer(overrides: [
+        authProvider.overrideWith(() => _FakeAuthNotifier(AuthUser(
+              id: 'alice-id',
+              name: 'Alice',
+              role: 'CHILD',
+              familyId: 'fam-1',
+              color: '#FF6584',
+              points: 30,
+            ))),
+        powerSyncDatabaseProvider.overrideWithValue(db),
+      ]);
+      addTearDown(container.dispose);
+      final sub = container.listen(myPointsProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      expect(await waitFor(container, 30), 30);
+    });
+
+    test('suit la ligne locale et réémet quand la sync la met à jour',
+        () async {
+      await db.execute(
+        'INSERT INTO family_members (id, name, role, points, color, avatar, family_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        ['alice-id', 'Alice', 'CHILD', 40, '#FF6584', null, 'fam-1'],
+      );
+      final container = ProviderContainer(overrides: [
+        authProvider.overrideWith(() => _FakeAuthNotifier(_alice)),
+        powerSyncDatabaseProvider.overrideWithValue(db),
+      ]);
+      addTearDown(container.dispose);
+      final sub = container.listen(myPointsProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      expect(await waitFor(container, 40), 40);
+
+      await db.execute(
+        'UPDATE family_members SET points = ? WHERE id = ?',
+        [50, 'alice-id'],
+      );
+      expect(await waitFor(container, 50), 50);
     });
   });
 

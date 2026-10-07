@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../models/schedule_item.dart';
 import '../../shared/l10n/l10n_extensions.dart';
 import '../../shared/providers/locale_provider.dart';
+import '../../shared/providers/my_points_provider.dart';
 import '../../shared/widgets/api_error_widget.dart';
 import '../../shared/widgets/celebration.dart';
 import '../auth/auth_provider.dart';
@@ -38,6 +39,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   Widget build(BuildContext context) {
     final tasksAsync = ref.watch(tasksProvider);
     final user = ref.watch(authProvider).value;
+    final points = ref.watch(myPointsProvider).value ?? user?.points ?? 0;
     final locale = ref.watch(appLocaleProvider);
     final today = DateFormat('EEEE d MMMM', dateLocaleFor(locale))
         .format(DateTime.now());
@@ -98,7 +100,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             children: [
               _ProgressBanner(
                 name: user?.name ?? '',
-                points: user?.points ?? 0,
+                points: points,
                 total: items.length,
                 completed: done.length,
               ),

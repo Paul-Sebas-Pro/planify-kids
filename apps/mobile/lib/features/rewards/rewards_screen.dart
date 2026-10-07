@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/reward.dart';
 import '../../shared/l10n/l10n_extensions.dart';
+import '../../shared/providers/my_points_provider.dart';
 import '../../shared/widgets/api_error_widget.dart';
 import '../auth/auth_provider.dart';
 import 'rewards_provider.dart';
@@ -15,6 +16,7 @@ class RewardsScreen extends ConsumerWidget {
     final rewardsAsync = ref.watch(rewardsProvider);
     final claimsAsync = ref.watch(myClaimsProvider);
     final user = ref.watch(authProvider).value;
+    final points = ref.watch(myPointsProvider).value ?? user?.points ?? 0;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -62,7 +64,7 @@ class RewardsScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               ...rewards.map((r) => _RewardCard(
                     reward: r,
-                    userPoints: user?.points ?? 0,
+                    userPoints: points,
                     memberId: user?.id ?? '',
                     pendingClaimIds: claimsAsync.value
                             ?.where((c) => c.isPending)

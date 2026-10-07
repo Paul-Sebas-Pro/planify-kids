@@ -33,7 +33,7 @@ final class ExchangesNotifierProvider
   ExchangesNotifier create() => ExchangesNotifier();
 }
 
-String _$exchangesNotifierHash() => r'8a0f4f1cc1f54d6699f12a1af29aa1b7508089d3';
+String _$exchangesNotifierHash() => r'1527b1fbb5dd6172d467d840867a2546ef3243f9';
 
 abstract class _$ExchangesNotifier extends $StreamNotifier<List<Exchange>> {
   Stream<List<Exchange>> build();
@@ -92,4 +92,4 @@ final class FamilyMembersProvider
   }
 }
 
-String _$familyMembersHash() => r'875804c7cac73581ba3eae2d86a9c3517dd9203d';
+String _$familyMembersHash() => r'feee5948278634a80c5ed5e44588d115967541ce';

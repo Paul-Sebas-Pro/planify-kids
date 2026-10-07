@@ -72,6 +72,27 @@ const badges = [
     conditionType: "STREAK",
     conditionValue: 30,
   },
+  {
+    name: "Esprit d'équipe",
+    description: "1 défi familial réussi",
+    icon: "🤝",
+    conditionType: "CHALLENGES_COMPLETED",
+    conditionValue: 1,
+  },
+  {
+    name: "Super équipe",
+    description: "5 défis familiaux réussis",
+    icon: "🏅",
+    conditionType: "CHALLENGES_COMPLETED",
+    conditionValue: 5,
+  },
+  {
+    name: "Famille de légende",
+    description: "10 défis familiaux réussis",
+    icon: "👑",
+    conditionType: "CHALLENGES_COMPLETED",
+    conditionValue: 10,
+  },
 ];
 
 // Additif (par nom) plutôt que "skip si déjà seedé" — sinon ajouter un

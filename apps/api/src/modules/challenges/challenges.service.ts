@@ -42,13 +42,16 @@ export async function updateChallengeService(
   return updateChallengeStatus(id, input.status);
 }
 
+/** Passe à COMPLETED les défis actifs dont l'objectif est atteint.
+ *  Renvoie le nombre de défis réussis par cet appel. */
 export async function checkChallengesAfterPoints(
   familyId: string,
-): Promise<void> {
+): Promise<number> {
   const now = new Date();
   const active = await getActiveChallengesForFamily(familyId, now);
-  if (active.length === 0) return;
+  if (active.length === 0) return 0;
 
+  let completed = 0;
   for (const challenge of active) {
     const total = await sumPointsInPeriod(
       familyId,
@@ -63,6 +66,8 @@ export async function checkChallengesAfterPoints(
         bonusPoints: challenge.bonusPoints,
         totalPoints: total,
       });
+      completed += 1;
     }
   }
+  return completed;
 }

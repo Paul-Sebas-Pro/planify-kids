@@ -19,8 +19,38 @@ export async function awardPointsForTask(
     data: { points },
   }).catch(() => {});
 
-  await checkAndAwardBadges(memberId, member.points, member.familyId);
-  checkChallengesAfterPoints(member.familyId).catch(() => {});
+  await checkAndAwardBadges(member);
+
+  // Attendu (pas de fire-and-forget) : sur Vercel serverless, une promesse
+  // encore en vol après la réponse peut être interrompue. Un échec ici ne
+  // doit pas faire échouer la complétion de la tâche.
+  try {
+    const completed = await checkChallengesAfterPoints(member.familyId);
+    // Défi réussi : badges "défis" + seuils de points franchis grâce au bonus,
+    // pour chaque enfant de la famille.
+    if (completed > 0) await checkBadgesForFamilyChildren(member.familyId);
+  } catch (err) {
+    console.error("Vérification défis/badges échouée :", err);
+  }
+}
+
+type BadgeCandidate = {
+  id: string;
+  points: number;
+  familyId: string;
+  createdAt: Date;
+};
+
+export async function checkBadgesForFamilyChildren(
+  familyId: string,
+): Promise<void> {
+  const children = await prisma.familyMember.findMany({
+    where: { familyId, role: "CHILD" },
+    select: { id: true, points: true, familyId: true, createdAt: true },
+  });
+  for (const child of children) {
+    await checkAndAwardBadges(child);
+  }
 }
 
 // Annule les points d'une tâche revenue de COMPLETED à un autre statut (undo enfant/parent)
@@ -66,29 +96,36 @@ function computeStreak(completedDays: Set<string>): number {
   return streak;
 }
 
-async function checkAndAwardBadges(
-  memberId: string,
-  totalPoints: number,
-  familyId: string,
-): Promise<void> {
-  const [badges, earned, completedCount, completedItems] = await Promise.all([
-    prisma.badge.findMany(),
-    prisma.memberBadge.findMany({
-      where: { memberId },
-      select: { badgeId: true },
-    }),
-    prisma.scheduleItem.count({
-      where: { assignedToMemberId: memberId, status: "COMPLETED" },
-    }),
-    prisma.scheduleItem.findMany({
-      where: {
-        assignedToMemberId: memberId,
-        status: "COMPLETED",
-        completedAt: { not: null },
-      },
-      select: { completedAt: true },
-    }),
-  ]);
+async function checkAndAwardBadges(member: BadgeCandidate): Promise<void> {
+  const { id: memberId, points: totalPoints, familyId } = member;
+  const [badges, earned, completedCount, completedItems, challengesCompleted] =
+    await Promise.all([
+      prisma.badge.findMany(),
+      prisma.memberBadge.findMany({
+        where: { memberId },
+        select: { badgeId: true },
+      }),
+      prisma.scheduleItem.count({
+        where: { assignedToMemberId: memberId, status: "COMPLETED" },
+      }),
+      prisma.scheduleItem.findMany({
+        where: {
+          assignedToMemberId: memberId,
+          status: "COMPLETED",
+          completedAt: { not: null },
+        },
+        select: { completedAt: true },
+      }),
+      // Défis familiaux réussis depuis l'arrivée de l'enfant : un enfant ajouté
+      // plus tard ne reçoit pas d'un coup les badges des défis passés.
+      prisma.familyChallenge.count({
+        where: {
+          familyId,
+          status: "COMPLETED",
+          completedAt: { gte: member.createdAt },
+        },
+      }),
+    ]);
 
   const earnedIds = new Set(
     earned.map((e: { badgeId: string }) => e.badgeId),
@@ -116,6 +153,8 @@ async function checkAndAwardBadges(
       return completedCount >= badge.conditionValue;
     if (badge.conditionType === "STREAK")
       return streak >= badge.conditionValue;
+    if (badge.conditionType === "CHALLENGES_COMPLETED")
+      return challengesCompleted >= badge.conditionValue;
     return false;
   });
 

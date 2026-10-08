@@ -15,6 +15,9 @@ const envSchema = z.object({
   FIREBASE_PRIVATE_KEY: z.string().optional(),
   POWERSYNC_URL: z.string().url().optional(),
   POWERSYNC_JWT_SECRET: z.string().min(32).optional(),
+  // Secret des Vercel Cron Jobs (envoyé par Vercel en `Authorization: Bearer`).
+  // Absent = routes /cron/* fermées.
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

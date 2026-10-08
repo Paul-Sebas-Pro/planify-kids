@@ -22,6 +22,7 @@ import { logsRoutes } from "./modules/logs/logs.routes.js";
 import { eventsRoutes } from "./modules/events/events.routes.js";
 import { challengesRoutes } from "./modules/challenges/challenges.routes.js";
 import { powersyncRoutes } from "./modules/powersync/powersync.routes.js";
+import { cronRoutes } from "./modules/cron/cron.routes.js";
 
 const app = new Hono();
 
@@ -68,6 +69,7 @@ app.route("/logs", logsRoutes);
 app.route("/events", eventsRoutes);
 app.route("/challenges", challengesRoutes);
 app.route("/powersync", powersyncRoutes);
+app.route("/cron", cronRoutes);
 
 // ─── Gestion d'erreurs ────────────────────────────────────────
 app.onError((err: unknown, c: Context) => {

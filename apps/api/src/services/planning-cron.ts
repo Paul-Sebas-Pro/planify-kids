@@ -6,6 +6,12 @@ import {
   notifyTasksForgotten,
 } from "../modules/notifications/notifications.service.js";
 import { syncCalendarZone } from "./school-calendar.js";
+import {
+  familyTimezone,
+  localDayKey,
+  localHour,
+  scheduleDayRange,
+} from "./timezone.js";
 
 function nextWeekRange(): { startDate: string; endDate: string } {
   const today = new Date();
@@ -68,70 +74,105 @@ export function startPlanningCron(): void {
   console.log("⏰ Cron planning auto démarré (quotidien 00:01)");
 }
 
-// Bornes du jour courant en heure LOCALE (pas de setHours+toISOString — voir
-// piège timezone documenté : le serveur tourne en Europe/Paris, pas en UTC).
-function todayRange(): { start: Date; end: Date } {
-  const now = new Date();
-  return {
-    start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0),
-    end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999),
-  };
-}
+// Heures locales (chez chaque famille) des notifications quotidiennes.
+export const REMINDER_LOCAL_HOUR = 8;
+export const FORGOTTEN_LOCAL_HOUR = 20;
 
-async function notifyPendingTasksForToday(
+/**
+ * Notifie les tâches du jour encore à faire, pour les seules familles où il
+ * est `localHourTarget` heures CHEZ ELLES (fuseau déduit de la zone scolaire).
+ * Le cron tourne une fois par heure UTC (vercel.json) : chaque famille est
+ * donc notifiée une seule fois par jour, à son heure locale — y compris dans
+ * les DOM-TOM. « Aujourd'hui » est le jour civil local de la famille.
+ */
+async function notifyPendingTasksAtLocalHour(
+  localHourTarget: number,
   notify: (memberId: string, familyId: string, count: number) => Promise<void>,
+  now: Date,
 ): Promise<number> {
-  const { start, end } = todayRange();
-
-  const items = await prisma.scheduleItem.findMany({
-    where: { status: "PENDING", date: { gte: start, lte: end } },
-    select: { assignedToMemberId: true, schedule: { select: { familyId: true } } },
+  const families = await prisma.family.findMany({
+    select: { id: true, schoolZone: true, timezone: true },
   });
 
-  const counts = new Map<string, { familyId: string; count: number }>();
-  for (const item of items) {
-    const entry = counts.get(item.assignedToMemberId);
-    if (entry) entry.count += 1;
-    else counts.set(item.assignedToMemberId, { familyId: item.schedule.familyId, count: 1 });
+  // Familles concernées, regroupées par jour local (fuseaux différents).
+  const familyIdsByDay = new Map<string, string[]>();
+  for (const family of families) {
+    const tz = familyTimezone(family);
+    if (localHour(now, tz) !== localHourTarget) continue;
+    const day = localDayKey(now, tz);
+    familyIdsByDay.set(day, [...(familyIdsByDay.get(day) ?? []), family.id]);
   }
 
-  for (const [memberId, { familyId, count }] of counts) {
-    try {
-      await notify(memberId, familyId, count);
-    } catch (err) {
-      console.warn(`[cron] Notif ignorée membre ${memberId}:`, (err as Error).message);
+  let notified = 0;
+  for (const [day, familyIds] of familyIdsByDay) {
+    const { start, end } = scheduleDayRange(day);
+    const items = await prisma.scheduleItem.findMany({
+      where: {
+        status: "PENDING",
+        date: { gte: start, lte: end },
+        schedule: { familyId: { in: familyIds } },
+      },
+      select: { assignedToMemberId: true, schedule: { select: { familyId: true } } },
+    });
+
+    const counts = new Map<string, { familyId: string; count: number }>();
+    for (const item of items) {
+      const entry = counts.get(item.assignedToMemberId);
+      if (entry) entry.count += 1;
+      else counts.set(item.assignedToMemberId, { familyId: item.schedule.familyId, count: 1 });
     }
+
+    for (const [memberId, { familyId, count }] of counts) {
+      try {
+        await notify(memberId, familyId, count);
+      } catch (err) {
+        console.warn(`[cron] Notif ignorée membre ${memberId}:`, (err as Error).message);
+      }
+    }
+    notified += counts.size;
   }
 
-  return counts.size;
+  return notified;
 }
 
-/** Rappel du matin : tâches du jour encore à faire. */
-export async function runTaskReminders(): Promise<{ notified: number }> {
+/** Rappel du matin (8 h locale) : tâches du jour encore à faire. */
+export async function runTaskReminders(
+  now: Date = new Date(),
+): Promise<{ notified: number }> {
   console.log("[cron] Rappel tâches du jour…");
-  const notified = await notifyPendingTasksForToday(notifyTasksReminder);
+  const notified = await notifyPendingTasksAtLocalHour(
+    REMINDER_LOCAL_HOUR,
+    notifyTasksReminder,
+    now,
+  );
   console.log(`[cron] Rappel envoyé à ${notified} membre(s).`);
   return { notified };
 }
 
-/** Alerte du soir : tâches du jour toujours pas faites. */
-export async function runForgottenTasks(): Promise<{ notified: number }> {
+/** Alerte du soir (20 h locale) : tâches du jour toujours pas faites. */
+export async function runForgottenTasks(
+  now: Date = new Date(),
+): Promise<{ notified: number }> {
   console.log("[cron] Alerte tâches oubliées…");
-  const notified = await notifyPendingTasksForToday(notifyTasksForgotten);
+  const notified = await notifyPendingTasksAtLocalHour(
+    FORGOTTEN_LOCAL_HOUR,
+    notifyTasksForgotten,
+    now,
+  );
   console.log(`[cron] Alerte envoyée à ${notified} membre(s).`);
   return { notified };
 }
 
 export function startTaskReminderCron(): void {
-  // Tous les jours à 08:00 — rappel des tâches du jour
-  cron.schedule("0 8 * * *", () => runTaskReminders());
-  console.log("⏰ Cron rappel tâches démarré (quotidien 08:00)");
+  // Toutes les heures : chaque famille est notifiée à 8 h dans SON fuseau
+  cron.schedule("0 * * * *", () => runTaskReminders());
+  console.log("⏰ Cron rappel tâches démarré (horaire, 8 h locale par famille)");
 }
 
 export function startForgottenTaskCron(): void {
-  // Tous les jours à 20:00 — alerte tâches du jour toujours pas faites
-  cron.schedule("0 20 * * *", () => runForgottenTasks());
-  console.log("⏰ Cron tâches oubliées démarré (quotidien 20:00)");
+  // Toutes les heures : chaque famille est alertée à 20 h dans SON fuseau
+  cron.schedule("0 * * * *", () => runForgottenTasks());
+  console.log("⏰ Cron tâches oubliées démarré (horaire, 20 h locale par famille)");
 }
 
 /** Rafraîchit le cache jours fériés/vacances pour chaque zone réellement

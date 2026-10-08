@@ -59,6 +59,15 @@ describe("GET /cron/:job (Vercel Cron Jobs)", () => {
     expect(jobs[fn]).toHaveBeenCalledOnce();
   });
 
+  it("chemin avec créneau horaire (vercel.json) — même tâche", async () => {
+    const res = await app.request("/cron/reminders/h06", {
+      headers: auth("cron-secret-0123456789"),
+    });
+
+    expect(res.status).toBe(200);
+    expect(jobs.runTaskReminders).toHaveBeenCalledOnce();
+  });
+
   it("401 sans en-tête Authorization", async () => {
     const res = await app.request("/cron/reminders");
 

@@ -2,6 +2,7 @@ import { prisma } from "../config/database.js";
 import { GamificationLog } from "../config/gamification-log.model.js";
 import { checkChallengesAfterPoints } from "../modules/challenges/challenges.service.js";
 import { notifyBadgeEarned } from "../modules/notifications/notifications.service.js";
+import { familyTimezone, localDayKey, previousDayKey } from "./timezone.js";
 
 export async function awardPointsForTask(
   memberId: string,
@@ -72,34 +73,31 @@ export async function revokePointsForTask(
   }).catch(() => {});
 }
 
-// Jour civil local (Europe/Paris — le serveur ne tourne pas en UTC) dérivé
-// directement des composants de la Date, sans passer par setHours+toISOString
-// (piège déjà documenté : décale le jour d'un cran selon l'offset local).
-function dayKey(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
 // Nombre de jours consécutifs (en remontant depuis aujourd'hui) avec au
-// moins une tâche complétée. checkAndAwardBadges() est toujours appelé juste
-// après une complétion, donc le jour courant fait toujours partie de
-// `completedDays` au moment du calcul.
-function computeStreak(completedDays: Set<string>): number {
+// moins une tâche complétée. Les jours sont ceux du fuseau de la famille
+// (DOM-TOM compris) — pas celui du serveur, qui tourne en UTC sur Vercel.
+// checkAndAwardBadges() est toujours appelé juste après une complétion, donc
+// le jour courant fait toujours partie de `completedDays` au moment du calcul.
+function computeStreak(completedDays: Set<string>, todayKey: string): number {
   let streak = 0;
-  const cur = new Date();
-  while (completedDays.has(dayKey(cur))) {
+  let day = todayKey;
+  while (completedDays.has(day)) {
     streak += 1;
-    cur.setDate(cur.getDate() - 1);
+    day = previousDayKey(day);
   }
   return streak;
 }
 
 async function checkAndAwardBadges(member: BadgeCandidate): Promise<void> {
   const { id: memberId, points: totalPoints, familyId } = member;
-  const [badges, earned, completedCount, completedItems, challengesCompleted] =
-    await Promise.all([
+  const [
+    badges,
+    earned,
+    completedCount,
+    completedItems,
+    challengesCompleted,
+    family,
+  ] = await Promise.all([
       prisma.badge.findMany(),
       prisma.memberBadge.findMany({
         where: { memberId },
@@ -125,7 +123,12 @@ async function checkAndAwardBadges(member: BadgeCandidate): Promise<void> {
           completedAt: { gte: member.createdAt },
         },
       }),
+      prisma.family.findUnique({
+        where: { id: familyId },
+        select: { schoolZone: true, timezone: true },
+      }),
     ]);
+  const tz = family ? familyTimezone(family) : "Europe/Paris";
 
   const earnedIds = new Set(
     earned.map((e: { badgeId: string }) => e.badgeId),
@@ -135,9 +138,9 @@ async function checkAndAwardBadges(member: BadgeCandidate): Promise<void> {
     completedItems
       .map((i: { completedAt: Date | null }) => i.completedAt)
       .filter((d: Date | null): d is Date => d !== null)
-      .map(dayKey),
+      .map((d) => localDayKey(d, tz)),
   );
-  const streak = computeStreak(completedDays);
+  const streak = computeStreak(completedDays, localDayKey(new Date(), tz));
 
   type BadgeRow = {
     id: string;

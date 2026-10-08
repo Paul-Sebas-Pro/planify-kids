@@ -31,7 +31,9 @@ function isAuthorized(header: string | undefined): boolean {
 
 export const cronRoutes = new Hono();
 
-cronRoutes.get("/:job", async (c) => {
+// `:slot` n'est pas lu : il rend chaque chemin unique dans vercel.json (un
+// cron « rappels » par heure UTC — une exécution/jour max par cron en Hobby).
+cronRoutes.get("/:job/:slot?", async (c) => {
   if (!isAuthorized(c.req.header("Authorization"))) {
     return c.json({ success: false, error: "Non autorisé" }, 401);
   }

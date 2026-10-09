@@ -67,10 +67,13 @@ export const planningApi = {
     ),
   delete: (id: string) =>
     request<{ success: boolean }>("DELETE", `/planning/${id}`),
+  // Les dates d'un planning arrivent en ISO complet ("2026-10-05T00:00:00.000Z")
+  // alors que la route attend "YYYY-MM-DD" : sans ce découpage, 400 systématique
+  // et jours fériés/vacances jamais affichés (vu dans les logs Vercel).
   calendar: (startDate: string, endDate: string) =>
     request<{ success: boolean; data: CalendarEntry[] }>(
       "GET",
-      `/planning/calendar?startDate=${startDate}&endDate=${endDate}`,
+      `/planning/calendar?startDate=${startDate.slice(0, 10)}&endDate=${endDate.slice(0, 10)}`,
     ),
 };
 

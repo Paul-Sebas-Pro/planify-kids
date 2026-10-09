@@ -143,16 +143,37 @@ describe("updateScheduleItemService — stratégie de conflit (option A)", () =>
     expect(mockAward).not.toHaveBeenCalled();
   });
 
-  it("déjà dans l'état demandé — succès sans réécriture ni double crédit", async () => {
-    // Cochée sur le web ET hors ligne sur la tablette.
+  it("déjà dans l'état demandé, sans conflit — succès sans réécriture ni double crédit", async () => {
+    // Écriture rejouée (ex. batch renvoyé après une coupure réseau).
     mockGetItem.mockResolvedValue(fakeItem("COMPLETED"));
 
     await updateScheduleItemService("item-1", child, {
       status: "COMPLETED",
-      expectedStatus: "PENDING",
+      expectedStatus: "COMPLETED",
+      expectedUpdatedAt: T0.toISOString(),
     });
 
     expect(mockCas).not.toHaveBeenCalled();
+    expect(mockAward).not.toHaveBeenCalled();
+  });
+
+  it("déjà dans l'état demandé mais modifié entre-temps — 409 (date serveur non renvoyée)", async () => {
+    // Cochée hors ligne sur la tablette ; le parent a fait le tour des
+    // statuts jusqu'à Fait. Répondre 200 avec la date serveur la ferait
+    // reprendre par la tablette pour sa décoche suivante (conflit blanchi).
+    mockGetItem.mockResolvedValue({
+      ...fakeItem("COMPLETED"),
+      updatedAt: new Date("2026-10-09T10:05:00.000Z"),
+    });
+
+    await expect(
+      updateScheduleItemService("item-1", child, {
+        status: "COMPLETED",
+        expectedStatus: "PENDING",
+        expectedUpdatedAt: T0.toISOString(),
+      }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(mockGetPlainItem).not.toHaveBeenCalled();
     expect(mockAward).not.toHaveBeenCalled();
   });
 

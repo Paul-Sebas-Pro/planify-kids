@@ -151,11 +151,6 @@ export async function updateScheduleItemService(
   if (actor.role === "CHILD" && before.assignedToMemberId !== actor.memberId) {
     throw new ForbiddenError("Cette tâche n'est pas la tienne");
   }
-  // Déjà dans l'état demandé (ex. cochée sur le web ET hors ligne) : rien à
-  // faire — ni double crédit, ni réécriture de completedAt (séries).
-  if (before.status === input.status) {
-    return getScheduleItem(itemId);
-  }
   if (input.expectedStatus) {
     // Écriture venant de la tablette (sync hors ligne). Trace pour diagnostiquer
     // la détection de conflit dans les logs Vercel : sans expectedUpdatedAt
@@ -176,6 +171,15 @@ export async function updateScheduleItemService(
     new Date(input.expectedUpdatedAt).getTime() !== before.updatedAt.getTime()
   ) {
     throw new ConflictError("Tâche modifiée entre-temps");
+  }
+  // Déjà dans l'état demandé : rien à faire — ni double crédit, ni réécriture
+  // de completedAt (séries). APRÈS la détection de conflit : renvoyer la date
+  // serveur d'un item modifié entre-temps la ferait reprendre par la tablette
+  // pour ses écritures suivantes, et « blanchirait » le conflit (vu en test
+  // réel : coche hors ligne puis décoche, parent ayant fait le tour des
+  // statuts jusqu'à Fait — la décoche était acceptée).
+  if (before.status === input.status) {
+    return getScheduleItem(itemId);
   }
   const updated = await updateScheduleItemIfStatus(
     itemId,

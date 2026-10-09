@@ -123,30 +123,45 @@ export function getScheduleItem(itemId: string) {
 }
 
 /**
- * Mise à jour conditionnelle (compare-and-set) : n'écrit que si le statut en
- * base est toujours `expectedStatus`. Atomique côté Postgres — deux requêtes
- * simultanées ne peuvent pas toutes deux passer PENDING → COMPLETED (et
- * créditer les points deux fois). Renvoie l'item mis à jour, ou null si le
- * statut a changé entre-temps.
+ * Change le statut d'un item ET ajuste les points de l'enfant dans une seule
+ * transaction : soit les deux sont enregistrés, soit aucun. Séparées, une
+ * erreur entre les deux (réseau, base saturée, timeout Vercel — vu en prod)
+ * laissait une tâche « Fait » sans ses points, et le nouvel essai de la
+ * tablette était refusé (date de modification changée) : points perdus.
+ *
+ * Écriture conditionnelle (compare-and-set) sur statut + date de
+ * modification : une modification concurrente fait échouer l'écriture
+ * (renvoie null, rien n'est modifié) — pas de double crédit possible.
  */
-export async function updateScheduleItemIfStatus(
+export function updateScheduleItemWithPoints(
   itemId: string,
   expected: { status: TaskStatus; updatedAt: Date },
-  input: Pick<UpdateScheduleItemInput, "status">,
+  status: TaskStatus,
+  points: { memberId: string; delta: number } | null,
 ) {
-  const now = new Date();
-  const { count } = await prisma.scheduleItem.updateMany({
-    // updatedAt en plus du statut : une modification intermédiaire revenue au
-    // même statut (ABA) fait aussi échouer l'écriture.
-    where: { id: itemId, status: expected.status, updatedAt: expected.updatedAt },
-    data: {
-      status: input.status,
-      completedAt: input.status === "COMPLETED" ? now : null,
-      updatedAt: now,
-    },
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const now = new Date();
+    const { count } = await tx.scheduleItem.updateMany({
+      where: { id: itemId, status: expected.status, updatedAt: expected.updatedAt },
+      data: {
+        status,
+        completedAt: status === "COMPLETED" ? now : null,
+        updatedAt: now,
+      },
+    });
+    if (count === 0) return null;
+
+    const member =
+      points && points.delta !== 0
+        ? await tx.familyMember.update({
+            where: { id: points.memberId },
+            data: { points: { increment: points.delta } },
+            select: { id: true, points: true, familyId: true, createdAt: true },
+          })
+        : null;
+    const item = await tx.scheduleItem.findUnique({ where: { id: itemId } });
+    return { item, member };
   });
-  if (count === 0) return null;
-  return getScheduleItem(itemId);
 }
 
 export function deleteSchedule(scheduleId: string, familyId: string) {

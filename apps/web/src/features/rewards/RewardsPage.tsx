@@ -101,6 +101,13 @@ export function RewardsPage() {
       status: "APPROVED" | "REJECTED";
     }) => rewardsApi.reviewClaim(claimId, { status }),
     onSuccess: () => {
+      setApiError(null);
+      qc.invalidateQueries({ queryKey: ["reward-claims"] });
+    },
+    // Refus serveur (solde insuffisant, demande déjà traitée ailleurs) : le
+    // montrer au parent et rafraîchir la liste plutôt que d'échouer en silence.
+    onError: (err: Error) => {
+      setApiError(err.message);
       qc.invalidateQueries({ queryKey: ["reward-claims"] });
     },
   });

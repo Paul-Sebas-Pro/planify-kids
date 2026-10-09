@@ -12,10 +12,21 @@ export async function awardPointsForTask(
     where: { id: memberId },
     data: { points: { increment: points } },
   });
+  await onPointsEarned(member, points);
+}
 
+/**
+ * Effets d'un crédit de points DÉJÀ enregistré (l'incrément lui-même est fait
+ * dans la transaction du changement de statut, cf. planning.repository) :
+ * log Mongo, badges, défis familiaux.
+ */
+export async function onPointsEarned(
+  member: BadgeCandidate,
+  points: number,
+): Promise<void> {
   GamificationLog.create({
     type: "POINTS_EARNED",
-    memberId,
+    memberId: member.id,
     familyId: member.familyId,
     data: { points },
   }).catch(() => {});
@@ -64,7 +75,15 @@ export async function revokePointsForTask(
     where: { id: memberId },
     data: { points: { decrement: points } },
   });
+  onPointsRevoked(member, points);
+}
 
+/** Effets d'un retrait de points DÉJÀ enregistré : log Mongo. */
+export function onPointsRevoked(
+  member: { id: string; familyId: string },
+  points: number,
+): void {
+  const memberId = member.id;
   GamificationLog.create({
     type: "POINTS_REVOKED",
     memberId,

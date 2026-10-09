@@ -9,8 +9,7 @@ import {
   getClaimsByMember,
   getClaimById,
   createClaim,
-  updateClaim,
-  deductPoints,
+  reviewClaimAtomic,
 } from "./rewards.repository.js";
 import { getMemberById } from "../members/members.repository.js";
 import { notifyClaimReviewed } from "../notifications/notifications.service.js";
@@ -94,11 +93,13 @@ export async function reviewClaimService(
     throw new AppError("Cette demande a déjà été traitée", 400);
   }
 
-  const updated = await updateClaim(claimId, input);
-
-  if (input.status === "APPROVED") {
-    await deductPoints(claim.memberId, claim.reward.pointsCost);
-  }
+  const updated = await reviewClaimAtomic(
+    claimId,
+    input,
+    input.status === "APPROVED"
+      ? { memberId: claim.memberId, points: claim.reward.pointsCost }
+      : null,
+  );
 
   await notifyClaimReviewed(
     claim.memberId,

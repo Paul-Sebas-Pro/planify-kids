@@ -1,4 +1,6 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../../config/database.js";
+import { AppError } from "../../core/errors/AppError.js";
 import type {
   CreateRewardInput,
   UpdateRewardInput,
@@ -83,16 +85,49 @@ export function createClaim(memberId: string, rewardId: string) {
   });
 }
 
-export function updateClaim(claimId: string, input: ReviewClaimInput) {
-  return prisma.rewardClaim.update({
-    where: { id: claimId },
-    data: { status: input.status },
-  });
+export class ClaimAlreadyReviewedError extends AppError {
+  constructor() {
+    super("Cette demande a déjà été traitée", 409, "CONFLICT");
+  }
 }
 
-export function deductPoints(memberId: string, points: number) {
-  return prisma.familyMember.update({
-    where: { id: memberId },
-    data: { points: { decrement: points } },
+export class InsufficientPointsError extends AppError {
+  constructor() {
+    super("Points insuffisants pour approuver cette récompense", 400);
+  }
+}
+
+/**
+ * Traite une demande de récompense en une seule transaction : passage
+ * PENDING → APPROVED/REJECTED et, si approuvée, retrait des points.
+ *  - Séparées, une erreur entre les deux accordait la récompense sans
+ *    retirer les points.
+ *  - Conditionnée à `status: PENDING` : deux approbations simultanées (double
+ *    clic, deux onglets) ne retirent pas les points deux fois.
+ *  - Retrait conditionné à un solde suffisant : deux demandes acceptées
+ *    séparément ne mettent pas le solde en négatif.
+ * Toute erreur levée annule la transaction (rien n'est modifié).
+ */
+export function reviewClaimAtomic(
+  claimId: string,
+  input: ReviewClaimInput,
+  deduction: { memberId: string; points: number } | null,
+) {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const { count } = await tx.rewardClaim.updateMany({
+      where: { id: claimId, status: "PENDING" },
+      data: { status: input.status },
+    });
+    if (count === 0) throw new ClaimAlreadyReviewedError();
+
+    if (deduction) {
+      const debited = await tx.familyMember.updateMany({
+        where: { id: deduction.memberId, points: { gte: deduction.points } },
+        data: { points: { decrement: deduction.points } },
+      });
+      if (debited.count === 0) throw new InsufficientPointsError();
+    }
+
+    return tx.rewardClaim.findUniqueOrThrow({ where: { id: claimId } });
   });
 }

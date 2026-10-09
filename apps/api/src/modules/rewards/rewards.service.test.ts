@@ -14,8 +14,7 @@ vi.mock("./rewards.repository", () => ({
   getClaimsByFamily: vi.fn(),
   getClaimById: vi.fn(),
   createClaim: vi.fn(),
-  updateClaim: vi.fn(),
-  deductPoints: vi.fn(),
+  reviewClaimAtomic: vi.fn(),
 }));
 
 vi.mock("../members/members.repository", () => ({
@@ -36,8 +35,7 @@ const mockUpdateReward = vi.mocked(repo.updateReward);
 const mockArchiveReward = vi.mocked(repo.archiveReward);
 const mockGetClaimById = vi.mocked(repo.getClaimById);
 const mockCreateClaim = vi.mocked(repo.createClaim);
-const mockUpdateClaim = vi.mocked(repo.updateClaim);
-const mockDeductPoints = vi.mocked(repo.deductPoints);
+const mockReview = vi.mocked(repo.reviewClaimAtomic);
 const mockGetMember = vi.mocked(membersRepo.getMemberById);
 
 const fakeReward = {
@@ -198,21 +196,29 @@ describe("reviewClaimService", () => {
     ).rejects.toThrow(AppError);
   });
 
-  it("déduit les points si APPROVED", async () => {
+  it("déduit les points si APPROVED (dans la même transaction)", async () => {
     mockGetClaimById.mockResolvedValue(fakeClaim as any);
-    mockUpdateClaim.mockResolvedValue({ ...fakeClaim, status: "APPROVED" } as any);
+    mockReview.mockResolvedValue({ ...fakeClaim, status: "APPROVED" } as any);
 
     await reviewClaimService("claim-1", "family-1", { status: "APPROVED" });
 
-    expect(mockDeductPoints).toHaveBeenCalledWith("member-1", 100);
+    expect(mockReview).toHaveBeenCalledWith(
+      "claim-1",
+      { status: "APPROVED" },
+      { memberId: "member-1", points: 100 },
+    );
   });
 
   it("ne déduit pas les points si REJECTED", async () => {
     mockGetClaimById.mockResolvedValue(fakeClaim as any);
-    mockUpdateClaim.mockResolvedValue({ ...fakeClaim, status: "REJECTED" } as any);
+    mockReview.mockResolvedValue({ ...fakeClaim, status: "REJECTED" } as any);
 
     await reviewClaimService("claim-1", "family-1", { status: "REJECTED" });
 
-    expect(mockDeductPoints).not.toHaveBeenCalled();
+    expect(mockReview).toHaveBeenCalledWith(
+      "claim-1",
+      { status: "REJECTED" },
+      null,
+    );
   });
 });

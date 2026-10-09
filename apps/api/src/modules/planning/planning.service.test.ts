@@ -11,13 +11,13 @@ vi.mock("./planning.repository", () => ({
   getScheduleItem: vi.fn(),
   getMemberLoadHistory: vi.fn(),
   getFamilySchoolZone: vi.fn(),
-  updateScheduleItemIfStatus: vi.fn(),
+  updateScheduleItemWithPoints: vi.fn(),
   deleteSchedule: vi.fn(),
 }));
 
 vi.mock("../../services/gamification", () => ({
-  awardPointsForTask: vi.fn(),
-  revokePointsForTask: vi.fn(),
+  onPointsEarned: vi.fn(),
+  onPointsRevoked: vi.fn(),
 }));
 
 vi.mock("../notifications/notifications.service", () => ({
@@ -42,14 +42,21 @@ import { updateScheduleItemService } from "./planning.service.js";
 
 const mockGetItem = vi.mocked(repo.getScheduleItemWithTask);
 const mockGetPlainItem = vi.mocked(repo.getScheduleItem);
-const mockCas = vi.mocked(repo.updateScheduleItemIfStatus);
-const mockAward = vi.mocked(gamification.awardPointsForTask);
-const mockRevoke = vi.mocked(gamification.revokePointsForTask);
+const mockCas = vi.mocked(repo.updateScheduleItemWithPoints);
+const mockAward = vi.mocked(gamification.onPointsEarned);
+const mockRevoke = vi.mocked(gamification.onPointsRevoked);
 
 const parent = { familyId: "fam-1", role: "PARENT" as const, memberId: "parent-1" };
 const child = { familyId: "fam-1", role: "CHILD" as const, memberId: "member-1" };
 
 const T0 = new Date("2026-10-09T10:00:00.123Z");
+
+const fakeMember = {
+  id: "member-1",
+  points: 50,
+  familyId: "fam-1",
+  createdAt: new Date(0),
+};
 
 const fakeItem = (status: string, familyId = "fam-1", assignee = "member-1") =>
   ({
@@ -63,7 +70,7 @@ const fakeItem = (status: string, familyId = "fam-1", assignee = "member-1") =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockCas.mockResolvedValue({ id: "item-1" } as any);
+  mockCas.mockResolvedValue({ item: { id: "item-1" }, member: fakeMember } as any);
   mockGetPlainItem.mockResolvedValue({ id: "item-1" } as any);
 });
 
@@ -76,9 +83,10 @@ describe("updateScheduleItemService", () => {
     expect(mockCas).toHaveBeenCalledWith(
       "item-1",
       { status: "PENDING", updatedAt: T0 },
-      { status: "COMPLETED" },
+      "COMPLETED",
+      { memberId: "member-1", delta: 10 },
     );
-    expect(mockAward).toHaveBeenCalledWith("member-1", 10);
+    expect(mockAward).toHaveBeenCalledWith(fakeMember, 10);
   });
 
   it("retire les points sur un retour arrière depuis COMPLETED", async () => {
@@ -86,7 +94,7 @@ describe("updateScheduleItemService", () => {
 
     await updateScheduleItemService("item-1", parent, { status: "PENDING" });
 
-    expect(mockRevoke).toHaveBeenCalledWith("member-1", 10);
+    expect(mockRevoke).toHaveBeenCalledWith(fakeMember, 10);
     expect(mockAward).not.toHaveBeenCalled();
   });
 
@@ -179,7 +187,7 @@ describe("updateScheduleItemService — stratégie de conflit (option A)", () =>
 
   it("modifiée par une requête concurrente entre lecture et écriture — 409, pas de crédit", async () => {
     mockGetItem.mockResolvedValue(fakeItem("PENDING"));
-    mockCas.mockResolvedValue(null);
+    mockCas.mockResolvedValue(null as any);
 
     await expect(
       updateScheduleItemService("item-1", child, { status: "COMPLETED" }),
@@ -217,6 +225,42 @@ describe("updateScheduleItemService — stratégie de conflit (option A)", () =>
     });
 
     expect(mockCas).toHaveBeenCalled();
-    expect(mockRevoke).toHaveBeenCalledWith("member-1", 10);
+    expect(mockRevoke).toHaveBeenCalledWith(fakeMember, 10);
+  });
+
+  it("retour arrière : points retirés DANS la transaction (delta négatif)", async () => {
+    mockGetItem.mockResolvedValue(fakeItem("COMPLETED"));
+
+    await updateScheduleItemService("item-1", parent, { status: "SKIPPED" });
+
+    expect(mockCas).toHaveBeenCalledWith(
+      "item-1",
+      { status: "COMPLETED", updatedAt: T0 },
+      "SKIPPED",
+      { memberId: "member-1", delta: -10 },
+    );
+  });
+
+  it("PENDING ↔ SKIPPED : aucun mouvement de points", async () => {
+    mockGetItem.mockResolvedValue(fakeItem("PENDING"));
+
+    await updateScheduleItemService("item-1", parent, { status: "SKIPPED" });
+
+    expect(mockCas).toHaveBeenCalledWith(
+      "item-1",
+      { status: "PENDING", updatedAt: T0 },
+      "SKIPPED",
+      null,
+    );
+  });
+
+  it("échec d'un effet secondaire (badges) après validation — la requête réussit", async () => {
+    mockGetItem.mockResolvedValue(fakeItem("PENDING"));
+    mockAward.mockRejectedValueOnce(new Error("Mongo down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(
+      updateScheduleItemService("item-1", child, { status: "COMPLETED" }),
+    ).resolves.toEqual({ id: "item-1" });
   });
 });

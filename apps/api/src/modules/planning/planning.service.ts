@@ -15,14 +15,11 @@ import {
   getScheduleItem,
   getMemberLoadHistory,
   getFamilySchoolZone,
-  updateScheduleItemIfStatus,
+  updateScheduleItemWithPoints,
   deleteSchedule,
 } from "./planning.repository.js";
 import { classifyDays, getCalendarEntries } from "../../services/school-calendar.js";
-import {
-  awardPointsForTask,
-  revokePointsForTask,
-} from "../../services/gamification.js";
+import { onPointsEarned, onPointsRevoked } from "../../services/gamification.js";
 import { notifyTaskCompleted, notifyTasksAssigned } from "../notifications/notifications.service.js";
 import { sseEmit } from "../../services/sse.service.js";
 import type {
@@ -181,34 +178,50 @@ export async function updateScheduleItemService(
   if (before.status === input.status) {
     return getScheduleItem(itemId);
   }
-  const updated = await updateScheduleItemIfStatus(
+  const gained = input.status === "COMPLETED" && before.status !== "COMPLETED";
+  const lost = input.status !== "COMPLETED" && before.status === "COMPLETED";
+  const points = before.task.points;
+  // Statut + points dans une même transaction (cf. repository).
+  const result = await updateScheduleItemWithPoints(
     itemId,
     { status: before.status, updatedAt: before.updatedAt },
-    { status: input.status },
+    input.status,
+    gained || lost
+      ? { memberId: before.assignedToMemberId, delta: gained ? points : -points }
+      : null,
   );
-  if (!updated) {
+  if (!result) {
     // Modifiée par une autre requête entre la lecture et l'écriture
     throw new ConflictError("Tâche modifiée entre-temps");
   }
 
-  if (input.status === "COMPLETED" && before.status !== "COMPLETED") {
-    await awardPointsForTask(before.assignedToMemberId, before.task.points);
-    await notifyTaskCompleted(
-      before.schedule.familyId,
-      before.member.name,
-      before.task.name,
-    );
-    sseEmit(before.schedule.familyId, "task_completed", {
-      memberName: before.member.name,
-      taskName: before.task.name,
-      points: before.task.points,
-    });
-  } else if (input.status !== "COMPLETED" && before.status === "COMPLETED") {
-    // Retour en arrière (undo) depuis COMPLETED — retire les points crédités à tort
-    await revokePointsForTask(before.assignedToMemberId, before.task.points);
+  // Effets secondaires APRÈS validation : statut et points sont déjà
+  // cohérents en base. Un échec ici (badges, défis, notifications) est
+  // journalisé sans faire échouer la requête — sinon la tablette rejouerait
+  // une écriture déjà appliquée.
+  try {
+    if (gained && result.member) {
+      await onPointsEarned(result.member, points);
+      await notifyTaskCompleted(
+        before.schedule.familyId,
+        before.member.name,
+        before.task.name,
+      );
+      sseEmit(before.schedule.familyId, "task_completed", {
+        memberName: before.member.name,
+        taskName: before.task.name,
+        points,
+      });
+    } else if (lost && result.member) {
+      // Retour en arrière (undo) depuis COMPLETED. Les badges déjà gagnés
+      // restent acquis.
+      onPointsRevoked(result.member, points);
+    }
+  } catch (err) {
+    console.error(`Effets après mise à jour de l'item ${itemId} échoués :`, err);
   }
 
-  return updated;
+  return result.item;
 }
 
 export async function deleteScheduleService(

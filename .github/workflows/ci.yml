@@ -104,7 +104,7 @@ jobs:
           exit 1
 
   web:
-    name: Web — typecheck
+    name: Web — typecheck + tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -121,6 +121,9 @@ jobs:
 
       - name: Typecheck Web
         run: pnpm --filter @planify-kids/web typecheck
+
+      - name: Tests Web (unitaires)
+        run: pnpm --filter @planify-kids/web test
 
   e2e:
     name: E2E — Playwright

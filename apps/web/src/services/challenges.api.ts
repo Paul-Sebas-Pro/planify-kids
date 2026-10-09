@@ -1,4 +1,5 @@
 import type { FamilyChallenge, CreateChallengeDto } from "@planify-kids/types";
+import { apiErrorMessage } from "./http-error";
 
 const BASE = "/api";
 
@@ -24,13 +25,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (!res.ok) {
-    const err = (await res.json().catch(() => ({ error: res.statusText }))) as {
-      error?: string;
-      message?: string;
-    };
-    throw new Error(err.error ?? err.message ?? `HTTP ${res.status}`);
-  }
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
 
   return res.json() as Promise<T>;
 }

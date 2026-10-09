@@ -25,4 +25,14 @@ i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
+// `<html lang>` suit la langue active (index.html démarre en "fr") : sinon
+// les lecteurs d'écran lisent l'interface anglaise avec une prononciation
+// française et le navigateur propose de « traduire depuis le français ».
+// Le `lang` du manifest PWA reste "fr" : il décrit la langue de son propre
+// texte (nom, description), figé au build.
+document.documentElement.lang = initialLanguage;
+i18n.on("languageChanged", (lng) => {
+  document.documentElement.lang = lng;
+});
+
 export default i18n;

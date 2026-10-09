@@ -156,6 +156,18 @@ export async function updateScheduleItemService(
   if (before.status === input.status) {
     return getScheduleItem(itemId);
   }
+  if (input.expectedStatus) {
+    // Écriture venant de la tablette (sync hors ligne). Trace pour diagnostiquer
+    // la détection de conflit dans les logs Vercel : sans expectedUpdatedAt
+    // (APK ancien, colonne updated_at pas encore synchronisée), seule la
+    // vérification par statut s'applique et le cas « ABA » passe.
+    console.info(
+      `[sync] item ${itemId} : ${before.status} → ${input.status}, ` +
+        `attendu ${input.expectedStatus} / ` +
+        `${input.expectedUpdatedAt ?? "SANS updatedAt"}, ` +
+        `serveur ${before.updatedAt.toISOString()}`,
+    );
+  }
   if (input.expectedStatus && input.expectedStatus !== before.status) {
     throw new ConflictError("Tâche modifiée entre-temps");
   }

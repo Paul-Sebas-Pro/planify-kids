@@ -49,9 +49,12 @@ const mockRevoke = vi.mocked(gamification.revokePointsForTask);
 const parent = { familyId: "fam-1", role: "PARENT" as const, memberId: "parent-1" };
 const child = { familyId: "fam-1", role: "CHILD" as const, memberId: "member-1" };
 
+const T0 = new Date("2026-10-09T10:00:00.123Z");
+
 const fakeItem = (status: string, familyId = "fam-1", assignee = "member-1") =>
   ({
     status,
+    updatedAt: T0,
     assignedToMemberId: assignee,
     task: { points: 10, name: "Ranger sa chambre" },
     member: { name: "Alice" },
@@ -70,9 +73,11 @@ describe("updateScheduleItemService", () => {
 
     await updateScheduleItemService("item-1", child, { status: "COMPLETED" });
 
-    expect(mockCas).toHaveBeenCalledWith("item-1", "PENDING", {
-      status: "COMPLETED",
-    });
+    expect(mockCas).toHaveBeenCalledWith(
+      "item-1",
+      { status: "PENDING", updatedAt: T0 },
+      { status: "COMPLETED" },
+    );
     expect(mockAward).toHaveBeenCalledWith("member-1", 10);
   });
 
@@ -159,5 +164,38 @@ describe("updateScheduleItemService — stratégie de conflit (option A)", () =>
       updateScheduleItemService("item-1", child, { status: "COMPLETED" }),
     ).rejects.toBeInstanceOf(ConflictError);
     expect(mockAward).not.toHaveBeenCalled();
+  });
+
+  it("ABA — statut revenu à l'identique mais modifié entre-temps : 409", async () => {
+    // Tablette hors ligne : Fait → À faire. Pendant ce temps, le parent fait
+    // le tour Fait → Passée → À faire → Fait sur le web : même statut qu'au
+    // départ, mais updatedAt a changé.
+    mockGetItem.mockResolvedValue({
+      ...fakeItem("COMPLETED"),
+      updatedAt: new Date("2026-10-09T10:05:00.000Z"),
+    });
+
+    await expect(
+      updateScheduleItemService("item-1", child, {
+        status: "PENDING",
+        expectedStatus: "COMPLETED",
+        expectedUpdatedAt: T0.toISOString(),
+      }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(mockCas).not.toHaveBeenCalled();
+    expect(mockRevoke).not.toHaveBeenCalled();
+  });
+
+  it("expectedUpdatedAt à jour — écriture acceptée", async () => {
+    mockGetItem.mockResolvedValue(fakeItem("COMPLETED"));
+
+    await updateScheduleItemService("item-1", child, {
+      status: "PENDING",
+      expectedStatus: "COMPLETED",
+      expectedUpdatedAt: T0.toISOString(),
+    });
+
+    expect(mockCas).toHaveBeenCalled();
+    expect(mockRevoke).toHaveBeenCalledWith("member-1", 10);
   });
 });

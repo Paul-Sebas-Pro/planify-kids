@@ -109,6 +109,7 @@ export function getScheduleItemWithTask(itemId: string) {
     where: { id: itemId },
     select: {
       status: true,
+      updatedAt: true,
       assignedToMemberId: true,
       task: { select: { points: true, name: true } },
       member: { select: { name: true } },
@@ -130,14 +131,18 @@ export function getScheduleItem(itemId: string) {
  */
 export async function updateScheduleItemIfStatus(
   itemId: string,
-  expectedStatus: TaskStatus,
+  expected: { status: TaskStatus; updatedAt: Date },
   input: Pick<UpdateScheduleItemInput, "status">,
 ) {
+  const now = new Date();
   const { count } = await prisma.scheduleItem.updateMany({
-    where: { id: itemId, status: expectedStatus },
+    // updatedAt en plus du statut : une modification intermédiaire revenue au
+    // même statut (ABA) fait aussi échouer l'écriture.
+    where: { id: itemId, status: expected.status, updatedAt: expected.updatedAt },
     data: {
       status: input.status,
-      completedAt: input.status === "COMPLETED" ? new Date() : null,
+      completedAt: input.status === "COMPLETED" ? now : null,
+      updatedAt: now,
     },
   });
   if (count === 0) return null;

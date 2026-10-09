@@ -63,7 +63,8 @@ bucket_definitions:
       WHERE "familyId" = request.jwt() ->> 'familyId'
     data:
       - SELECT id, "taskTemplateId" as task_id, "scheduleId" as schedule_id,
-               "assignedToMemberId" as assigned_to_member_id, date, slot, status
+               "assignedToMemberId" as assigned_to_member_id, date, slot, status,
+               "updatedAt" as updated_at
         FROM "ScheduleItem" schedule_items
         WHERE "scheduleId" = bucket.schedule_id
 

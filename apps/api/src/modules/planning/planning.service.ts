@@ -159,7 +159,17 @@ export async function updateScheduleItemService(
   if (input.expectedStatus && input.expectedStatus !== before.status) {
     throw new ConflictError("Tâche modifiée entre-temps");
   }
-  const updated = await updateScheduleItemIfStatus(itemId, before.status, input);
+  if (
+    input.expectedUpdatedAt &&
+    new Date(input.expectedUpdatedAt).getTime() !== before.updatedAt.getTime()
+  ) {
+    throw new ConflictError("Tâche modifiée entre-temps");
+  }
+  const updated = await updateScheduleItemIfStatus(
+    itemId,
+    { status: before.status, updatedAt: before.updatedAt },
+    { status: input.status },
+  );
   if (!updated) {
     // Modifiée par une autre requête entre la lecture et l'écriture
     throw new ConflictError("Tâche modifiée entre-temps");

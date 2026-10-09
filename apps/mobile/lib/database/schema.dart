@@ -10,11 +10,15 @@ const appSchema = Schema([
       Column.text('date'),
       Column.text('slot'),
       Column.text('status'),
+      Column.text('updated_at'),
     ],
-    // Ancien statut joint à chaque écriture (CrudEntry.previousValues) :
-    // envoyé au serveur en `expectedStatus` pour détecter un conflit
-    // (statut modifié côté serveur pendant que la tablette était hors ligne).
-    trackPreviousValues: TrackPreviousValuesOptions(columnFilter: ['status']),
+    // Ancien statut + date de modification serveur joints à chaque écriture
+    // (CrudEntry.previousValues) : envoyés en `expectedStatus` /
+    // `expectedUpdatedAt` pour détecter un conflit (item modifié côté serveur
+    // pendant que la tablette était hors ligne, même revenu au même statut).
+    trackPreviousValues: TrackPreviousValuesOptions(
+      columnFilter: ['status', 'updated_at'],
+    ),
   ),
   Table('tasks', [
     Column.text('name'),

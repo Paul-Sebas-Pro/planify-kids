@@ -149,15 +149,17 @@ class ApiClient {
         .toList();
   }
 
-  /// [expectedStatus] : statut vu par la tablette avant sa modification —
-  /// le serveur refuse (409) si l'item a changé entre-temps.
-  Future<ScheduleItem> updateScheduleItemStatus(String itemId, String status,
-      {String? expectedStatus}) async {
+  /// [expectedStatus] / [expectedUpdatedAt] (ISO 8601) : état vu par la
+  /// tablette avant sa modification — le serveur refuse (409) si l'item a
+  /// changé entre-temps. Renvoie la nouvelle date de modification serveur.
+  Future<String?> updateScheduleItemStatus(String itemId, String status,
+      {String? expectedStatus, String? expectedUpdatedAt}) async {
     final res = await _dio.patch('/planning/items/$itemId', data: {
       'status': status,
       'expectedStatus': ?expectedStatus,
+      'expectedUpdatedAt': ?expectedUpdatedAt,
     });
-    return ScheduleItem.fromJson(_unwrap(res));
+    return _unwrap(res)['updatedAt'] as String?;
   }
 
   // ── Badges ────────────────────────────────────────────────────────────────

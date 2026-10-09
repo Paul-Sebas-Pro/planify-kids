@@ -14,6 +14,11 @@ export const updateScheduleItemSchema = z.object({
   // au serveur, quelqu'un a modifié l'item entre-temps → 409, le serveur
   // garde la décision la plus récente (stratégie de conflit validée : A).
   expectedStatus: taskStatusSchema.optional(),
+  // Date de dernière modification que le client avait (ISO 8601). Plus sûr
+  // que `expectedStatus` : détecte aussi un statut modifié puis revenu à sa
+  // valeur de départ entre-temps (problème « ABA », vu en test réel : parent
+  // qui fait le tour Fait → Passée → À faire → Fait sur le web).
+  expectedUpdatedAt: z.iso.datetime().optional(),
 });
 
 export const calendarQuerySchema = z.object({

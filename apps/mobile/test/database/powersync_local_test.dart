@@ -30,15 +30,18 @@ class _StubApiClient extends ApiClient {
 
   final List<(String, String)> updateScheduleItemStatusCalls = [];
   final List<String?> expectedStatuses = [];
+  final List<String?> expectedUpdatedAts = [];
+  int _version = 0;
 
   /// Code HTTP d'erreur renvoyé pour un item donné (simule le serveur).
   final Map<String, int> failures = {};
 
   @override
-  Future<ScheduleItem> updateScheduleItemStatus(String itemId, String status,
-      {String? expectedStatus}) async {
+  Future<String?> updateScheduleItemStatus(String itemId, String status,
+      {String? expectedStatus, String? expectedUpdatedAt}) async {
     updateScheduleItemStatusCalls.add((itemId, status));
     expectedStatuses.add(expectedStatus);
+    expectedUpdatedAts.add(expectedUpdatedAt);
     final code = failures[itemId];
     if (code != null) {
       final req = RequestOptions(path: '/planning/items/$itemId');
@@ -48,15 +51,9 @@ class _StubApiClient extends ApiClient {
         type: DioExceptionType.badResponse,
       );
     }
-    return ScheduleItem(
-      id: itemId,
-      taskId: 'task-1',
-      taskName: 'Ranger sa chambre',
-      taskPoints: 10,
-      assignedToMemberId: 'alice-id',
-      date: DateTime(2026, 6, 16),
-      status: status,
-    );
+    // Nouvelle date de modification serveur à chaque écriture acceptée.
+    _version += 1;
+    return '2026-10-09T10:00:0$_version.000Z';
   }
 }
 
@@ -95,10 +92,16 @@ Future<void> _seedScheduleItem(
   await db.execute(
     '''
     INSERT INTO schedule_items
-      (id, task_id, schedule_id, assigned_to_member_id, date, slot, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+      (id, task_id, schedule_id, assigned_to_member_id, date, slot, status,
+       updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ''',
-    [id, 'task-1', 'schedule-1', 'alice-id', '2026-06-16T00:00:00.000', 'EVENING', status],
+    [
+      id, 'task-1', 'schedule-1', 'alice-id', '2026-06-16T00:00:00.000',
+      'EVENING', status,
+      // Format PowerSync d'un `timestamp` Postgres : sans fuseau (UTC).
+      '2026-10-09 09:00:00.000',
+    ],
   );
 }
 
@@ -330,6 +333,11 @@ void main() {
       expect(api.updateScheduleItemStatusCalls,
           [('item-1', 'COMPLETED'), ('item-1', 'PENDING')]);
       expect(api.expectedStatuses, ['PENDING', 'COMPLETED']);
+      // 1re écriture : date synchronisée (convertie en ISO UTC) ; 2e : date
+      // renvoyée par le serveur après la 1re — sinon la tablette entrerait en
+      // conflit avec sa propre modification.
+      expect(api.expectedUpdatedAts,
+          ['2026-10-09T09:00:00.000Z', '2026-10-09T10:00:01.000Z']);
     });
 
     test('409 (conflit : modifiée côté serveur entre-temps) — abandonnée, '

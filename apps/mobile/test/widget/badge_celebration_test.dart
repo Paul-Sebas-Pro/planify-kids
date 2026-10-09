@@ -8,6 +8,7 @@ import 'package:mobile/features/badges/badge_celebration.dart';
 import 'package:mobile/features/badges/badges_provider.dart';
 import 'package:mobile/models/auth_user.dart';
 import 'package:mobile/models/badge.dart';
+import 'package:mobile/shared/utils/utc_timestamp.dart';
 import 'package:mobile/shared/providers/providers.dart';
 import 'package:mobile/shared/services/secure_storage.dart';
 

@@ -16,14 +16,15 @@ export function LoginPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const setAuth = useAuthStore((s) => s.setAuth);
   const [error, setError] = useState<string | null>(null);
-
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
-
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>();
+
+  // Après TOUS les hooks : un return avant useForm changeait le nombre de
+  // hooks d'un rendu à l'autre (crash React si la connexion change).
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
   async function onSubmit(values: FormValues) {
     setError(null);

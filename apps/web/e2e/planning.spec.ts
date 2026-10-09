@@ -43,11 +43,11 @@ test.describe("Planning", () => {
       const initial = await statusChip.textContent();
       await statusChip.click();
       await page.waitForTimeout(500);
-      const updated = await statusChip.textContent();
-      // Le statut a changé (ou un autre chip est apparu)
+      // NB : ce test ne vérifie pas que le statut a changé (sélecteur trop
+      // vague pour cibler à coup sûr le chip cliqué) — seulement l'absence
+      // de crash après le clic.
       const anyChip = page.locator("[class*=chip],[class*=badge],[class*=status]").first();
       await expect(anyChip).toBeVisible();
-      // Vérifie qu'un changement s'est produit
       expect(initial).toBeTruthy();
     }
   });

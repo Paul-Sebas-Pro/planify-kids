@@ -121,8 +121,7 @@ class ProfileScreen extends ConsumerWidget {
               title: Text(context.l10n.profileNotificationsTitle),
               subtitle: Text(
                 unreadCount > 0
-                    ? context.l10n.profileNotificationsUnread(
-                        unreadCount, unreadCount > 1 ? 's' : '')
+                    ? context.l10n.profileNotificationsUnread(unreadCount)
                     : context.l10n.profileNotificationsAllRead,
               ),
               trailing: const Icon(Icons.chevron_right),

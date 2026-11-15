@@ -493,12 +493,7 @@ class _ProgressBanner extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            context.l10n.todayProgressSummary(
-              completed,
-              total,
-              total > 1 ? 's' : '',
-              completed > 1 ? 's' : '',
-            ),
+            context.l10n.todayProgressSummary(completed, total),
             style: const TextStyle(
               fontSize: 12,
               color: Colors.white70,
